@@ -110,22 +110,6 @@ a {
   font-size: 0.95rem;
 }
 
-.kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.kpi {
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
-}
-
-.kpi strong {
-  display: block;
-  font-size: 2rem;
-}
-
 @media (max-width: 720px) {
   .nav {
     flex-direction: column;

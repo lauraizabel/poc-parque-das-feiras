@@ -1,39 +1,290 @@
 import { z } from "zod";
 
-export const appEnvSchema = z.object({
+const nonEmptyString = z.string().trim().min(1);
+const optionalNonEmptyString = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}, nonEmptyString.optional());
+
+const optionalUrl = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? undefined : trimmed;
+}, z.url().optional());
+
+const serverProviderSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  APP_URL: z.url(),
+  STOREFRONT_URL: z.url(),
+  DASHBOARD_URL: z.url(),
   API_URL: z.url(),
-  DATABASE_URL: z.string().min(1),
-  REDIS_URL: z.string().min(1),
-  JWT_SECRET: z.string().min(1).default("change-me"),
-  STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
-  PAGARME_API_KEY: z.string().optional(),
-  MERCADO_PAGO_ACCESS_TOKEN: z.string().optional(),
-  ASAAS_API_KEY: z.string().optional(),
-  S3_REGION: z.string().optional(),
-  S3_BUCKET: z.string().optional(),
-  S3_ACCESS_KEY_ID: z.string().optional(),
-  S3_SECRET_ACCESS_KEY: z.string().optional(),
-  S3_ENDPOINT: z.string().optional(),
-  R2_PUBLIC_URL: z.string().optional(),
-  RESEND_API_KEY: z.string().optional(),
-  SENDGRID_API_KEY: z.string().optional(),
-  AWS_SES_REGION: z.string().optional(),
-  AWS_SES_ACCESS_KEY_ID: z.string().optional(),
-  AWS_SES_SECRET_ACCESS_KEY: z.string().optional(),
-  CLOUDFLARE_API_TOKEN: z.string().optional(),
-  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
-  VERCEL_ACCESS_TOKEN: z.string().optional(),
-  VERCEL_PROJECT_ID: z.string().optional()
+  DATABASE_URL: nonEmptyString,
+  REDIS_URL: nonEmptyString,
+  JWT_SECRET: nonEmptyString
 });
+
+const paymentsProviderSchema = z
+  .object({
+    PAYMENTS_ENABLED: z.coerce.boolean().default(false),
+    PAYMENT_PROVIDER: z.enum(["STRIPE", "PAGARME", "MERCADO_PAGO", "ASAAS"]).default("STRIPE"),
+    STRIPE_SECRET_KEY: optionalNonEmptyString,
+    STRIPE_WEBHOOK_SECRET: optionalNonEmptyString,
+    PAGARME_API_KEY: optionalNonEmptyString,
+    MERCADO_PAGO_ACCESS_TOKEN: optionalNonEmptyString,
+    ASAAS_API_KEY: optionalNonEmptyString
+  })
+  .superRefine((env, ctx) => {
+    if (!env.PAYMENTS_ENABLED) {
+      return;
+    }
+
+    if (env.PAYMENT_PROVIDER === "STRIPE") {
+      if (!env.STRIPE_SECRET_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STRIPE_SECRET_KEY"],
+          message: "Required when PAYMENT_PROVIDER=STRIPE"
+        });
+      }
+
+      if (!env.STRIPE_WEBHOOK_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["STRIPE_WEBHOOK_SECRET"],
+          message: "Required when PAYMENT_PROVIDER=STRIPE"
+        });
+      }
+    }
+
+    if (env.PAYMENT_PROVIDER === "PAGARME" && !env.PAGARME_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["PAGARME_API_KEY"],
+        message: "Required when PAYMENT_PROVIDER=PAGARME"
+      });
+    }
+
+    if (env.PAYMENT_PROVIDER === "MERCADO_PAGO" && !env.MERCADO_PAGO_ACCESS_TOKEN) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["MERCADO_PAGO_ACCESS_TOKEN"],
+        message: "Required when PAYMENT_PROVIDER=MERCADO_PAGO"
+      });
+    }
+
+    if (env.PAYMENT_PROVIDER === "ASAAS" && !env.ASAAS_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["ASAAS_API_KEY"],
+        message: "Required when PAYMENT_PROVIDER=ASAAS"
+      });
+    }
+  });
+
+const storageProviderSchema = z
+  .object({
+    STORAGE_PROVIDER: z.enum(["MINIO", "S3", "R2"]).default("MINIO"),
+    S3_REGION: optionalNonEmptyString,
+    S3_BUCKET: optionalNonEmptyString,
+    S3_ACCESS_KEY_ID: optionalNonEmptyString,
+    S3_SECRET_ACCESS_KEY: optionalNonEmptyString,
+    S3_ENDPOINT: optionalUrl,
+    R2_PUBLIC_URL: optionalUrl
+  })
+  .superRefine((env, ctx) => {
+    const requiredFields = ["S3_BUCKET", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"] as const;
+
+    for (const field of requiredFields) {
+      if (!env[field]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `Required when STORAGE_PROVIDER=${env.STORAGE_PROVIDER}`
+        });
+      }
+    }
+
+    if ((env.STORAGE_PROVIDER === "MINIO" || env.STORAGE_PROVIDER === "S3") && !env.S3_REGION) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["S3_REGION"],
+        message: `Required when STORAGE_PROVIDER=${env.STORAGE_PROVIDER}`
+      });
+    }
+
+    if (env.STORAGE_PROVIDER === "MINIO" && !env.S3_ENDPOINT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["S3_ENDPOINT"],
+        message: "Required when STORAGE_PROVIDER=MINIO"
+      });
+    }
+
+    if (env.STORAGE_PROVIDER === "R2" && !env.R2_PUBLIC_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["R2_PUBLIC_URL"],
+        message: "Required when STORAGE_PROVIDER=R2"
+      });
+    }
+  });
+
+const emailProviderSchema = z
+  .object({
+    EMAIL_ENABLED: z.coerce.boolean().default(false),
+    EMAIL_PROVIDER: z.enum(["RESEND", "SENDGRID", "AWS_SES"]).default("RESEND"),
+    RESEND_API_KEY: optionalNonEmptyString,
+    SENDGRID_API_KEY: optionalNonEmptyString,
+    AWS_SES_REGION: optionalNonEmptyString,
+    AWS_SES_ACCESS_KEY_ID: optionalNonEmptyString,
+    AWS_SES_SECRET_ACCESS_KEY: optionalNonEmptyString
+  })
+  .superRefine((env, ctx) => {
+    if (!env.EMAIL_ENABLED) {
+      return;
+    }
+
+    if (env.EMAIL_PROVIDER === "RESEND" && !env.RESEND_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["RESEND_API_KEY"],
+        message: "Required when EMAIL_PROVIDER=RESEND"
+      });
+    }
+
+    if (env.EMAIL_PROVIDER === "SENDGRID" && !env.SENDGRID_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["SENDGRID_API_KEY"],
+        message: "Required when EMAIL_PROVIDER=SENDGRID"
+      });
+    }
+
+    if (env.EMAIL_PROVIDER === "AWS_SES") {
+      if (!env.AWS_SES_REGION) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["AWS_SES_REGION"],
+          message: "Required when EMAIL_PROVIDER=AWS_SES"
+        });
+      }
+
+      if (!env.AWS_SES_ACCESS_KEY_ID) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["AWS_SES_ACCESS_KEY_ID"],
+          message: "Required when EMAIL_PROVIDER=AWS_SES"
+        });
+      }
+
+      if (!env.AWS_SES_SECRET_ACCESS_KEY) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["AWS_SES_SECRET_ACCESS_KEY"],
+          message: "Required when EMAIL_PROVIDER=AWS_SES"
+        });
+      }
+    }
+  });
+
+const domainsProviderSchema = z
+  .object({
+    DOMAINS_ENABLED: z.coerce.boolean().default(false),
+    DOMAIN_PROVIDER: z.enum(["CLOUDFLARE", "VERCEL"]).default("CLOUDFLARE"),
+    CLOUDFLARE_API_TOKEN: optionalNonEmptyString,
+    CLOUDFLARE_ACCOUNT_ID: optionalNonEmptyString,
+    VERCEL_ACCESS_TOKEN: optionalNonEmptyString,
+    VERCEL_PROJECT_ID: optionalNonEmptyString
+  })
+  .superRefine((env, ctx) => {
+    if (!env.DOMAINS_ENABLED) {
+      return;
+    }
+
+    if (env.DOMAIN_PROVIDER === "CLOUDFLARE") {
+      if (!env.CLOUDFLARE_API_TOKEN) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["CLOUDFLARE_API_TOKEN"],
+          message: "Required when DOMAIN_PROVIDER=CLOUDFLARE"
+        });
+      }
+
+      if (!env.CLOUDFLARE_ACCOUNT_ID) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["CLOUDFLARE_ACCOUNT_ID"],
+          message: "Required when DOMAIN_PROVIDER=CLOUDFLARE"
+        });
+      }
+    }
+
+    if (env.DOMAIN_PROVIDER === "VERCEL") {
+      if (!env.VERCEL_ACCESS_TOKEN) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["VERCEL_ACCESS_TOKEN"],
+          message: "Required when DOMAIN_PROVIDER=VERCEL"
+        });
+      }
+
+      if (!env.VERCEL_PROJECT_ID) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["VERCEL_PROJECT_ID"],
+          message: "Required when DOMAIN_PROVIDER=VERCEL"
+        });
+      }
+    }
+  });
 
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url(),
   NEXT_PUBLIC_API_URL: z.url()
 });
 
+export type ApiEnv = z.infer<typeof serverProviderSchema> &
+  z.infer<typeof paymentsProviderSchema> &
+  z.infer<typeof storageProviderSchema> &
+  z.infer<typeof emailProviderSchema> &
+  z.infer<typeof domainsProviderSchema>;
+export type PublicEnv = z.infer<typeof publicEnvSchema>;
+
+function formatSchemaErrors(error: z.ZodError) {
+  return error.issues
+    .map((issue) => {
+      const path = issue.path.join(".") || "root";
+      return `- ${path}: ${issue.message}`;
+    })
+    .join("\n");
+}
+
+function parseWithContext<T>(schema: z.ZodSchema<T>, input: unknown, scope: string) {
+  const result = schema.safeParse(input);
+
+  if (!result.success) {
+    throw new Error(`Invalid ${scope} environment variables:\n${formatSchemaErrors(result.error)}`);
+  }
+
+  return result.data;
+}
+
+export function createApiEnv(input: unknown) {
+  return {
+    ...parseWithContext(serverProviderSchema, input, "API base"),
+    ...parseWithContext(paymentsProviderSchema, input, "API payments"),
+    ...parseWithContext(storageProviderSchema, input, "API storage"),
+    ...parseWithContext(emailProviderSchema, input, "API email"),
+    ...parseWithContext(domainsProviderSchema, input, "API domains")
+  } satisfies ApiEnv;
+}
+
 export function createPublicEnv(input: unknown) {
-  return publicEnvSchema.parse(input);
+  return parseWithContext(publicEnvSchema, input, "public");
 }

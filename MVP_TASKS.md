@@ -64,10 +64,10 @@ Legenda de prioridade:
 ## Epic 1: Fundação do monorepo e arquitetura base
 
 ### Task 1.1 (P0): Inicializar monorepo com apps e pacotes compartilhados
-- [ ] Configurar monorepo com `pnpm workspaces` ou `Turborepo`, incluindo apps de `web-storefront`, `web-dashboard`, `api` e pacotes compartilhados de tipos/config.
-- [ ] Critérios de aceite: repositório instala dependências com um único comando e executa apps principais localmente.
-- [ ] Notas técnicas: padronizar TypeScript, ESLint, Prettier, aliases de import e variáveis de ambiente por app.
-- [ ] Dependências: nenhuma.
+- [x] Configurar monorepo com `pnpm workspaces` ou `Turborepo`, incluindo apps de `web-storefront`, `web-dashboard`, `api` e pacotes compartilhados de tipos/config.
+- [x] Critérios de aceite: repositório instala dependências com um único comando e executa apps principais localmente.
+- [x] Notas técnicas: padronizar TypeScript, ESLint, Prettier, aliases de import e variáveis de ambiente por app.
+- [x] Dependências: nenhuma.
 
 ### Task 1.2 (P0): Definir convenções de módulos do backend monolítico
 - [x] Estruturar módulos NestJS por domínio: auth, stores, domains, catalog, cart, checkout, payments, orders, admin, notifications, audit.
@@ -94,10 +94,10 @@ Legenda de prioridade:
 - [ ] Dependências: Prisma configurado.
 
 ### Task 1.6 (P0): Implementar configuração centralizada e validação de ambiente
-- [ ] Criar camada de configuração tipada para API e frontends com validação de env vars.
-- [ ] Critérios de aceite: app falha com mensagem clara quando faltar variável obrigatória.
-- [ ] Notas técnicas: separar envs de pagamento, storage, e-mail e domínio.
-- [ ] Dependências: apps criados.
+- [x] Criar camada de configuração tipada para API e frontends com validação de env vars.
+- [x] Critérios de aceite: app falha com mensagem clara quando faltar variável obrigatória.
+- [x] Notas técnicas: separar envs de pagamento, storage, e-mail e domínio.
+- [x] Dependências: apps criados.
 
 ### Task 1.7 (P1): Configurar pipeline inicial de CI
 - [ ] Criar pipeline para lint, typecheck, testes unitários básicos e validação de migrations.
@@ -108,10 +108,10 @@ Legenda de prioridade:
 ## Epic 2: Identidade, autenticação e autorização
 
 ### Task 2.1 (P0): Modelar entidades de usuário, membership e roles
-- [ ] Criar entidades `User`, `StoreMember` e enumerações de papéis: `PLATFORM_ADMIN`, `STORE_OWNER`, `STORE_MANAGER`, `STORE_SUPPORT`, `CUSTOMER`.
-- [ ] Critérios de aceite: migrations criadas com constraints e relações consistentes.
-- [ ] Notas técnicas: membership por loja com role explícita; permitir um usuário em várias lojas.
-- [ ] Dependências: Prisma baseline.
+- [x] Criar entidades `User`, `StoreMember` e enumerações de papéis: `PLATFORM_ADMIN`, `STORE_OWNER`, `STORE_MANAGER`, `STORE_SUPPORT`, `CUSTOMER`.
+- [x] Critérios de aceite: migrations criadas com constraints e relações consistentes.
+- [x] Notas técnicas: membership por loja com role explícita; permitir um usuário em várias lojas.
+- [x] Dependências: Prisma baseline.
 
 ### Task 2.2 (P0): Implementar autenticação por e-mail e senha
 - [ ] Criar endpoints de cadastro, login, logout e refresh ou sessão equivalente.

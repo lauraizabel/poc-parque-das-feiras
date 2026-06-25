@@ -2,7 +2,8 @@
 
 Estrutura inicial de um monorepo para produto SaaS com:
 
-- `apps/web`: Next.js para site publico e painel
+- `apps/web-storefront`: Next.js para a vitrine publica
+- `apps/web-dashboard`: Next.js para o painel operacional
 - `apps/api`: NestJS para API, jobs e integracoes
 - `packages/database`: Prisma + schema base multi-tenant
 - `packages/queue`: BullMQ + fabrica de filas
@@ -28,7 +29,8 @@ As outras opcoes que voce listou continuam viaveis. A base foi deixada modular p
 ```text
 apps/
   api/
-  web/
+  web-storefront/
+  web-dashboard/
 packages/
   config/
   database/
@@ -44,6 +46,12 @@ packages/
 4. Gere o client Prisma com `pnpm db:generate`.
 5. Aplique a baseline do banco com `pnpm db:migrate`.
 6. Rode o projeto com `pnpm dev`.
+
+O comando `pnpm dev` sobe:
+
+- storefront em `http://localhost:3000`
+- API em `http://localhost:3001`
+- dashboard em `http://localhost:3002`
 
 ## Infra local
 
@@ -76,6 +84,30 @@ Comandos principais:
 - `pnpm db:migrate`: cria/aplica migrations no ambiente local
 - `pnpm db:migrate:deploy`: aplica migrations existentes
 - `pnpm db:status`: mostra o estado das migrations
+
+## Ambiente e validacao
+
+O pacote `@acme/config` agora separa a configuracao em blocos:
+
+- base da aplicacao: URLs, banco, Redis e JWT
+- URLs separadas: `STOREFRONT_URL`, `DASHBOARD_URL` e `API_URL`
+- pagamentos: `PAYMENTS_ENABLED` + `PAYMENT_PROVIDER`
+- storage: `STORAGE_PROVIDER`
+- e-mail: `EMAIL_ENABLED` + `EMAIL_PROVIDER`
+- dominios: `DOMAINS_ENABLED` + `DOMAIN_PROVIDER`
+- frontends: `NEXT_PUBLIC_STOREFRONT_URL`, `NEXT_PUBLIC_DASHBOARD_URL` e `NEXT_PUBLIC_API_URL`
+
+Regras importantes:
+
+- a API falha no bootstrap com mensagem clara quando faltar variavel obrigatoria
+- pagamentos, e-mail e dominios so exigem credenciais quando o bloco estiver habilitado
+- storage continua validado sempre, porque faz parte da base operacional do projeto
+
+Exemplos:
+
+- desenvolvimento local: `PAYMENTS_ENABLED=false`, `EMAIL_ENABLED=false`, `DOMAINS_ENABLED=false`
+- ativando Stripe: `PAYMENTS_ENABLED=true` e preencher `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`
+- ativando Cloudflare: `DOMAINS_ENABLED=true` e preencher `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`
 
 ## Proximos passos recomendados
 

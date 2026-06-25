@@ -7,17 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum TenantStatus {
+enum StoreStatus {
   ACTIVE
   TRIALING
   PAST_DUE
   SUSPENDED
 }
 
-enum MembershipRole {
-  OWNER
-  ADMIN
-  MEMBER
+enum PlatformRole {
+  PLATFORM_ADMIN
+  CUSTOMER
+}
+
+enum StoreMemberRole {
+  STORE_OWNER
+  STORE_MANAGER
+  STORE_SUPPORT
 }
 
 enum DomainStatus {
@@ -34,20 +39,21 @@ enum PaymentProvider {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  email         String       @unique
+  id            String        @id @default(cuid())
+  email         String        @unique
   fullName      String?
-  memberships   Membership[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  platformRole  PlatformRole  @default(CUSTOMER)
+  storeMembers  StoreMember[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
-model Tenant {
+model Store {
   id                String            @id @default(cuid())
   name              String
   slug              String            @unique
-  status            TenantStatus      @default(TRIALING)
-  memberships       Membership[]
+  status            StoreStatus       @default(TRIALING)
+  storeMembers      StoreMember[]
   domains           Domain[]
   paymentAccounts   PaymentAccount[]
   assets            Asset[]
@@ -55,18 +61,18 @@ model Tenant {
   updatedAt         DateTime          @updatedAt
 }
 
-model Membership {
-  id        String         @id @default(cuid())
+model StoreMember {
+  id        String          @id @default(cuid())
   userId    String
-  tenantId  String
-  role      MembershipRole @default(MEMBER)
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  storeId   String
+  role      StoreMemberRole @default(STORE_SUPPORT)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store     Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 
-  @@unique([userId, tenantId])
-  @@index([tenantId])
+  @@unique([userId, storeId])
+  @@index([storeId])
 }
 
 model Domain {
@@ -74,12 +80,12 @@ model Domain {
   hostname   String       @unique
   status     DomainStatus @default(PENDING)
   verifiedAt DateTime?
-  tenantId   String
-  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId    String
+  store      Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
-  @@index([tenantId])
+  @@index([storeId])
 }
 
 model PaymentAccount {
@@ -87,26 +93,26 @@ model PaymentAccount {
   provider           PaymentProvider
   externalAccountId  String
   externalCustomerId String?
-  tenantId           String
-  tenant             Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  storeId            String
+  store              Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
   @@unique([provider, externalAccountId])
-  @@index([tenantId])
+  @@index([storeId])
 }
 
 model Asset {
   id         String   @id @default(cuid())
-  tenantId   String
+  storeId    String
   key        String   @unique
   bucket     String
   mimeType   String
   sizeBytes  Int
   publicUrl  String?
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@index([tenantId])
+  @@index([storeId])
 }

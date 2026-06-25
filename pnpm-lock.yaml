@@ -85,7 +85,41 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
-  apps/web:
+  apps/web-dashboard:
+    dependencies:
+      '@acme/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@acme/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      next:
+        specifier: ^15.3.5
+        version: 15.5.19(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.1.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.1.0
+        version: 19.2.7(react@19.2.7)
+      zod:
+        specifier: ^4.0.5
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.10
+        version: 24.13.2
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.1.6
+        version: 19.2.3(@types/react@19.2.17)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  apps/web-storefront:
     dependencies:
       '@acme/config':
         specifier: workspace:*

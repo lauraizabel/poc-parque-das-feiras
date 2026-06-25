@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { appEnvSchema } from "@acme/config";
+import { createApiEnv } from "@acme/config";
 import { AdminModule } from "./admin/admin.module";
 import { AuditModule } from "./audit/audit.module";
 import { AuthModule } from "./auth/auth.module";
@@ -19,7 +19,7 @@ import { StoresModule } from "./stores/stores.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      validate: (env) => appEnvSchema.parse(env)
+      validate: (env) => createApiEnv(env)
     }),
     AuthModule,
     StoresModule,
