@@ -14,12 +14,37 @@ export class StoresRepository {
     };
   }
 
-  createStore(input: { name: string; slug: string }) {
+  createStore(input: {
+    name: string;
+    slug: string;
+    defaultSubdomain: string;
+    ownerId: string;
+    supportEmail?: string;
+    currencyCode?: string;
+    locale?: string;
+  }) {
     return prisma.store.create({
       data: {
         name: input.name,
-        slug: input.slug
+        slug: input.slug,
+        defaultSubdomain: input.defaultSubdomain,
+        ownerId: input.ownerId,
+        supportEmail: input.supportEmail,
+        currencyCode: input.currencyCode,
+        locale: input.locale
       }
+    });
+  }
+
+  findStoreBySlug(slug: string) {
+    return prisma.store.findUnique({
+      where: { slug }
+    });
+  }
+
+  findStoreBySubdomain(defaultSubdomain: string) {
+    return prisma.store.findUnique({
+      where: { defaultSubdomain }
     });
   }
 

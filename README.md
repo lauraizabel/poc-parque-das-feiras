@@ -119,6 +119,17 @@ O `storeId` pode ser resolvido por:
 - `query.storeId`
 - header `x-store-id`
 
+## Store base
+
+O modelo inicial de `Store` ja inclui:
+
+- `slug` interno unico
+- `defaultSubdomain` unico
+- `ownerId` com relacao explicita ao usuario dono
+- configuracoes iniciais: `supportEmail`, `currencyCode` e `locale`
+
+O endpoint `POST /stores` ja normaliza slug/subdominio, bloqueia slugs reservados e cria a loja vinculada ao usuario autenticado.
+
 ## Ambiente e validacao
 
 O pacote `@acme/config` agora separa a configuracao em blocos:

@@ -45,6 +45,7 @@ model User {
   passwordHash     String
   refreshTokenHash String?
   platformRole     PlatformRole  @default(CUSTOMER)
+  ownedStores      Store[]       @relation("StoreOwner")
   storeMembers     StoreMember[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -54,13 +55,21 @@ model Store {
   id                String            @id @default(cuid())
   name              String
   slug              String            @unique
+  defaultSubdomain  String            @unique
+  ownerId           String
+  supportEmail      String?
+  currencyCode      String            @default("BRL")
+  locale            String            @default("pt-BR")
   status            StoreStatus       @default(TRIALING)
+  owner             User              @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   storeMembers      StoreMember[]
   domains           Domain[]
   paymentAccounts   PaymentAccount[]
   assets            Asset[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
+
+  @@index([ownerId])
 }
 
 model StoreMember {

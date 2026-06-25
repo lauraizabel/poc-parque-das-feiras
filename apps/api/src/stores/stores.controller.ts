@@ -6,6 +6,7 @@ import { PlatformRoles } from "../auth/platform-roles.decorator";
 import { StoreAccess } from "../auth/store-access.decorator";
 import { StoreRoles } from "../auth/store-roles.decorator";
 import { AuthenticatedRequest } from "../auth/auth.types";
+import { createStoreSchema, parseStoreBody } from "./stores.schemas";
 import { StoresService } from "./stores.service";
 
 @Controller("stores")
@@ -48,6 +49,15 @@ export class StoresController {
       access: "granted",
       storeContext: request.storeContext
     };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  createStore(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    return this.storesService.createStore({
+      ...parseStoreBody(createStoreSchema, body),
+      ownerId: request.user.sub
+    });
   }
 
   @UseGuards(JwtAuthGuard)

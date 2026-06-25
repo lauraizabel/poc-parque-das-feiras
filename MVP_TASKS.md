@@ -146,10 +146,10 @@ Legenda de prioridade:
 ## Epic 3: Onboarding do lojista e gestão de lojas
 
 ### Task 3.1 (P0): Modelar entidade Store e configurações iniciais
-- [ ] Criar entidade `Store` com nome, slug interno, status, subdomínio padrão, owner e configurações essenciais.
-- [ ] Critérios de aceite: migration inclui unicidade de slug/subdomínio e relação com owner.
-- [ ] Notas técnicas: reservar slugs proibidos e normalizar entrada.
-- [ ] Dependências: usuário e membership.
+- [x] Criar entidade `Store` com nome, slug interno, status, subdomínio padrão, owner e configurações essenciais.
+- [x] Critérios de aceite: migration inclui unicidade de slug/subdomínio e relação com owner.
+- [x] Notas técnicas: reservar slugs proibidos e normalizar entrada.
+- [x] Dependências: usuário e membership.
 
 ### Task 3.2 (P0): Implementar fluxo de criação de conta de lojista com loja inicial
 - [ ] Criar fluxo em que um usuário cadastra conta e já cria sua primeira loja.
