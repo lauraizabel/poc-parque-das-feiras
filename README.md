@@ -102,6 +102,23 @@ Detalhes da implementacao:
 - refresh token com rotacao e hash persistido no banco
 - rota protegida via Bearer token em `Authorization`
 
+## Autorizacao base
+
+A API agora separa autenticacao de autorizacao:
+
+- `JwtAuthGuard`: valida o Bearer token e injeta o usuario autenticado
+- `AuthorizationGuard`: valida papel global e contexto de loja
+- `@PlatformRoles(...)`: restringe rotas por papel global
+- `@StoreAccess()`: exige resolucao de `storeId`
+- `@StoreRoles(...)`: restringe rotas por membership da loja
+
+O `storeId` pode ser resolvido por:
+
+- `params.storeId`
+- `body.storeId`
+- `query.storeId`
+- header `x-store-id`
+
 ## Ambiente e validacao
 
 O pacote `@acme/config` agora separa a configuracao em blocos:

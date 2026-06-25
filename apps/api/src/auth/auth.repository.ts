@@ -49,6 +49,17 @@ export class AuthRepository {
     });
   }
 
+  findStoreMembership(userId: string, storeId: string) {
+    return prisma.storeMember.findUnique({
+      where: {
+        userId_storeId: {
+          userId,
+          storeId
+        }
+      }
+    });
+  }
+
   toAuthenticatedUser(user: User) {
     return {
       id: user.id,

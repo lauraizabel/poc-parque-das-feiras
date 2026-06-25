@@ -126,10 +126,10 @@ Legenda de prioridade:
 - [ ] Dependências: autenticação base e notificações por e-mail.
 
 ### Task 2.4 (P0): Implementar guards e autorização por papel e escopo de loja
-- [ ] Criar middleware/guard para validar autenticação, role global e acesso por `storeId`.
-- [ ] Critérios de aceite: usuários sem permissão recebem erro consistente e auditável.
-- [ ] Notas técnicas: separar autorização global de autorização contextual da loja.
-- [ ] Dependências: membership e autenticação.
+- [x] Criar middleware/guard para validar autenticação, role global e acesso por `storeId`.
+- [x] Critérios de aceite: usuários sem permissão recebem erro consistente e auditável.
+- [x] Notas técnicas: separar autorização global de autorização contextual da loja.
+- [x] Dependências: membership e autenticação.
 
 ### Task 2.5 (P1): Construir telas base de autenticação no dashboard
 - [ ] Implementar páginas de login, cadastro, esqueci senha e redefinição de senha.

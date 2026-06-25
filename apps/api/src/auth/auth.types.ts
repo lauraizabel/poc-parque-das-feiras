@@ -17,6 +17,18 @@ export type AuthenticatedUser = {
 export type AuthenticatedRequest = {
   headers: {
     authorization?: string;
+    "x-store-id"?: string;
+  };
+  params?: Record<string, string | undefined>;
+  body?: {
+    storeId?: string;
+  };
+  query?: {
+    storeId?: string | string[];
   };
   user: AuthTokenPayload;
+  storeContext?: {
+    storeId: string;
+    membershipRole: string;
+  };
 };
