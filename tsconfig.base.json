@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@acme/config": ["packages/config/src/index.ts"],
+      "@acme/database": ["packages/database/src/index.ts"],
+      "@acme/queue": ["packages/queue/src/index.ts"],
+      "@acme/types": ["packages/types/src/index.ts"]
+    }
+  }
+}

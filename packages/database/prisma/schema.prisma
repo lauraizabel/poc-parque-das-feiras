@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  SUSPENDED
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum PaymentProvider {
+  STRIPE_CONNECT
+  PAGARME
+  MERCADO_PAGO
+  ASAAS
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  fullName      String?
+  memberships   Membership[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Tenant {
+  id                String            @id @default(cuid())
+  name              String
+  slug              String            @unique
+  status            TenantStatus      @default(TRIALING)
+  memberships       Membership[]
+  domains           Domain[]
+  paymentAccounts   PaymentAccount[]
+  assets            Asset[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+model Membership {
+  id        String         @id @default(cuid())
+  userId    String
+  tenantId  String
+  role      MembershipRole @default(MEMBER)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+}
+
+model Domain {
+  id         String       @id @default(cuid())
+  hostname   String       @unique
+  status     DomainStatus @default(PENDING)
+  verifiedAt DateTime?
+  tenantId   String
+  tenant     Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@index([tenantId])
+}
+
+model PaymentAccount {
+  id                 String          @id @default(cuid())
+  provider           PaymentProvider
+  externalAccountId  String
+  externalCustomerId String?
+  tenantId           String
+  tenant             Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@unique([provider, externalAccountId])
+  @@index([tenantId])
+}
+
+model Asset {
+  id         String   @id @default(cuid())
+  tenantId   String
+  key        String   @unique
+  bucket     String
+  mimeType   String
+  sizeBytes  Int
+  publicUrl  String?
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId])
+}

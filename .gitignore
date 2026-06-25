@@ -1,0 +1,12 @@
+.DS_Store
+.turbo
+.next
+dist
+coverage
+node_modules
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+apps/api/dist
+packages/database/generated

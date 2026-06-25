@@ -1,0 +1,25 @@
+{
+  "name": "saas-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.4",
+  "scripts": {
+    "postinstall": "pnpm db:generate",
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write .",
+    "db:generate": "pnpm --filter @acme/database db:generate",
+    "db:migrate": "pnpm --filter @acme/database db:migrate",
+    "db:migrate:deploy": "pnpm --filter @acme/database db:migrate:deploy",
+    "db:status": "pnpm --filter @acme/database db:status",
+    "compose:up": "docker compose up -d",
+    "compose:down": "docker compose down"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "turbo": "^2.0.12",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@acme/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --project tsconfig.json --watch",
+    "build": "tsc --project tsconfig.json",
+    "lint": "tsc --project tsconfig.json --noEmit",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:status": "prisma migrate status --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "prisma": "^6.10.1",
+    "typescript": "^5.9.2"
+  }
+}

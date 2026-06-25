@@ -1,0 +1,3 @@
+Um sistema de marketplace,
+onde precisa ter uma integração de pagamentos, vitrine de lojas, 
+onde cada loja vai ter seu proprio dominio, e com isso poder personalizar a loja do jeito que quiser.
