@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { createApiEnv } from "@acme/config";
@@ -19,6 +20,11 @@ import { StoresModule } from "./stores/stores.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [
+        path.resolve(process.cwd(), ".env"),
+        path.resolve(process.cwd(), "../.env"),
+        path.resolve(process.cwd(), "../../.env")
+      ],
       validate: (env) => createApiEnv(env)
     }),
     AuthModule,

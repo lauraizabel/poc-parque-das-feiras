@@ -39,13 +39,15 @@ enum PaymentProvider {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  fullName      String?
-  platformRole  PlatformRole  @default(CUSTOMER)
-  storeMembers  StoreMember[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  email            String        @unique
+  fullName         String?
+  passwordHash     String
+  refreshTokenHash String?
+  platformRole     PlatformRole  @default(CUSTOMER)
+  storeMembers     StoreMember[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 }
 
 model Store {

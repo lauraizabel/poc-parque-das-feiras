@@ -85,6 +85,23 @@ Comandos principais:
 - `pnpm db:migrate:deploy`: aplica migrations existentes
 - `pnpm db:status`: mostra o estado das migrations
 
+## Autenticacao base
+
+A API ja possui fluxo inicial de autenticacao por e-mail e senha:
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `POST /auth/refresh`
+- `POST /auth/logout`
+- `GET /auth/me`
+
+Detalhes da implementacao:
+
+- senha com hash via `scrypt`
+- access token e refresh token em JWT
+- refresh token com rotacao e hash persistido no banco
+- rota protegida via Bearer token em `Authorization`
+
 ## Ambiente e validacao
 
 O pacote `@acme/config` agora separa a configuracao em blocos:

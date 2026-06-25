@@ -1,6 +1,26 @@
 import { z } from "zod";
 
 const nonEmptyString = z.string().trim().min(1);
+const booleanFromEnv = z.preprocess((value) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+
+    if (normalized === "true") {
+      return true;
+    }
+
+    if (normalized === "false") {
+      return false;
+    }
+  }
+
+  return value;
+}, z.boolean());
+
 const optionalNonEmptyString = z.preprocess((value) => {
   if (typeof value !== "string") {
     return value;
@@ -26,12 +46,14 @@ const serverProviderSchema = z.object({
   API_URL: z.url(),
   DATABASE_URL: nonEmptyString,
   REDIS_URL: nonEmptyString,
-  JWT_SECRET: nonEmptyString
+  JWT_SECRET: nonEmptyString,
+  JWT_ACCESS_TTL: nonEmptyString.default("15m"),
+  JWT_REFRESH_TTL: nonEmptyString.default("7d")
 });
 
 const paymentsProviderSchema = z
   .object({
-    PAYMENTS_ENABLED: z.coerce.boolean().default(false),
+    PAYMENTS_ENABLED: booleanFromEnv.default(false),
     PAYMENT_PROVIDER: z.enum(["STRIPE", "PAGARME", "MERCADO_PAGO", "ASAAS"]).default("STRIPE"),
     STRIPE_SECRET_KEY: optionalNonEmptyString,
     STRIPE_WEBHOOK_SECRET: optionalNonEmptyString,
@@ -137,7 +159,7 @@ const storageProviderSchema = z
 
 const emailProviderSchema = z
   .object({
-    EMAIL_ENABLED: z.coerce.boolean().default(false),
+    EMAIL_ENABLED: booleanFromEnv.default(false),
     EMAIL_PROVIDER: z.enum(["RESEND", "SENDGRID", "AWS_SES"]).default("RESEND"),
     RESEND_API_KEY: optionalNonEmptyString,
     SENDGRID_API_KEY: optionalNonEmptyString,
@@ -195,7 +217,7 @@ const emailProviderSchema = z
 
 const domainsProviderSchema = z
   .object({
-    DOMAINS_ENABLED: z.coerce.boolean().default(false),
+    DOMAINS_ENABLED: booleanFromEnv.default(false),
     DOMAIN_PROVIDER: z.enum(["CLOUDFLARE", "VERCEL"]).default("CLOUDFLARE"),
     CLOUDFLARE_API_TOKEN: optionalNonEmptyString,
     CLOUDFLARE_ACCOUNT_ID: optionalNonEmptyString,

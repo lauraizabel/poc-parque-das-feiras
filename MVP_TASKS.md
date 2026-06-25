@@ -114,10 +114,10 @@ Legenda de prioridade:
 - [x] Dependências: Prisma baseline.
 
 ### Task 2.2 (P0): Implementar autenticação por e-mail e senha
-- [ ] Criar endpoints de cadastro, login, logout e refresh ou sessão equivalente.
-- [ ] Critérios de aceite: usuário consegue autenticar e acessar rotas protegidas.
-- [ ] Notas técnicas: usar hash seguro de senha, política mínima de senha e cookies/httpOnly ou JWT com rotação.
-- [ ] Dependências: entidades de usuário.
+- [x] Criar endpoints de cadastro, login, logout e refresh ou sessão equivalente.
+- [x] Critérios de aceite: usuário consegue autenticar e acessar rotas protegidas.
+- [x] Notas técnicas: usar hash seguro de senha, política mínima de senha e cookies/httpOnly ou JWT com rotação.
+- [x] Dependências: entidades de usuário.
 
 ### Task 2.3 (P1): Implementar confirmação de e-mail e recuperação de senha
 - [ ] Criar fluxo de token para verificação de conta e reset de senha.
