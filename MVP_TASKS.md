@@ -152,16 +152,16 @@ Legenda de prioridade:
 - [x] Dependências: usuário e membership.
 
 ### Task 3.2 (P0): Implementar fluxo de criação de conta de lojista com loja inicial
-- [ ] Criar fluxo em que um usuário cadastra conta e já cria sua primeira loja.
-- [ ] Critérios de aceite: ao concluir onboarding, usuário vira `STORE_OWNER` da loja criada.
-- [ ] Notas técnicas: transação única para user + store + membership + subdomínio padrão.
-- [ ] Dependências: autenticação e entidade Store.
+- [x] Criar fluxo em que um usuário cadastra conta e já cria sua primeira loja.
+- [x] Critérios de aceite: ao concluir onboarding, usuário vira `STORE_OWNER` da loja criada.
+- [x] Notas técnicas: transação única para user + store + membership + subdomínio padrão.
+- [x] Dependências: autenticação e entidade Store.
 
 ### Task 3.3 (P0): Gerar subdomínio padrão automaticamente
-- [ ] Implementar geração de subdomínio padrão no formato `slug.marketplace.com`.
-- [ ] Critérios de aceite: toda nova loja nasce com subdomínio único e acessível.
-- [ ] Notas técnicas: tratar colisões com estratégia previsível e registrar host canônico.
-- [ ] Dependências: criação de loja.
+- [x] Implementar geração de subdomínio padrão no formato `slug.marketplace.com`.
+- [x] Critérios de aceite: toda nova loja nasce com subdomínio único e acessível.
+- [x] Notas técnicas: tratar colisões com estratégia previsível e registrar host canônico.
+- [x] Dependências: criação de loja.
 
 ### Task 3.4 (P1): Criar telas de onboarding e configuração inicial da loja
 - [ ] Implementar UX para nome da loja, slug desejado e dados iniciais de operação.

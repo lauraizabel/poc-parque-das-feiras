@@ -130,6 +130,17 @@ O modelo inicial de `Store` ja inclui:
 
 O endpoint `POST /stores` ja normaliza slug/subdominio, bloqueia slugs reservados e cria a loja vinculada ao usuario autenticado.
 
+## Onboarding inicial do lojista
+
+O endpoint `POST /auth/register-merchant` agora cria em uma unica transacao:
+
+- usuario
+- loja inicial
+- membership `STORE_OWNER`
+- subdominio padrao unico
+
+O subdominio padrao nasce a partir do slug normalizado e aplica sufixos previsiveis quando houver colisao.
+
 ## Ambiente e validacao
 
 O pacote `@acme/config` agora separa a configuracao em blocos:

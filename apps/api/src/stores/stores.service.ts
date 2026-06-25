@@ -58,23 +58,24 @@ export class StoresService {
 
   async createStore(input: CreateStoreInput & { ownerId: string }) {
     const slug = this.normalizeSlug(input.slug);
-    const defaultSubdomain = this.normalizeSlug(input.defaultSubdomain ?? slug);
+    const requestedSubdomain = input.defaultSubdomain
+      ? this.normalizeSlug(input.defaultSubdomain)
+      : null;
 
     this.assertAllowedSlug(slug, "slug");
-    this.assertAllowedSlug(defaultSubdomain, "defaultSubdomain");
+    if (requestedSubdomain) {
+      this.assertAllowedSlug(requestedSubdomain, "defaultSubdomain");
+    }
 
-    const [existingSlug, existingSubdomain] = await Promise.all([
-      this.storesRepository.findStoreBySlug(slug),
-      this.storesRepository.findStoreBySubdomain(defaultSubdomain)
-    ]);
+    const existingSlug = await this.storesRepository.findStoreBySlug(slug);
 
     if (existingSlug) {
       throw new BadRequestException("Store slug is already in use");
     }
 
-    if (existingSubdomain) {
-      throw new BadRequestException("Default subdomain is already in use");
-    }
+    const defaultSubdomain = requestedSubdomain
+      ? await this.ensureSpecificSubdomainAvailable(requestedSubdomain)
+      : await this.generateUniqueDefaultSubdomain(slug);
 
     return this.storesRepository.createStore({
       ownerId: input.ownerId,
@@ -107,5 +108,29 @@ export class StoresService {
     if (RESERVED_SLUGS.has(value)) {
       throw new BadRequestException(`${field} is reserved`);
     }
+  }
+
+  private async ensureSpecificSubdomainAvailable(subdomain: string) {
+    const existingSubdomain = await this.storesRepository.findStoreBySubdomain(subdomain);
+
+    if (existingSubdomain) {
+      throw new BadRequestException("Default subdomain is already in use");
+    }
+
+    return subdomain;
+  }
+
+  private async generateUniqueDefaultSubdomain(baseSlug: string) {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const suffix = attempt === 0 ? "" : `-${attempt + 1}`;
+      const candidate = `${baseSlug}${suffix}`;
+      const existingSubdomain = await this.storesRepository.findStoreBySubdomain(candidate);
+
+      if (!existingSubdomain) {
+        return candidate;
+      }
+    }
+
+    throw new BadRequestException("Could not generate a unique default subdomain");
   }
 }

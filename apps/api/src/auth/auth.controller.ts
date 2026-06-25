@@ -4,6 +4,7 @@ import {
   loginSchema,
   parseBody,
   refreshSchema,
+  registerMerchantSchema,
   registerSchema
 } from "./auth.schemas";
 import { JwtAuthGuard } from "./jwt-auth.guard";
@@ -21,6 +22,11 @@ export class AuthController {
   @Post("register")
   register(@Body() body: unknown) {
     return this.authService.register(parseBody(registerSchema, body));
+  }
+
+  @Post("register-merchant")
+  registerMerchant(@Body() body: unknown) {
+    return this.authService.registerMerchant(parseBody(registerMerchantSchema, body));
   }
 
   @Post("login")

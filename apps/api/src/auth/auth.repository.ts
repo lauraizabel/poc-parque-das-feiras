@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PlatformRole, User } from "@prisma/client";
+import { PlatformRole, StoreMemberRole, User } from "@prisma/client";
 import { prisma } from "@acme/database";
 import { DomainBoundary } from "../platform/domain-boundary";
 
@@ -42,6 +42,51 @@ export class AuthRepository {
     });
   }
 
+  createMerchantOnboarding(input: {
+    email: string;
+    fullName: string;
+    passwordHash: string;
+    storeName: string;
+    storeSlug: string;
+    defaultSubdomain: string;
+    supportEmail?: string;
+    currencyCode?: string;
+    locale?: string;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: input.email.toLowerCase(),
+          fullName: input.fullName,
+          passwordHash: input.passwordHash,
+          platformRole: PlatformRole.CUSTOMER
+        }
+      });
+
+      const store = await tx.store.create({
+        data: {
+          name: input.storeName,
+          slug: input.storeSlug,
+          defaultSubdomain: input.defaultSubdomain,
+          ownerId: user.id,
+          supportEmail: input.supportEmail,
+          currencyCode: input.currencyCode,
+          locale: input.locale
+        }
+      });
+
+      const membership = await tx.storeMember.create({
+        data: {
+          userId: user.id,
+          storeId: store.id,
+          role: StoreMemberRole.STORE_OWNER
+        }
+      });
+
+      return { user, store, membership };
+    });
+  }
+
   updateRefreshTokenHash(userId: string, refreshTokenHash: string | null) {
     return prisma.user.update({
       where: { id: userId },
@@ -56,6 +101,17 @@ export class AuthRepository {
           userId,
           storeId
         }
+      }
+    });
+  }
+
+  findStoreBySlugOrSubdomain(slug: string, defaultSubdomain: string) {
+    return prisma.store.findFirst({
+      where: {
+        OR: [
+          { slug },
+          { defaultSubdomain }
+        ]
       }
     });
   }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException
@@ -7,9 +8,33 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { PlatformRole } from "@prisma/client";
 import { AuthRepository } from "./auth.repository";
-import { LoginInput, RefreshInput, RegisterInput } from "./auth.schemas";
+import {
+  LoginInput,
+  RefreshInput,
+  RegisterInput,
+  RegisterMerchantInput
+} from "./auth.schemas";
 import { PasswordService } from "./password.service";
 import { AuthTokenPayload } from "./auth.types";
+
+const RESERVED_STORE_SLUGS = new Set([
+  "admin",
+  "api",
+  "app",
+  "auth",
+  "checkout",
+  "dashboard",
+  "help",
+  "login",
+  "panel",
+  "root",
+  "settings",
+  "signup",
+  "store",
+  "stores",
+  "support",
+  "www"
+]);
 
 @Injectable()
 export class AuthService {
@@ -22,6 +47,22 @@ export class AuthService {
 
   getBoundary() {
     return this.authRepository.getBoundary();
+  }
+
+  normalizeStoreSlug(value: string) {
+    const normalized = value
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    if (normalized.length < 2) {
+      throw new BadRequestException("Store slug must contain at least 2 alphanumeric characters");
+    }
+
+    return normalized;
   }
 
   async register(input: RegisterInput) {
@@ -39,6 +80,52 @@ export class AuthService {
     });
 
     return this.issueAuthSession(user.id, user.email, user.platformRole, user.fullName);
+  }
+
+  async registerMerchant(input: RegisterMerchantInput) {
+    const existingUser = await this.authRepository.findUserByEmail(input.email);
+
+    if (existingUser) {
+      throw new ConflictException("Email is already registered");
+    }
+
+    const reservedSlug = this.normalizeStoreSlug(input.storeSlug);
+    this.assertAllowedStoreSlug(reservedSlug);
+    const existingSlug = await this.authRepository.findStoreBySlugOrSubdomain(
+      reservedSlug,
+      "__unused__"
+    );
+
+    if (existingSlug?.slug === reservedSlug) {
+      throw new ConflictException("Store slug is already in use");
+    }
+
+    const defaultSubdomain = await this.generateDefaultSubdomain(reservedSlug);
+
+    const onboarding = await this.authRepository.createMerchantOnboarding({
+      email: input.email,
+      fullName: input.fullName,
+      passwordHash: this.passwordService.hashSecret(input.password),
+      storeName: input.storeName.trim(),
+      storeSlug: reservedSlug,
+      defaultSubdomain,
+      supportEmail: input.supportEmail?.toLowerCase(),
+      currencyCode: input.currencyCode?.toUpperCase() ?? "BRL",
+      locale: input.locale ?? "pt-BR"
+    });
+
+    const session = await this.issueAuthSession(
+      onboarding.user.id,
+      onboarding.user.email,
+      onboarding.user.platformRole,
+      onboarding.user.fullName
+    );
+
+    return {
+      ...session,
+      store: onboarding.store,
+      membership: onboarding.membership
+    };
   }
 
   async login(input: LoginInput) {
@@ -155,6 +242,29 @@ export class AuthService {
       }
 
       throw new UnauthorizedException(`Invalid or expired ${type} token`);
+    }
+  }
+
+  private async generateDefaultSubdomain(storeSlug: string) {
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const suffix = attempt === 0 ? "" : `-${attempt + 1}`;
+      const candidate = `${storeSlug}${suffix}`;
+      const existingStore = await this.authRepository.findStoreBySlugOrSubdomain(
+        storeSlug,
+        candidate
+      );
+
+      if (!existingStore) {
+        return candidate;
+      }
+    }
+
+    throw new ConflictException("Could not generate a unique default subdomain");
+  }
+
+  private assertAllowedStoreSlug(slug: string) {
+    if (RESERVED_STORE_SLUGS.has(slug)) {
+      throw new BadRequestException("Store slug is reserved");
     }
   }
 }

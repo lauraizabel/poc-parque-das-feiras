@@ -24,9 +24,26 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1)
 });
 
+export const registerMerchantSchema = z.object({
+  email: z.string().email(),
+  password: z
+    .string()
+    .min(8, passwordPolicyMessage)
+    .regex(/[a-z]/, passwordPolicyMessage)
+    .regex(/[A-Z]/, passwordPolicyMessage)
+    .regex(/[0-9]/, passwordPolicyMessage),
+  fullName: z.string().trim().min(2).max(120),
+  storeName: z.string().trim().min(2).max(120),
+  storeSlug: z.string().trim().min(2).max(60),
+  supportEmail: z.string().email().optional(),
+  currencyCode: z.string().trim().length(3).optional(),
+  locale: z.string().trim().min(2).max(10).optional()
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
+export type RegisterMerchantInput = z.infer<typeof registerMerchantSchema>;
 
 export function parseBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
   try {
