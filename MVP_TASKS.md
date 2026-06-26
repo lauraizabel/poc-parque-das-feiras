@@ -202,10 +202,10 @@ Legenda de prioridade:
 - [x] Dependências: módulos de catálogo, carrinho, pedidos e afins.
 
 ### Task 4.4 (P0): Criar testes de resolução por host e isolamento de tenant
-- [ ] Cobrir cenários com subdomínio padrão, domínio custom ativo, host inválido e acesso cruzado.
-- [ ] Critérios de aceite: testes impedem regressões de segurança multi-tenant.
-- [ ] Notas técnicas: priorizar integração e testes end-to-end dos fluxos públicos.
-- [ ] Dependências: middleware e isolamento por `storeId`.
+- [x] Cobrir cenários com subdomínio padrão, domínio custom ativo, host inválido e acesso cruzado.
+- [x] Critérios de aceite: testes impedem regressões de segurança multi-tenant.
+- [x] Notas técnicas: priorizar integração e testes end-to-end dos fluxos públicos.
+- [x] Dependências: middleware e isolamento por `storeId`.
 
 ## Epic 5: Gestão de domínios próprios e SSL
 

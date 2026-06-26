@@ -7,7 +7,8 @@
     "build": "nest build",
     "start": "node dist/apps/api/src/main.js",
     "lint": "tsc --project tsconfig.json --noEmit",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test:tenant-resolution": "node --test dist/apps/api/src/domains/tenant-resolution.test.js"
   },
   "dependencies": {
     "@acme/config": "workspace:*",
