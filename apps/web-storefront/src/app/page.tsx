@@ -44,6 +44,7 @@ export default async function HomePage() {
         </div>
         <nav className="nav-links">
           {isResolvedStore ? <a href="/catalog">Catalogo</a> : null}
+          {isResolvedStore ? <a href="/cart">Carrinho</a> : null}
           <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
           <a href="http://localhost:3002">Dashboard</a>
         </nav>

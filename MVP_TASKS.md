@@ -360,16 +360,16 @@ Legenda de prioridade:
 - [x] Dependências: Cart/CartItem.
 
 ### Task 8.3 (P1): Implementar persistência de carrinho no frontend
-- [ ] Construir camada no storefront para manter carrinho por loja durante navegação.
-- [ ] Critérios de aceite: usuário mantém o carrinho ao navegar na mesma loja.
-- [ ] Notas técnicas: pode usar cookie/session/local storage em conjunto com carrinho server-side.
-- [ ] Dependências: API de carrinho.
+- [x] Construir camada no storefront para manter carrinho por loja durante navegação.
+- [x] Critérios de aceite: usuário mantém o carrinho ao navegar na mesma loja.
+- [x] Notas técnicas: pode usar cookie/session/local storage em conjunto com carrinho server-side.
+- [x] Dependências: API de carrinho.
 
 ### Task 8.4 (P1): Construir UI de carrinho simples
-- [ ] Implementar drawer ou página de carrinho com resumo, edição de quantidades e subtotal.
-- [ ] Critérios de aceite: cliente consegue revisar itens antes do checkout.
-- [ ] Notas técnicas: destacar que o carrinho é exclusivo da loja atual.
-- [ ] Dependências: persistência de carrinho.
+- [x] Implementar drawer ou página de carrinho com resumo, edição de quantidades e subtotal.
+- [x] Critérios de aceite: cliente consegue revisar itens antes do checkout.
+- [x] Notas técnicas: destacar que o carrinho é exclusivo da loja atual.
+- [x] Dependências: persistência de carrinho.
 
 ### Task 8.5 (P1): Implementar testes de regras do carrinho
 - [ ] Cobrir mistura de lojas, estoque insuficiente, produto inativo e atualização concorrente simples.
@@ -404,10 +404,10 @@ Legenda de prioridade:
 - [x] Dependências: modelagem de pagamento e decisão do gateway.
 
 ### Task 9.5 (P0): Construir UI de checkout
-- [ ] Implementar formulário de cliente, endereço, frete e pagamento no storefront.
-- [ ] Critérios de aceite: cliente consegue concluir pedido e iniciar pagamento sem sair do contexto da loja.
-- [ ] Notas técnicas: validar campos no client e server, com feedback claro de erro.
-- [ ] Dependências: criação de pedido e integração de pagamento.
+- [x] Implementar formulário de cliente, endereço, frete e pagamento no storefront.
+- [x] Critérios de aceite: cliente consegue concluir pedido e iniciar pagamento sem sair do contexto da loja.
+- [x] Notas técnicas: validar campos no client e server, com feedback claro de erro.
+- [x] Dependências: criação de pedido e integração de pagamento.
 
 ### Task 9.6 (P0): Implementar endpoint de webhooks de pagamento
 - [ ] Criar endpoint seguro para receber eventos do gateway.

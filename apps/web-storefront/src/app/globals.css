@@ -384,6 +384,129 @@ a {
   gap: 10px;
 }
 
+.checkout-layout {
+  display: grid;
+  gap: 24px;
+  padding: 16px 0 64px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+}
+
+.checkout-main,
+.checkout-side {
+  display: grid;
+  gap: 18px;
+}
+
+.cart-list,
+.summary-list {
+  display: grid;
+  gap: 16px;
+}
+
+.cart-item {
+  display: grid;
+  gap: 12px;
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.cart-item:first-child {
+  border-top: 0;
+}
+
+.cart-item h2 {
+  margin: 0 0 4px;
+}
+
+.cart-item p,
+.cart-item-price span {
+  margin: 0;
+  color: var(--muted);
+}
+
+.cart-item-controls,
+.cart-item-price {
+  display: grid;
+  gap: 6px;
+}
+
+.field-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 24px 0;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.field-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text);
+  font: inherit;
+}
+
+.field-input-small {
+  max-width: 110px;
+}
+
+.checkout-form {
+  display: grid;
+  gap: 18px;
+}
+
+.summary-card h2,
+.success-card h3 {
+  margin: 8px 0 0;
+}
+
+.summary-total {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.summary-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.success-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.error-copy {
+  color: #9f2f16;
+  margin: 0;
+}
+
+.text-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-strong);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
 .pill-muted {
   background: rgba(255, 255, 255, 0.55);
   color: var(--muted);
@@ -425,6 +548,11 @@ a {
   .pagination {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .checkout-layout,
+  .field-grid {
+    grid-template-columns: 1fr;
   }
 
   .product-detail {

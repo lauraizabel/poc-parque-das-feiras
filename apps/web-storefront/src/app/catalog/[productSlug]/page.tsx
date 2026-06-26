@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AddToCartButton } from "../../../components/add-to-cart-button";
 import { getStorefrontContext, getStorefrontProduct } from "../../../lib/storefront-context";
 
 type ProductPageProps = {
@@ -113,6 +114,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <nav className="nav-links">
           <a href="/">Home</a>
           <a href="/catalog">Catalogo</a>
+          <a href="/cart">Carrinho</a>
         </nav>
       </header>
 
@@ -192,18 +194,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <p className="availability-copy">{availabilityCopy.body}</p>
 
           <div className="product-actions">
-            <button
-              className={`button-link button-button ${
-                availability.canAddToCart ? "" : "button-link-disabled"
-              }`}
-              disabled={!availability.canAddToCart}
-              type="button"
-            >
-              {availability.canAddToCart ? "Adicionar ao carrinho" : "Indisponivel para compra"}
-            </button>
+            {availability.canAddToCart ? (
+              <AddToCartButton productId={product.id} storeId={store.id} />
+            ) : (
+              <button className="button-link button-button button-link-disabled" disabled type="button">
+                Indisponivel para compra
+              </button>
+            )}
             <span className="helper-copy">
               {availability.canAddToCart
-                ? "Fluxo de carrinho entra na proxima etapa do MVP."
+                ? "Carrinho e checkout ja seguem o contexto da loja atual."
                 : "A vitrine bloqueia a compra enquanto esse item estiver indisponivel."}
             </span>
           </div>

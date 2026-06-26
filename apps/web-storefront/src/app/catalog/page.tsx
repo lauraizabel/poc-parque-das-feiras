@@ -120,6 +120,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         <nav className="nav-links">
           <a href="/">Home</a>
           <a href="/catalog">Todos os produtos</a>
+          <a href="/cart">Carrinho</a>
         </nav>
       </header>
 
