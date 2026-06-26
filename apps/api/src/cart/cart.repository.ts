@@ -46,6 +46,22 @@ export class CartRepository {
     });
   }
 
+  findActiveCartByCustomerEmail(storeId: string, customerEmail: string) {
+    return prisma.cart.findFirst({
+      where: {
+        storeId,
+        customerEmail,
+        status: CartStatus.ACTIVE
+      },
+      include: {
+        items: true
+      },
+      orderBy: {
+        updatedAt: "desc"
+      }
+    });
+  }
+
   createCart(input: {
     storeId: string;
     userId?: string | null;
@@ -82,6 +98,23 @@ export class CartRepository {
     });
   }
 
+  getCartByIdAndStore(cartId: string, storeId: string) {
+    return prisma.cart.findFirst({
+      where: {
+        id: cartId,
+        storeId,
+        status: CartStatus.ACTIVE
+      },
+      include: {
+        items: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+  }
+
   addCartItem(input: {
     cartId: string;
     storeId: string;
@@ -104,6 +137,41 @@ export class CartRepository {
         unitPriceCents: input.unitPriceCents,
         compareAtCents: input.compareAtCents ?? null,
         currencyCode: input.currencyCode ?? "BRL"
+      }
+    });
+  }
+
+  findCartItemById(cartItemId: string) {
+    return prisma.cartItem.findUnique({
+      where: {
+        id: cartItemId
+      }
+    });
+  }
+
+  updateCartItemQuantity(cartItemId: string, quantity: number) {
+    return prisma.cartItem.update({
+      where: {
+        id: cartItemId
+      },
+      data: {
+        quantity
+      }
+    });
+  }
+
+  deleteCartItem(cartItemId: string) {
+    return prisma.cartItem.delete({
+      where: {
+        id: cartItemId
+      }
+    });
+  }
+
+  clearCart(cartId: string) {
+    return prisma.cartItem.deleteMany({
+      where: {
+        cartId
       }
     });
   }

@@ -354,10 +354,10 @@ Legenda de prioridade:
 - [x] Dependências: catálogo e tenant resolution.
 
 ### Task 8.2 (P0): Implementar API de carrinho
-- [ ] Criar endpoints para criar carrinho, adicionar item, atualizar quantidade, remover item e limpar carrinho.
-- [ ] Critérios de aceite: API valida estoque, status do produto e loja do host.
-- [ ] Notas técnicas: persistir preço unitário no item para evitar inconsistência de sessão.
-- [ ] Dependências: Cart/CartItem.
+- [x] Criar endpoints para criar carrinho, adicionar item, atualizar quantidade, remover item e limpar carrinho.
+- [x] Critérios de aceite: API valida estoque, status do produto e loja do host.
+- [x] Notas técnicas: persistir preço unitário no item para evitar inconsistência de sessão.
+- [x] Dependências: Cart/CartItem.
 
 ### Task 8.3 (P1): Implementar persistência de carrinho no frontend
 - [ ] Construir camada no storefront para manter carrinho por loja durante navegação.
