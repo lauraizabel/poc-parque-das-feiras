@@ -278,10 +278,10 @@ Legenda de prioridade:
 - [ ] Dependências: entidades de catálogo e autorização por loja.
 
 ### Task 6.3 (P0): Implementar CRUD backend de produtos
-- [ ] Criar endpoints para criar, editar, publicar, desativar e arquivar produtos.
-- [ ] Critérios de aceite: produto suporta estados `DRAFT`, `ACTIVE`, `INACTIVE`, `OUT_OF_STOCK`, `ARCHIVED`.
-- [ ] Notas técnicas: validar preço promocional, estoque e relação com categoria.
-- [ ] Dependências: entidades de catálogo.
+- [x] Criar endpoints para criar, editar, publicar, desativar e arquivar produtos.
+- [x] Critérios de aceite: produto suporta estados `DRAFT`, `ACTIVE`, `INACTIVE`, `OUT_OF_STOCK`, `ARCHIVED`.
+- [x] Notas técnicas: validar preço promocional, estoque e relação com categoria.
+- [x] Dependências: entidades de catálogo.
 
 ### Task 6.4 (P1): Implementar upload de imagens para produtos
 - [ ] Criar fluxo de upload para S3/R2 com associação a `ProductImage`.

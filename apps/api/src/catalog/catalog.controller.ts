@@ -8,8 +8,10 @@ import { StoreRoles } from "../auth/store-roles.decorator";
 import { CatalogService } from "./catalog.service";
 import {
   createCategorySchema,
+  createProductSchema,
   parseCatalogBody,
-  updateCategorySchema
+  updateCategorySchema,
+  updateProductSchema
 } from "./catalog.schemas";
 
 @Controller("catalog")
@@ -67,5 +69,62 @@ export class CatalogController {
   @Post(":storeId/categories/:categoryId/deactivate")
   deactivateCategory(@Param("storeId") storeId: string, @Param("categoryId") categoryId: string) {
     return this.catalogService.deactivateCategory(storeId, categoryId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Get(":storeId/products")
+  listStoreProducts(@Param("storeId") storeId: string) {
+    return this.catalogService.listStoreProducts(storeId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Post("products")
+  createProduct(@Req() _request: AuthenticatedRequest, @Body() body: unknown) {
+    return this.catalogService.createProduct(
+      parseCatalogBody(createProductSchema, body)
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Patch("products/:productId")
+  updateProduct(
+    @Req() _request: AuthenticatedRequest,
+    @Param("productId") productId: string,
+    @Body() body: unknown
+  ) {
+    return this.catalogService.updateProduct(
+      productId,
+      parseCatalogBody(updateProductSchema, body)
+    );
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Post(":storeId/products/:productId/publish")
+  publishProduct(@Param("storeId") storeId: string, @Param("productId") productId: string) {
+    return this.catalogService.publishProduct(storeId, productId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Post(":storeId/products/:productId/deactivate")
+  deactivateProduct(@Param("storeId") storeId: string, @Param("productId") productId: string) {
+    return this.catalogService.deactivateProduct(storeId, productId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Post(":storeId/products/:productId/archive")
+  archiveProduct(@Param("storeId") storeId: string, @Param("productId") productId: string) {
+    return this.catalogService.archiveProduct(storeId, productId);
   }
 }

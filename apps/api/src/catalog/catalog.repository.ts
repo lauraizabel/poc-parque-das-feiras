@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { CategoryStatus } from "@prisma/client";
+import { CategoryStatus, ProductStatus } from "@prisma/client";
 import { prisma } from "@acme/database";
 import { DomainBoundary } from "../platform/domain-boundary";
 
@@ -72,6 +72,100 @@ export class CatalogRepository {
   ) {
     return prisma.category.update({
       where: { id: categoryId },
+      data: input
+    });
+  }
+
+  findProductById(productId: string) {
+    return prisma.product.findUnique({
+      where: { id: productId }
+    });
+  }
+
+  findProductBySlug(storeId: string, slug: string) {
+    return prisma.product.findUnique({
+      where: {
+        storeId_slug: {
+          storeId,
+          slug
+        }
+      }
+    });
+  }
+
+  findProductBySku(storeId: string, sku: string) {
+    return prisma.product.findUnique({
+      where: {
+        storeId_sku: {
+          storeId,
+          sku
+        }
+      }
+    });
+  }
+
+  listProductsByStore(storeId: string) {
+    return prisma.product.findMany({
+      where: { storeId },
+      include: {
+        category: true
+      },
+      orderBy: [
+        { createdAt: "desc" }
+      ]
+    });
+  }
+
+  createProduct(input: {
+    storeId: string;
+    categoryId?: string;
+    name: string;
+    slug: string;
+    description?: string;
+    sku?: string;
+    priceCents: number;
+    compareAtCents?: number | null;
+    currencyCode?: string;
+    stockQuantity: number;
+    status: ProductStatus;
+    isFeatured?: boolean;
+  }) {
+    return prisma.product.create({
+      data: {
+        storeId: input.storeId,
+        categoryId: input.categoryId,
+        name: input.name,
+        slug: input.slug,
+        description: input.description,
+        sku: input.sku,
+        priceCents: input.priceCents,
+        compareAtCents: input.compareAtCents,
+        currencyCode: input.currencyCode ?? "BRL",
+        stockQuantity: input.stockQuantity,
+        status: input.status,
+        isFeatured: input.isFeatured ?? false
+      }
+    });
+  }
+
+  updateProduct(
+    productId: string,
+    input: {
+      categoryId?: string | null;
+      name?: string;
+      slug?: string;
+      description?: string | null;
+      sku?: string | null;
+      priceCents?: number;
+      compareAtCents?: number | null;
+      currencyCode?: string;
+      stockQuantity?: number;
+      status?: ProductStatus;
+      isFeatured?: boolean;
+    }
+  ) {
+    return prisma.product.update({
+      where: { id: productId },
       data: input
     });
   }

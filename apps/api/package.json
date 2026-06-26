@@ -11,6 +11,7 @@
     "lint": "tsc --project tsconfig.json --noEmit",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test:catalog": "node --test dist/apps/api/src/catalog/catalog-categories.test.js",
+    "test:catalog-products": "node --test dist/apps/api/src/catalog/catalog-products.test.js",
     "test:tenant-resolution": "node --test dist/apps/api/src/domains/tenant-resolution.test.js",
     "test:domains": "node --test dist/apps/api/src/domains/tenant-resolution.test.js dist/apps/api/src/domains/domain-registration.test.js dist/apps/api/src/domains/domain-dns-verification.test.js dist/apps/api/src/domains/domain-ssl-provisioning.test.js"
   },
