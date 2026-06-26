@@ -1,4 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { prisma } from "@acme/database";
+import { OrderStatus } from "@prisma/client";
 import { DomainBoundary } from "../platform/domain-boundary";
 
 @Injectable()
@@ -10,5 +12,135 @@ export class OrdersRepository {
       responsibilities: ["orders", "line items", "status history", "fulfillment metadata"],
       dependsOn: ["database", "checkout", "payments"]
     };
+  }
+
+  createOrder(input: {
+    storeId: string;
+    cartId?: string | null;
+    customerId?: string | null;
+    paymentId?: string | null;
+    status?: OrderStatus;
+    currencyCode?: string;
+    subtotalCents: number;
+    shippingCents?: number;
+    discountCents?: number;
+    totalCents: number;
+    customerEmail: string;
+    customerFullName?: string | null;
+    customerPhoneNumber?: string | null;
+    shippingRecipientName?: string | null;
+    shippingPhoneNumber?: string | null;
+    shippingPostalCode?: string | null;
+    shippingState?: string | null;
+    shippingCity?: string | null;
+    shippingDistrict?: string | null;
+    shippingStreet?: string | null;
+    shippingNumber?: string | null;
+    shippingComplement?: string | null;
+    billingRecipientName?: string | null;
+    billingPhoneNumber?: string | null;
+    billingPostalCode?: string | null;
+    billingState?: string | null;
+    billingCity?: string | null;
+    billingDistrict?: string | null;
+    billingStreet?: string | null;
+    billingNumber?: string | null;
+    billingComplement?: string | null;
+    notes?: string | null;
+  }) {
+    return prisma.order.create({
+      data: {
+        storeId: input.storeId,
+        cartId: input.cartId ?? null,
+        customerId: input.customerId ?? null,
+        paymentId: input.paymentId ?? null,
+        status: input.status ?? OrderStatus.CREATED,
+        currencyCode: input.currencyCode ?? "BRL",
+        subtotalCents: input.subtotalCents,
+        shippingCents: input.shippingCents ?? 0,
+        discountCents: input.discountCents ?? 0,
+        totalCents: input.totalCents,
+        customerEmail: input.customerEmail,
+        customerFullName: input.customerFullName ?? null,
+        customerPhoneNumber: input.customerPhoneNumber ?? null,
+        shippingRecipientName: input.shippingRecipientName ?? null,
+        shippingPhoneNumber: input.shippingPhoneNumber ?? null,
+        shippingPostalCode: input.shippingPostalCode ?? null,
+        shippingState: input.shippingState ?? null,
+        shippingCity: input.shippingCity ?? null,
+        shippingDistrict: input.shippingDistrict ?? null,
+        shippingStreet: input.shippingStreet ?? null,
+        shippingNumber: input.shippingNumber ?? null,
+        shippingComplement: input.shippingComplement ?? null,
+        billingRecipientName: input.billingRecipientName ?? null,
+        billingPhoneNumber: input.billingPhoneNumber ?? null,
+        billingPostalCode: input.billingPostalCode ?? null,
+        billingState: input.billingState ?? null,
+        billingCity: input.billingCity ?? null,
+        billingDistrict: input.billingDistrict ?? null,
+        billingStreet: input.billingStreet ?? null,
+        billingNumber: input.billingNumber ?? null,
+        billingComplement: input.billingComplement ?? null,
+        notes: input.notes ?? null
+      }
+    });
+  }
+
+  addOrderItem(input: {
+    orderId: string;
+    storeId: string;
+    productId?: string | null;
+    productName: string;
+    productSlug: string;
+    quantity: number;
+    unitPriceCents: number;
+    compareAtCents?: number | null;
+    discountCents?: number;
+    totalCents: number;
+    currencyCode?: string;
+    sku?: string | null;
+    categoryName?: string | null;
+    categorySlug?: string | null;
+  }) {
+    return prisma.orderItem.create({
+      data: {
+        orderId: input.orderId,
+        storeId: input.storeId,
+        productId: input.productId ?? null,
+        productName: input.productName,
+        productSlug: input.productSlug,
+        quantity: input.quantity,
+        unitPriceCents: input.unitPriceCents,
+        compareAtCents: input.compareAtCents ?? null,
+        discountCents: input.discountCents ?? 0,
+        totalCents: input.totalCents,
+        currencyCode: input.currencyCode ?? "BRL",
+        sku: input.sku ?? null,
+        categoryName: input.categoryName ?? null,
+        categorySlug: input.categorySlug ?? null
+      }
+    });
+  }
+
+  getOrderById(orderId: string) {
+    return prisma.order.findUnique({
+      where: {
+        id: orderId
+      },
+      include: {
+        customer: true,
+        payment: true,
+        cart: {
+          include: {
+            items: true
+          }
+        },
+        items: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
   }
 }

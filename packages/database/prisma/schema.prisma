@@ -78,6 +78,18 @@ enum PaymentTransactionStatus {
   CANCELED
 }
 
+enum OrderStatus {
+  CREATED
+  WAITING_PAYMENT
+  PAYMENT_APPROVED
+  PAYMENT_FAILED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELED
+  REFUNDED
+}
+
 enum CategoryStatus {
   ACTIVE
   INACTIVE
@@ -128,6 +140,8 @@ model Store {
   customers         Customer[]
   payments          Payment[]
   paymentTransactions PaymentTransaction[]
+  orders            Order[]
+  orderItems        OrderItem[]
   assets            Asset[]
   categories        Category[]
   products          Product[]
@@ -207,6 +221,7 @@ model Customer {
   store          Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
   carts          Cart[]
   payments       Payment[]
+  orders         Order[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -268,6 +283,7 @@ model Product {
   images           ProductImage[]
   variants         ProductVariant[]
   cartItems        CartItem[]
+  orderItems       OrderItem[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -293,6 +309,7 @@ model Cart {
   customer      Customer?   @relation(fields: [customerId, storeId], references: [id, storeId], onDelete: SetNull)
   items         CartItem[]
   payments      Payment[]
+  orders        Order[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -348,6 +365,7 @@ model Payment {
   cart                  Cart           @relation(fields: [cartId, storeId], references: [id, storeId], onDelete: Restrict)
   customer              Customer?      @relation(fields: [customerId, storeId], references: [id, storeId], onDelete: SetNull)
   transactions          PaymentTransaction[]
+  orders                Order[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
 
@@ -381,6 +399,87 @@ model PaymentTransaction {
   @@index([paymentId, kind, status])
   @@index([provider, externalTransactionId])
   @@index([paymentId, idempotencyKey])
+}
+
+model Order {
+  id                       String      @id @default(cuid())
+  storeId                  String
+  cartId                   String?
+  customerId               String?
+  paymentId                String?
+  status                   OrderStatus @default(CREATED)
+  currencyCode             String      @default("BRL")
+  subtotalCents            Int
+  shippingCents            Int         @default(0)
+  discountCents            Int         @default(0)
+  totalCents               Int
+  customerEmail            String
+  customerFullName         String?
+  customerPhoneNumber      String?
+  shippingRecipientName    String?
+  shippingPhoneNumber      String?
+  shippingPostalCode       String?
+  shippingState            String?
+  shippingCity             String?
+  shippingDistrict         String?
+  shippingStreet           String?
+  shippingNumber           String?
+  shippingComplement       String?
+  billingRecipientName     String?
+  billingPhoneNumber       String?
+  billingPostalCode        String?
+  billingState             String?
+  billingCity              String?
+  billingDistrict          String?
+  billingStreet            String?
+  billingNumber            String?
+  billingComplement        String?
+  notes                    String?
+  statusUpdatedAt          DateTime    @default(now())
+  approvedAt               DateTime?
+  canceledAt               DateTime?
+  refundedAt               DateTime?
+  shippedAt                DateTime?
+  deliveredAt              DateTime?
+  store                    Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  cart                     Cart?       @relation(fields: [cartId, storeId], references: [id, storeId], onDelete: SetNull)
+  customer                 Customer?   @relation(fields: [customerId, storeId], references: [id, storeId], onDelete: SetNull)
+  payment                  Payment?    @relation(fields: [paymentId, storeId], references: [id, storeId], onDelete: SetNull)
+  items                    OrderItem[]
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  @@unique([id, storeId])
+  @@index([storeId, status])
+  @@index([storeId, customerId])
+  @@index([storeId, paymentId])
+  @@index([storeId, cartId])
+}
+
+model OrderItem {
+  id               String   @id @default(cuid())
+  orderId          String
+  storeId          String
+  productId        String?
+  productName      String
+  productSlug      String
+  quantity         Int
+  unitPriceCents   Int
+  compareAtCents   Int?
+  discountCents    Int      @default(0)
+  totalCents       Int
+  currencyCode     String   @default("BRL")
+  sku              String?
+  categoryName     String?
+  categorySlug     String?
+  order            Order    @relation(fields: [orderId, storeId], references: [id, storeId], onDelete: Cascade)
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product          Product? @relation(fields: [productId, storeId], references: [id, storeId], onDelete: SetNull)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([orderId, storeId])
+  @@index([storeId, productId])
 }
 
 model ProductImage {

@@ -386,10 +386,10 @@ Legenda de prioridade:
 - [x] Dependências: Cart e Order.
 
 ### Task 9.2 (P0): Modelar entidade Order e OrderItem
-- [ ] Criar entidades `Order` e `OrderItem` com snapshot de itens, preços, cliente, endereço e `storeId`.
-- [ ] Critérios de aceite: status mínimos suportados incluem `CREATED`, `WAITING_PAYMENT`, `PAYMENT_APPROVED`, `PAYMENT_FAILED`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELED`, `REFUNDED`.
-- [ ] Notas técnicas: separar claramente domínio de pedido do domínio de pagamento.
-- [ ] Dependências: catálogo, carrinho e Customer.
+- [x] Criar entidades `Order` e `OrderItem` com snapshot de itens, preços, cliente, endereço e `storeId`.
+- [x] Critérios de aceite: status mínimos suportados incluem `CREATED`, `WAITING_PAYMENT`, `PAYMENT_APPROVED`, `PAYMENT_FAILED`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELED`, `REFUNDED`.
+- [x] Notas técnicas: separar claramente domínio de pedido do domínio de pagamento.
+- [x] Dependências: catálogo, carrinho e Customer.
 
 ### Task 9.3 (P0): Implementar criação de pedido a partir do carrinho
 - [ ] Transformar carrinho válido em pedido com status inicial e lock básico de preço/itens.
