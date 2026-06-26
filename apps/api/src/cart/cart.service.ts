@@ -8,4 +8,10 @@ export class CartService {
   getBoundary() {
     return this.cartRepository.getBoundary();
   }
+
+  getCurrentPublicContext(storeId: string) {
+    return {
+      storeId
+    };
+  }
 }

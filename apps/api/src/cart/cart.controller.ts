@@ -14,7 +14,10 @@ export class CartController {
   @Get("public/context")
   getPublicContext(@Req() request: PublicStorefrontRequest) {
     return {
-      store: request.publicStore ?? null
+      store: request.publicStore ?? null,
+      cart: request.publicStore
+        ? this.cartService.getCurrentPublicContext(request.publicStore.storeId)
+        : null
     };
   }
 }

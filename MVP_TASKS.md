@@ -348,10 +348,10 @@ Legenda de prioridade:
 ## Epic 8: Carrinho e experiência de compra
 
 ### Task 8.1 (P0): Modelar entidades Cart e CartItem
-- [ ] Criar entidades para carrinho simples por loja com vínculo a sessão ou cliente identificado.
-- [ ] Critérios de aceite: carrinho pertence a uma única loja e contém itens com snapshot mínimo de preço.
-- [ ] Notas técnicas: não permitir mistura de produtos de lojas distintas no mesmo carrinho.
-- [ ] Dependências: catálogo e tenant resolution.
+- [x] Criar entidades para carrinho simples por loja com vínculo a sessão ou cliente identificado.
+- [x] Critérios de aceite: carrinho pertence a uma única loja e contém itens com snapshot mínimo de preço.
+- [x] Notas técnicas: não permitir mistura de produtos de lojas distintas no mesmo carrinho.
+- [x] Dependências: catálogo e tenant resolution.
 
 ### Task 8.2 (P0): Implementar API de carrinho
 - [ ] Criar endpoints para criar carrinho, adicionar item, atualizar quantidade, remover item e limpar carrinho.

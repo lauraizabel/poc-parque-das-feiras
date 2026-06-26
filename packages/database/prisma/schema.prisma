@@ -59,6 +59,12 @@ enum ProductStatus {
   ARCHIVED
 }
 
+enum CartStatus {
+  ACTIVE
+  CONVERTED
+  ABANDONED
+}
+
 model User {
   id               String        @id @default(cuid())
   email            String        @unique
@@ -68,6 +74,7 @@ model User {
   platformRole     PlatformRole  @default(CUSTOMER)
   ownedStores      Store[]       @relation("StoreOwner")
   storeMembers     StoreMember[]
+  carts            Cart[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 }
@@ -89,6 +96,8 @@ model Store {
   assets            Asset[]
   categories        Category[]
   products          Product[]
+  carts             Cart[]
+  cartItems         CartItem[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -203,13 +212,59 @@ model Product {
   category         Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   images           ProductImage[]
   variants         ProductVariant[]
+  cartItems        CartItem[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
+  @@unique([id, storeId])
   @@unique([storeId, slug])
   @@unique([storeId, sku])
   @@index([storeId, status])
   @@index([storeId, categoryId])
+}
+
+model Cart {
+  id            String      @id @default(cuid())
+  storeId       String
+  userId        String?
+  sessionId     String?
+  customerEmail String?
+  status        CartStatus  @default(ACTIVE)
+  currencyCode  String      @default("BRL")
+  expiresAt     DateTime?
+  store         Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items         CartItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([id, storeId])
+  @@index([storeId, status])
+  @@index([storeId, sessionId, status])
+  @@index([storeId, userId, status])
+  @@index([storeId, customerEmail, status])
+}
+
+model CartItem {
+  id               String   @id @default(cuid())
+  cartId           String
+  storeId          String
+  productId        String
+  quantity         Int      @default(1)
+  productName      String
+  productSlug      String
+  unitPriceCents   Int
+  compareAtCents   Int?
+  currencyCode     String   @default("BRL")
+  cart             Cart     @relation(fields: [cartId, storeId], references: [id, storeId], onDelete: Cascade)
+  store            Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product          Product  @relation(fields: [productId, storeId], references: [id, storeId], onDelete: Restrict)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId, storeId])
+  @@index([storeId, productId])
 }
 
 model ProductImage {
