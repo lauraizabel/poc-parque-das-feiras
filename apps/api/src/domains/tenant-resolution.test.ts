@@ -4,7 +4,12 @@ import { AddressInfo } from "node:net";
 import { after, before, describe, it } from "node:test";
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import { PlatformRole, StoreMemberRole, DomainStatus } from "@prisma/client";
+import {
+  PlatformRole,
+  StoreMemberRole,
+  DomainStatus,
+  StoreDomainType
+} from "@prisma/client";
 import { prisma } from "@acme/database";
 import { AppModule } from "../app.module";
 
@@ -106,10 +111,12 @@ describe("tenant resolution", () => {
       ]
     });
 
-    await prisma.domain.create({
+    await prisma.storeDomain.create({
       data: {
-        hostname: primaryCustomHost,
-        status: DomainStatus.VERIFIED,
+        host: primaryCustomHost,
+        type: StoreDomainType.CUSTOM_DOMAIN,
+        status: DomainStatus.ACTIVE,
+        activatedAt: new Date(),
         storeId: primaryStore.id
       }
     });

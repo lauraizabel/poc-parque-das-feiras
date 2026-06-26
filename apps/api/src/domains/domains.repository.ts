@@ -20,11 +20,11 @@ export class DomainsRepository {
     });
   }
 
-  findVerifiedDomain(hostname: string) {
-    return prisma.domain.findFirst({
+  findActiveDomain(hostname: string) {
+    return prisma.storeDomain.findFirst({
       where: {
-        hostname,
-        status: DomainStatus.VERIFIED
+        host: hostname,
+        status: DomainStatus.ACTIVE
       },
       include: {
         store: true

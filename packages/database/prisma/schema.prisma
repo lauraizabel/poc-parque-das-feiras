@@ -25,10 +25,18 @@ enum StoreMemberRole {
   STORE_SUPPORT
 }
 
+enum StoreDomainType {
+  CUSTOM_DOMAIN
+}
+
 enum DomainStatus {
   PENDING
-  VERIFIED
-  FAILED
+  AWAITING_DNS
+  VERIFYING
+  SSL_PENDING
+  ACTIVE
+  ERROR
+  REMOVED
 }
 
 enum PaymentProvider {
@@ -63,7 +71,7 @@ model Store {
   status            StoreStatus       @default(TRIALING)
   owner             User              @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   storeMembers      StoreMember[]
-  domains           Domain[]
+  domains           StoreDomain[]
   paymentAccounts   PaymentAccount[]
   assets            Asset[]
   createdAt         DateTime          @default(now())
@@ -86,17 +94,31 @@ model StoreMember {
   @@index([storeId])
 }
 
-model Domain {
-  id         String       @id @default(cuid())
-  hostname   String       @unique
-  status     DomainStatus @default(PENDING)
-  verifiedAt DateTime?
-  storeId    String
-  store      Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+model StoreDomain {
+  id                 String          @id @default(cuid())
+  host               String          @unique
+  type               StoreDomainType @default(CUSTOM_DOMAIN)
+  status             DomainStatus    @default(PENDING)
+  dnsTargetValue     String?
+  dnsConfiguredValue String?
+  dnsLastCheckedAt   DateTime?
+  dnsVerifiedAt      DateTime?
+  dnsErrorMessage    String?
+  sslProvisioningId  String?
+  sslLastCheckedAt   DateTime?
+  sslIssuedAt        DateTime?
+  sslErrorMessage    String?
+  activatedAt        DateTime?
+  removedAt          DateTime?
+  storeId            String
+  store              Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
+  @@unique([storeId, type])
   @@index([storeId])
+  @@index([status])
+  @@map("Domain")
 }
 
 model PaymentAccount {

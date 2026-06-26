@@ -210,10 +210,10 @@ Legenda de prioridade:
 ## Epic 5: Gestão de domínios próprios e SSL
 
 ### Task 5.1 (P0): Modelar entidade StoreDomain e status de domínio
-- [ ] Criar entidade `StoreDomain` com campos de host, tipo, status, timestamps, dados de verificação DNS e SSL.
-- [ ] Critérios de aceite: status suportados incluem `PENDING`, `AWAITING_DNS`, `VERIFYING`, `SSL_PENDING`, `ACTIVE`, `ERROR`, `REMOVED`.
-- [ ] Notas técnicas: garantir unicidade global do domínio e limitação de 1 domínio próprio por loja no MVP.
-- [ ] Dependências: Store.
+- [x] Criar entidade `StoreDomain` com campos de host, tipo, status, timestamps, dados de verificação DNS e SSL.
+- [x] Critérios de aceite: status suportados incluem `PENDING`, `AWAITING_DNS`, `VERIFYING`, `SSL_PENDING`, `ACTIVE`, `ERROR`, `REMOVED`.
+- [x] Notas técnicas: garantir unicidade global do domínio e limitação de 1 domínio próprio por loja no MVP.
+- [x] Dependências: Store.
 
 ### Task 5.2 (P0): Implementar cadastro de domínio próprio pelo lojista
 - [ ] Criar endpoint e tela para cadastro de domínio próprio com suporte oficial a host `www`.

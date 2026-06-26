@@ -51,7 +51,7 @@ export class DomainsService {
       return { kind: "storefront-root", matchedHost };
     }
 
-    const customDomain = await this.domainsRepository.findVerifiedDomain(matchedHost);
+    const customDomain = await this.domainsRepository.findActiveDomain(matchedHost);
 
     if (customDomain) {
       return {
