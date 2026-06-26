@@ -163,44 +163,46 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
         <section className="product-grid">
           {catalog.products.map((product) => (
             <article className="product-card" key={product.id}>
-              <div className="product-image">
-                {product.images[0]?.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt={product.images[0]?.altText ?? product.name}
-                    className="product-image-tag"
-                    src={product.images[0].imageUrl}
-                  />
-                ) : (
-                  <div className="product-image-placeholder">{product.name.slice(0, 1)}</div>
-                )}
-              </div>
-              <div className="product-copy">
-                <div className="product-meta">
-                  <span>{product.category?.name ?? "Sem categoria"}</span>
-                  {product.isFeatured ? <span>Destaque</span> : null}
+              <a className="product-card-link" href={`/catalog/${product.slug}`}>
+                <div className="product-image">
+                  {product.images[0]?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={product.images[0]?.altText ?? product.name}
+                      className="product-image-tag"
+                      src={product.images[0].imageUrl}
+                    />
+                  ) : (
+                    <div className="product-image-placeholder">{product.name.slice(0, 1)}</div>
+                  )}
                 </div>
-                <h2>{product.name}</h2>
-                <p>{product.description?.trim() || "Produto publicado e pronto para compra."}</p>
-                <div className="price-row">
-                  <strong>
-                    {formatMoney(
-                      product.priceCents,
-                      product.currencyCode,
-                      catalog.store.locale
-                    )}
-                  </strong>
-                  {product.compareAtCents ? (
-                    <span>
+                <div className="product-copy">
+                  <div className="product-meta">
+                    <span>{product.category?.name ?? "Sem categoria"}</span>
+                    {product.isFeatured ? <span>Destaque</span> : null}
+                  </div>
+                  <h2>{product.name}</h2>
+                  <p>{product.description?.trim() || "Produto publicado e pronto para compra."}</p>
+                  <div className="price-row">
+                    <strong>
                       {formatMoney(
-                        product.compareAtCents,
+                        product.priceCents,
                         product.currencyCode,
                         catalog.store.locale
                       )}
-                    </span>
-                  ) : null}
+                    </strong>
+                    {product.compareAtCents ? (
+                      <span>
+                        {formatMoney(
+                          product.compareAtCents,
+                          product.currencyCode,
+                          catalog.store.locale
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              </a>
             </article>
           ))}
         </section>

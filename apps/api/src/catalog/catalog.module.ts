@@ -19,7 +19,8 @@ export class CatalogModule implements NestModule {
       .forRoutes(
         { path: "catalog/public/context", method: RequestMethod.GET },
         { path: "catalog/public/home", method: RequestMethod.GET },
-        { path: "catalog/public/products", method: RequestMethod.GET }
+        { path: "catalog/public/products", method: RequestMethod.GET },
+        { path: "catalog/public/products/:productSlug", method: RequestMethod.GET }
       );
   }
 }

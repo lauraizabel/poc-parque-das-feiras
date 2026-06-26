@@ -334,10 +334,10 @@ Legenda de prioridade:
 - [x] Dependências: homepage pública e catálogo.
 
 ### Task 7.5 (P0): Construir página de detalhe do produto
-- [ ] Implementar página com fotos, descrição, preço, estoque e ação de adicionar ao carrinho.
-- [ ] Critérios de aceite: produto indisponível exibe estado correto e não permite compra indevida.
-- [ ] Notas técnicas: garantir slug por loja e fallback para imagem ausente.
-- [ ] Dependências: catálogo e imagens.
+- [x] Implementar página com fotos, descrição, preço, estoque e ação de adicionar ao carrinho.
+- [x] Critérios de aceite: produto indisponível exibe estado correto e não permite compra indevida.
+- [x] Notas técnicas: garantir slug por loja e fallback para imagem ausente.
+- [x] Dependências: catálogo e imagens.
 
 ### Task 7.6 (P1): Implementar testes básicos da vitrine pública
 - [ ] Criar testes de renderização por tenant, visibilidade de produtos e regras de status.

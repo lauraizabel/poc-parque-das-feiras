@@ -96,6 +96,36 @@ export class CatalogService {
     };
   }
 
+  async getPublicProduct(publicStore: PublicStorefrontContext, productSlug: string) {
+    const store = await this.getResolvedPublicStore(publicStore);
+    const normalizedSlug = this.normalizeSlug(productSlug, "Product");
+    const product = await this.catalogRepository.findPublicProductBySlug(
+      publicStore.storeId,
+      normalizedSlug
+    );
+
+    if (
+      !product ||
+      (product.status !== ProductStatus.ACTIVE && product.status !== ProductStatus.OUT_OF_STOCK)
+    ) {
+      throw new NotFoundException({
+        message: "Product not found",
+        code: "PUBLIC_PRODUCT_NOT_FOUND",
+        productSlug: normalizedSlug
+      });
+    }
+
+    return {
+      store,
+      product,
+      availability: {
+        canAddToCart: product.status === ProductStatus.ACTIVE && product.stockQuantity > 0,
+        isInStock: product.stockQuantity > 0,
+        status: product.status
+      }
+    };
+  }
+
   async listStoreCategories(storeId: string) {
     return {
       categories: await this.catalogRepository.listCategoriesByStore(storeId)

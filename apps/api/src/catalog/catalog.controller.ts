@@ -45,6 +45,14 @@ export class CatalogController {
     );
   }
 
+  @Get("public/products/:productSlug")
+  getPublicProduct(
+    @Req() request: PublicStorefrontRequest,
+    @Param("productSlug") productSlug: string
+  ) {
+    return this.catalogService.getPublicProduct(request.publicStore!, productSlug);
+  }
+
   @UseGuards(JwtAuthGuard, AuthorizationGuard)
   @StoreAccess()
   @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)

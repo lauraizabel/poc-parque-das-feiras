@@ -178,6 +178,27 @@ export class CatalogRepository {
     });
   }
 
+  findPublicProductBySlug(storeId: string, slug: string) {
+    return prisma.product.findUnique({
+      where: {
+        storeId_slug: {
+          storeId,
+          slug
+        }
+      },
+      include: {
+        category: true,
+        images: {
+          orderBy: [
+            { isPrimary: "desc" },
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ]
+        }
+      }
+    });
+  }
+
   listProductsByStore(storeId: string) {
     return prisma.product.findMany({
       where: { storeId },

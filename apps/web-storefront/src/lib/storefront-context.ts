@@ -42,6 +42,7 @@ export type PublicStorefrontProduct = {
   id: string;
   name: string;
   slug: string;
+  status: "DRAFT" | "ACTIVE" | "OUT_OF_STOCK" | "INACTIVE" | "ARCHIVED";
   description: string | null;
   priceCents: number;
   compareAtCents: number | null;
@@ -75,6 +76,16 @@ export type StorefrontCatalogData = {
     pageSize: number;
     totalItems: number;
     totalPages: number;
+  };
+};
+
+export type StorefrontProductData = {
+  store: PublicStorefrontStore;
+  product: PublicStorefrontProduct;
+  availability: {
+    canAddToCart: boolean;
+    isInStock: boolean;
+    status: PublicStorefrontProduct["status"];
   };
 };
 
@@ -164,5 +175,11 @@ export async function getStorefrontCatalog(input: {
   const query = search.toString();
   return fetchStorefrontApi<StorefrontCatalogData>(
     `/catalog/public/products${query ? `?${query}` : ""}`
+  );
+}
+
+export async function getStorefrontProduct(productSlug: string) {
+  return fetchStorefrontApi<StorefrontProductData>(
+    `/catalog/public/products/${encodeURIComponent(productSlug)}`
   );
 }

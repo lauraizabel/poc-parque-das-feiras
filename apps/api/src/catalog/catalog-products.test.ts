@@ -302,6 +302,80 @@ describe("catalog products", () => {
     );
   });
 
+  it("returns a public product detail by slug and keeps out-of-stock products visible but blocked", async () => {
+    await prisma.productImage.createMany({
+      data: [
+        {
+          productId,
+          imageUrl: "https://cdn.example.com/notebook-pro-primary.jpg",
+          altText: "Notebook Pro aberto",
+          isPrimary: true,
+          sortOrder: 0
+        },
+        {
+          productId,
+          imageUrl: "https://cdn.example.com/notebook-pro-side.jpg",
+          altText: "Notebook Pro lateral",
+          isPrimary: false,
+          sortOrder: 1
+        }
+      ]
+    });
+
+    const activeResponse = await requestJson<{
+      product: { slug: string; status: string; images: Array<{ imageUrl: string }> };
+      availability: { canAddToCart: boolean; isInStock: boolean; status: string };
+    }>({
+      path: `/catalog/public/products/notebook-pro`,
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(activeResponse.statusCode, 200);
+    assert.equal(activeResponse.body.product.slug, "notebook-pro");
+    assert.equal(activeResponse.body.product.status, "ACTIVE");
+    assert.equal(activeResponse.body.product.images.length, 2);
+    assert.equal(activeResponse.body.availability.canAddToCart, true);
+    assert.equal(activeResponse.body.availability.isInStock, true);
+
+    const outOfStockResponse = await requestJson<{
+      product: { status: string; stockQuantity: number };
+      availability: { canAddToCart: boolean; isInStock: boolean; status: string };
+    }>({
+      method: "PATCH",
+      path: `/catalog/products/${productId}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        stockQuantity: 0,
+        status: "ACTIVE"
+      }
+    });
+
+    assert.equal(outOfStockResponse.statusCode, 200);
+    assert.equal(outOfStockResponse.body.product.status, "OUT_OF_STOCK");
+
+    const blockedPurchaseResponse = await requestJson<{
+      product: { status: string; stockQuantity: number };
+      availability: { canAddToCart: boolean; isInStock: boolean; status: string };
+    }>({
+      path: `/catalog/public/products/notebook-pro`,
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(blockedPurchaseResponse.statusCode, 200);
+    assert.equal(blockedPurchaseResponse.body.product.status, "OUT_OF_STOCK");
+    assert.equal(blockedPurchaseResponse.body.product.stockQuantity, 0);
+    assert.equal(blockedPurchaseResponse.body.availability.canAddToCart, false);
+    assert.equal(blockedPurchaseResponse.body.availability.isInStock, false);
+    assert.equal(blockedPurchaseResponse.body.availability.status, "OUT_OF_STOCK");
+  });
+
   it("rejects invalid compareAt price and foreign category access", async () => {
     const invalidPriceResponse = await requestJson<{
       message: string;
