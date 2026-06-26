@@ -266,10 +266,10 @@ Legenda de prioridade:
 ## Epic 6: Catálogo, categorias e mídia
 
 ### Task 6.1 (P0): Modelar entidades de catálogo
-- [ ] Criar entidades `Category`, `Product`, `ProductImage` e opcionalmente `ProductVariant` se necessário para o MVP.
-- [ ] Critérios de aceite: modelo suporta nome, slug, descrição, preço, preço promocional, SKU, estoque, fotos, categoria, status e `storeId`.
-- [ ] Notas técnicas: usar índices por `storeId`, `slug`, `status` e constraints para integridade.
-- [ ] Dependências: Prisma baseline e Store.
+- [x] Criar entidades `Category`, `Product`, `ProductImage` e opcionalmente `ProductVariant` se necessário para o MVP.
+- [x] Critérios de aceite: modelo suporta nome, slug, descrição, preço, preço promocional, SKU, estoque, fotos, categoria, status e `storeId`.
+- [x] Notas técnicas: usar índices por `storeId`, `slug`, `status` e constraints para integridade.
+- [x] Dependências: Prisma baseline e Store.
 
 ### Task 6.2 (P0): Implementar CRUD backend de categorias
 - [ ] Criar endpoints para criar, listar, editar, ordenar e desativar categorias da loja.
