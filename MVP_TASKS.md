@@ -392,10 +392,10 @@ Legenda de prioridade:
 - [x] Dependências: catálogo, carrinho e Customer.
 
 ### Task 9.3 (P0): Implementar criação de pedido a partir do carrinho
-- [ ] Transformar carrinho válido em pedido com status inicial e lock básico de preço/itens.
-- [ ] Critérios de aceite: pedido é criado com itens, totais e referência da loja corretamente.
-- [ ] Notas técnicas: validar estoque no momento da criação e reservar/baixar conforme política simples do MVP.
-- [ ] Dependências: Order/OrderItem e API de carrinho.
+- [x] Transformar carrinho válido em pedido com status inicial e lock básico de preço/itens.
+- [x] Critérios de aceite: pedido é criado com itens, totais e referência da loja corretamente.
+- [x] Notas técnicas: validar estoque no momento da criação e reservar/baixar conforme política simples do MVP.
+- [x] Dependências: Order/OrderItem e API de carrinho.
 
 ### Task 9.4 (P0): Integrar gateway de pagamento via adapter
 - [ ] Criar adapter para gateway escolhido entre Stripe, Mercado Pago, Pagar.me ou Asaas.

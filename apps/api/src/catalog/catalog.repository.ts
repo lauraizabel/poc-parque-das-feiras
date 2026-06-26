@@ -108,6 +108,20 @@ export class CatalogRepository {
     });
   }
 
+  findProductsByIds(storeId: string, productIds: string[]) {
+    return prisma.product.findMany({
+      where: {
+        storeId,
+        id: {
+          in: productIds
+        }
+      },
+      include: {
+        category: true
+      }
+    });
+  }
+
   findProductBySlug(storeId: string, slug: string) {
     return prisma.product.findUnique({
       where: {

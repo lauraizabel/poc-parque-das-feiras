@@ -1,6 +1,7 @@
-import { Controller, Get, Req } from "@nestjs/common";
+import { Body, Controller, Get, Post, Req } from "@nestjs/common";
 import { PublicStorefrontRequest } from "../auth/auth.types";
 import { CheckoutService } from "./checkout.service";
+import { createOrderFromCartSchema, parseCheckoutBody } from "./checkout.schemas";
 
 @Controller("checkout")
 export class CheckoutController {
@@ -16,5 +17,13 @@ export class CheckoutController {
     return {
       store: request.publicStore ?? null
     };
+  }
+
+  @Post("public/current/order")
+  createOrder(@Req() request: PublicStorefrontRequest, @Body() body: unknown) {
+    return this.checkoutService.createOrderFromCart(
+      request.publicStore!,
+      parseCheckoutBody(createOrderFromCartSchema, body)
+    );
   }
 }
