@@ -196,10 +196,10 @@ Legenda de prioridade:
 - [x] Dependências: estratégia de tenant resolution.
 
 ### Task 4.3 (P0): Implementar isolamento de dados por `storeId`
-- [ ] Garantir que consultas multi-tenant sempre filtrem por `storeId` quando aplicável.
-- [ ] Critérios de aceite: não existe leitura ou escrita cruzada entre lojas nos módulos de domínio.
-- [ ] Notas técnicas: encapsular filtros em repositories/services para reduzir risco de fuga de dados.
-- [ ] Dependências: módulos de catálogo, carrinho, pedidos e afins.
+- [x] Garantir que consultas multi-tenant sempre filtrem por `storeId` quando aplicável.
+- [x] Critérios de aceite: não existe leitura ou escrita cruzada entre lojas nos módulos de domínio.
+- [x] Notas técnicas: encapsular filtros em repositories/services para reduzir risco de fuga de dados.
+- [x] Dependências: módulos de catálogo, carrinho, pedidos e afins.
 
 ### Task 4.4 (P0): Criar testes de resolução por host e isolamento de tenant
 - [ ] Cobrir cenários com subdomínio padrão, domínio custom ativo, host inválido e acesso cruzado.

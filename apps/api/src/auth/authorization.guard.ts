@@ -100,12 +100,38 @@ export class AuthorizationGuard implements CanActivate {
   }
 
   private resolveStoreId(request: AuthenticatedRequest) {
-    const paramsStoreId = request.params?.storeId;
-    const bodyStoreId = this.extractString(request.body?.storeId);
-    const queryStoreId = this.extractString(request.query?.storeId);
-    const headerStoreId = this.extractString(request.headers["x-store-id"]);
+    const candidates = [
+      {
+        source: "params",
+        value: this.extractString(request.params?.storeId)
+      },
+      {
+        source: "body",
+        value: this.extractString(request.body?.storeId)
+      },
+      {
+        source: "query",
+        value: this.extractString(request.query?.storeId)
+      },
+      {
+        source: "headers",
+        value: this.extractString(request.headers["x-store-id"])
+      }
+    ].filter((candidate): candidate is { source: string; value: string } =>
+      candidate.value !== null
+    );
 
-    return paramsStoreId ?? bodyStoreId ?? queryStoreId ?? headerStoreId ?? null;
+    const uniqueStoreIds = [...new Set(candidates.map((candidate) => candidate.value))];
+
+    if (uniqueStoreIds.length > 1) {
+      throw new ForbiddenException({
+        message: "Conflicting storeId values detected in request",
+        code: "AUTH_STORE_CONTEXT_CONFLICT",
+        providedStoreIds: candidates
+      });
+    }
+
+    return uniqueStoreIds[0] ?? null;
   }
 
   private extractString(value: unknown) {

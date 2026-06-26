@@ -44,6 +44,14 @@ export type PublicStorefrontRequest = {
   headers: {
     host?: string;
     "x-forwarded-host"?: string;
+    "x-store-id"?: string;
+  };
+  params?: Record<string, string | undefined>;
+  body?: {
+    storeId?: string;
+  };
+  query?: {
+    storeId?: string | string[];
   };
   publicStore?: PublicStorefrontContext;
 };
