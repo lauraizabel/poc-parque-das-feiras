@@ -70,6 +70,17 @@ describe("domain dns verification", () => {
         resolveCname: async () => ({
           configuredTarget: `${dnsTarget}.`
         })
+      } as never,
+      {
+        provisionDomain: async () => ({
+          externalId: `mock-${domainId}`,
+          status: "pending",
+          payload: {}
+        }),
+        getProvisioningStatus: async () => ({
+          status: "active",
+          payload: {}
+        })
       } as never
     );
 
@@ -105,6 +116,17 @@ describe("domain dns verification", () => {
         resolveCname: async () => ({
           configuredTarget: "wrong-target.example.com"
         })
+      } as never,
+      {
+        provisionDomain: async () => ({
+          externalId: `mock-${domainId}`,
+          status: "pending",
+          payload: {}
+        }),
+        getProvisioningStatus: async () => ({
+          status: "active",
+          payload: {}
+        })
       } as never
     );
 
@@ -139,6 +161,17 @@ describe("domain dns verification", () => {
         resolveCname: async () => {
           throw new Error("queryA ENOTFOUND");
         }
+      } as never,
+      {
+        provisionDomain: async () => ({
+          externalId: `mock-${domainId}`,
+          status: "pending",
+          payload: {}
+        }),
+        getProvisioningStatus: async () => ({
+          status: "active",
+          payload: {}
+        })
       } as never
     );
 

@@ -7,17 +7,23 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { DomainStatus } from "@prisma/client";
 import { DomainsDnsService } from "./domains-dns.service";
+import { DomainsSslService } from "./domains-ssl.service";
 import { DomainsRepository } from "./domains.repository";
 import { HostResolution } from "./host-resolution.types";
 import { CreateStoreDomainInput } from "./domains.schemas";
-import { createDomainDnsVerificationQueue } from "./domains.queue";
+import {
+  createDomainDnsVerificationQueue,
+  createDomainSslProvisioningQueue,
+  createDomainSslStatusQueue
+} from "./domains.queue";
 
 @Injectable()
 export class DomainsService {
   constructor(
     private readonly domainsRepository: DomainsRepository,
     private readonly configService: ConfigService,
-    private readonly domainsDnsResolver: DomainsDnsService
+    private readonly domainsDnsResolver: DomainsDnsService,
+    private readonly domainsSslService: DomainsSslService
   ) {}
 
   getBoundary() {
@@ -148,13 +154,16 @@ export class DomainsService {
       const configuredTarget = this.normalizeDnsTarget(dnsResult.configuredTarget);
 
       if (expectedTarget && configuredTarget === expectedTarget) {
-        return this.domainsRepository.updateDomainDnsStatus(domainId, {
+        const updatedDomain = await this.domainsRepository.updateDomainDnsStatus(domainId, {
           status: DomainStatus.SSL_PENDING,
           dnsConfiguredValue: configuredTarget,
           dnsLastCheckedAt: checkedAt,
           dnsVerifiedAt: checkedAt,
           dnsErrorMessage: null
         });
+
+        await this.enqueueSslProvisioning(domainId);
+        return updatedDomain;
       }
 
       return this.domainsRepository.updateDomainDnsStatus(domainId, {
@@ -179,6 +188,180 @@ export class DomainsService {
 
       throw error;
     }
+  }
+
+  async enqueueSslProvisioning(domainId: string) {
+    const queue = createDomainSslProvisioningQueue();
+
+    try {
+      const domain = await this.domainsRepository.findDomainById(domainId);
+
+      if (!domain) {
+        throw new NotFoundException({
+          message: "Domain not found",
+          code: "DOMAIN_NOT_FOUND",
+          domainId
+        });
+      }
+
+      const job = await queue.add("provision-domain-ssl", {
+        domainId
+      });
+
+      return {
+        queued: true,
+        jobId: job.id ?? null,
+        domainId
+      };
+    } finally {
+      await queue.close();
+    }
+  }
+
+  async enqueueSslStatusSync(domainId: string) {
+    const queue = createDomainSslStatusQueue();
+
+    try {
+      const domain = await this.domainsRepository.findDomainById(domainId);
+
+      if (!domain) {
+        throw new NotFoundException({
+          message: "Domain not found",
+          code: "DOMAIN_NOT_FOUND",
+          domainId
+        });
+      }
+
+      const job = await queue.add("sync-domain-ssl-status", {
+        domainId
+      });
+
+      return {
+        queued: true,
+        jobId: job.id ?? null,
+        domainId
+      };
+    } finally {
+      await queue.close();
+    }
+  }
+
+  async processSslProvisioningJob(domainId: string) {
+    const domain = await this.domainsRepository.findDomainById(domainId);
+
+    if (!domain) {
+      throw new NotFoundException({
+        message: "Domain not found",
+        code: "DOMAIN_NOT_FOUND",
+        domainId
+      });
+    }
+
+    const checkedAt = new Date();
+    const result = await this.domainsSslService.provisionDomain({
+      domainId: domain.id,
+      host: domain.host
+    });
+
+    const provisioningMetadata = JSON.stringify(result.payload ?? {});
+
+    if (result.status === "active") {
+      return this.domainsRepository.updateDomainSslStatus(domainId, {
+        status: DomainStatus.ACTIVE,
+        sslProvisioningId: result.externalId,
+        sslProvisioningMetadata: provisioningMetadata,
+        sslLastCheckedAt: checkedAt,
+        sslIssuedAt: checkedAt,
+        sslErrorMessage: null,
+        activatedAt: checkedAt
+      });
+    }
+
+    if (result.status === "error") {
+      return this.domainsRepository.updateDomainSslStatus(domainId, {
+        status: DomainStatus.ERROR,
+        sslProvisioningId: result.externalId,
+        sslProvisioningMetadata: provisioningMetadata,
+        sslLastCheckedAt: checkedAt,
+        sslIssuedAt: null,
+        sslErrorMessage: result.errorMessage ?? "SSL provisioning failed",
+        activatedAt: null
+      });
+    }
+
+    const updatedDomain = await this.domainsRepository.updateDomainSslStatus(domainId, {
+      status: DomainStatus.SSL_PENDING,
+      sslProvisioningId: result.externalId,
+      sslProvisioningMetadata: provisioningMetadata,
+      sslLastCheckedAt: checkedAt,
+      sslIssuedAt: null,
+      sslErrorMessage: null,
+      activatedAt: null
+    });
+
+    await this.enqueueSslStatusSync(domainId);
+    return updatedDomain;
+  }
+
+  async processSslStatusSyncJob(domainId: string) {
+    const domain = await this.domainsRepository.findDomainById(domainId);
+
+    if (!domain) {
+      throw new NotFoundException({
+        message: "Domain not found",
+        code: "DOMAIN_NOT_FOUND",
+        domainId
+      });
+    }
+
+    if (!domain.sslProvisioningId) {
+      throw new BadRequestException({
+        message: "SSL provisioning was not started for this domain",
+        code: "DOMAIN_SSL_PROVISIONING_MISSING",
+        domainId
+      });
+    }
+
+    const checkedAt = new Date();
+    const result = await this.domainsSslService.getProvisioningStatus({
+      externalId: domain.sslProvisioningId,
+      host: domain.host
+    });
+    const provisioningMetadata = JSON.stringify(result.payload ?? {});
+
+    if (result.status === "active") {
+      return this.domainsRepository.updateDomainSslStatus(domainId, {
+        status: DomainStatus.ACTIVE,
+        sslProvisioningId: domain.sslProvisioningId,
+        sslProvisioningMetadata: provisioningMetadata,
+        sslLastCheckedAt: checkedAt,
+        sslIssuedAt: checkedAt,
+        sslErrorMessage: null,
+        activatedAt: checkedAt
+      });
+    }
+
+    if (result.status === "error") {
+      return this.domainsRepository.updateDomainSslStatus(domainId, {
+        status: DomainStatus.ERROR,
+        sslProvisioningId: domain.sslProvisioningId,
+        sslProvisioningMetadata: provisioningMetadata,
+        sslLastCheckedAt: checkedAt,
+        sslIssuedAt: null,
+        sslErrorMessage: result.errorMessage ?? "SSL provisioning failed",
+        activatedAt: null
+      });
+    }
+
+    return this.domainsRepository.updateDomainSslStatus(domainId, {
+      status: DomainStatus.SSL_PENDING,
+      sslProvisioningId: domain.sslProvisioningId,
+      sslProvisioningMetadata: provisioningMetadata,
+      sslLastCheckedAt: checkedAt,
+      sslIssuedAt: null,
+      sslErrorMessage: null,
+      activatedAt: null
+    });
   }
 
   async resolveHost(request: {

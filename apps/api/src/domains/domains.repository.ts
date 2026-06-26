@@ -98,4 +98,30 @@ export class DomainsRepository {
       }
     });
   }
+
+  updateDomainSslStatus(
+    domainId: string,
+    input: {
+      status: DomainStatus;
+      sslProvisioningId?: string | null;
+      sslProvisioningMetadata?: string | null;
+      sslLastCheckedAt?: Date;
+      sslIssuedAt?: Date | null;
+      sslErrorMessage?: string | null;
+      activatedAt?: Date | null;
+    }
+  ) {
+    return prisma.storeDomain.update({
+      where: { id: domainId },
+      data: {
+        status: input.status,
+        sslProvisioningId: input.sslProvisioningId,
+        sslProvisioningMetadata: input.sslProvisioningMetadata,
+        sslLastCheckedAt: input.sslLastCheckedAt,
+        sslIssuedAt: input.sslIssuedAt,
+        sslErrorMessage: input.sslErrorMessage,
+        activatedAt: input.activatedAt
+      }
+    });
+  }
 }

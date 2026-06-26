@@ -7,10 +7,11 @@
     "build": "nest build",
     "start": "node dist/apps/api/src/main.js",
     "worker:domains-dns": "node dist/apps/api/src/domains/domain-dns.worker.js",
+    "worker:domains-ssl": "node dist/apps/api/src/domains/domain-ssl.worker.js",
     "lint": "tsc --project tsconfig.json --noEmit",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test:tenant-resolution": "node --test dist/apps/api/src/domains/tenant-resolution.test.js",
-    "test:domains": "node --test dist/apps/api/src/domains/tenant-resolution.test.js dist/apps/api/src/domains/domain-registration.test.js dist/apps/api/src/domains/domain-dns-verification.test.js"
+    "test:domains": "node --test dist/apps/api/src/domains/tenant-resolution.test.js dist/apps/api/src/domains/domain-registration.test.js dist/apps/api/src/domains/domain-dns-verification.test.js dist/apps/api/src/domains/domain-ssl-provisioning.test.js"
   },
   "dependencies": {
     "@acme/config": "workspace:*",

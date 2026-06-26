@@ -105,6 +105,7 @@ model StoreDomain {
   dnsVerifiedAt      DateTime?
   dnsErrorMessage    String?
   sslProvisioningId  String?
+  sslProvisioningMetadata String?
   sslLastCheckedAt   DateTime?
   sslIssuedAt        DateTime?
   sslErrorMessage    String?

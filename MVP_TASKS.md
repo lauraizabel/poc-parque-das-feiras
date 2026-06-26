@@ -234,10 +234,10 @@ Legenda de prioridade:
 - [x] Dependências: Redis/BullMQ e StoreDomain.
 
 ### Task 5.5 (P0): Integrar provisionamento de domínio custom e SSL
-- [ ] Integrar com Cloudflare for SaaS ou alternativa compatível para ativação do domínio e emissão de certificado.
-- [ ] Critérios de aceite: quando DNS estiver correto, sistema acompanha progresso até SSL ativo.
-- [ ] Notas técnicas: abstrair provider para permitir troca futura; persistir IDs externos e payloads relevantes.
-- [ ] Dependências: verificação de DNS e escolha de provider.
+- [x] Integrar com Cloudflare for SaaS ou alternativa compatível para ativação do domínio e emissão de certificado.
+- [x] Critérios de aceite: quando DNS estiver correto, sistema acompanha progresso até SSL ativo.
+- [x] Notas técnicas: abstrair provider para permitir troca futura; persistir IDs externos e payloads relevantes.
+- [x] Dependências: verificação de DNS e escolha de provider.
 
 ### Task 5.6 (P0): Implementar monitoramento de status SSL e tratamento de erro
 - [ ] Criar job para consultar status do certificado e atualizar domínio para `SSL_PENDING`, `ACTIVE` ou `ERROR`.
