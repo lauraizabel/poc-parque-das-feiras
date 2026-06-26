@@ -143,4 +143,40 @@ export class OrdersRepository {
       }
     });
   }
+
+  getOrderByIdAndStore(orderId: string, storeId: string) {
+    return prisma.order.findFirst({
+      where: {
+        id: orderId,
+        storeId
+      },
+      include: {
+        customer: true,
+        payment: true,
+        cart: {
+          include: {
+            items: true
+          }
+        },
+        items: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+  }
+
+  updateOrder(orderId: string, input: {
+    paymentId?: string | null;
+    status?: OrderStatus;
+    statusUpdatedAt?: Date;
+  }) {
+    return prisma.order.update({
+      where: {
+        id: orderId
+      },
+      data: input
+    });
+  }
 }

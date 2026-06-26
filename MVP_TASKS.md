@@ -398,10 +398,10 @@ Legenda de prioridade:
 - [x] Dependências: Order/OrderItem e API de carrinho.
 
 ### Task 9.4 (P0): Integrar gateway de pagamento via adapter
-- [ ] Criar adapter para gateway escolhido entre Stripe, Mercado Pago, Pagar.me ou Asaas.
-- [ ] Critérios de aceite: checkout cria intenção/transação de pagamento e devolve dados necessários ao frontend.
-- [ ] Notas técnicas: isolar provider em interface única para troca futura.
-- [ ] Dependências: modelagem de pagamento e decisão do gateway.
+- [x] Criar adapter para gateway escolhido entre Stripe, Mercado Pago, Pagar.me ou Asaas.
+- [x] Critérios de aceite: checkout cria intenção/transação de pagamento e devolve dados necessários ao frontend.
+- [x] Notas técnicas: isolar provider em interface única para troca futura.
+- [x] Dependências: modelagem de pagamento e decisão do gateway.
 
 ### Task 9.5 (P0): Construir UI de checkout
 - [ ] Implementar formulário de cliente, endereço, frete e pagamento no storefront.

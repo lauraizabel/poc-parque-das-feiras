@@ -90,6 +90,22 @@ export class PaymentsRepository {
     });
   }
 
+  findPaymentByOrder(orderId: string, storeId: string) {
+    return prisma.payment.findFirst({
+      where: {
+        storeId,
+        orders: {
+          some: {
+            id: orderId
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+  }
+
   getPaymentById(paymentId: string) {
     return prisma.payment.findUnique({
       where: {

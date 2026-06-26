@@ -16,6 +16,7 @@
     "test:cart-api": "node --test dist/apps/api/src/cart/cart-api.test.js",
     "test:checkout-api": "node --test dist/apps/api/src/checkout/checkout-api.test.js",
     "test:orders-modeling": "node --test dist/apps/api/src/orders/orders-modeling.test.js",
+    "test:payments-api": "node --test dist/apps/api/src/payments/payments-api.test.js",
     "test:payments-modeling": "node --test dist/apps/api/src/payments/payments-modeling.test.js",
     "test:tenant-resolution": "node --test dist/apps/api/src/domains/tenant-resolution.test.js",
     "test:domains": "node --test dist/apps/api/src/domains/tenant-resolution.test.js dist/apps/api/src/domains/domain-registration.test.js dist/apps/api/src/domains/domain-dns-verification.test.js dist/apps/api/src/domains/domain-ssl-provisioning.test.js"
