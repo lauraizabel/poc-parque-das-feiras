@@ -216,10 +216,10 @@ Legenda de prioridade:
 - [x] Dependências: Store.
 
 ### Task 5.2 (P0): Implementar cadastro de domínio próprio pelo lojista
-- [ ] Criar endpoint e tela para cadastro de domínio próprio com suporte oficial a host `www`.
-- [ ] Critérios de aceite: sistema recusa domínio já em uso, inválido ou fora do formato aceito.
-- [ ] Notas técnicas: normalizar domínio, bloquear apex sem `www` no fluxo oficial do MVP.
-- [ ] Dependências: StoreDomain model.
+- [x] Criar endpoint e tela para cadastro de domínio próprio com suporte oficial a host `www`.
+- [x] Critérios de aceite: sistema recusa domínio já em uso, inválido ou fora do formato aceito.
+- [x] Notas técnicas: normalizar domínio, bloquear apex sem `www` no fluxo oficial do MVP.
+- [x] Dependências: StoreDomain model.
 
 ### Task 5.3 (P1): Exibir instruções DNS para ativação do domínio
 - [ ] Gerar instruções claras de CNAME para o lojista configurar seu domínio.

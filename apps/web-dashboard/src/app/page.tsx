@@ -1,4 +1,5 @@
 import { env } from "../lib/env";
+import { DomainConsole } from "./domain-console";
 
 const kpis = [
   { label: "Lojas ativas", value: "18" },
@@ -41,6 +42,8 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
+
+      <DomainConsole />
     </main>
   );
 }

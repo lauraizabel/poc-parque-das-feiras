@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { DomainStatus } from "@prisma/client";
+import { DomainStatus, StoreDomainType } from "@prisma/client";
 import { prisma } from "@acme/database";
 import { DomainBoundary } from "../platform/domain-boundary";
 
@@ -20,6 +20,29 @@ export class DomainsRepository {
     });
   }
 
+  findStoreById(storeId: string) {
+    return prisma.store.findUnique({
+      where: { id: storeId }
+    });
+  }
+
+  findCustomDomainByStoreId(storeId: string) {
+    return prisma.storeDomain.findUnique({
+      where: {
+        storeId_type: {
+          storeId,
+          type: StoreDomainType.CUSTOM_DOMAIN
+        }
+      }
+    });
+  }
+
+  findDomainByHost(host: string) {
+    return prisma.storeDomain.findUnique({
+      where: { host }
+    });
+  }
+
   findActiveDomain(hostname: string) {
     return prisma.storeDomain.findFirst({
       where: {
@@ -28,6 +51,22 @@ export class DomainsRepository {
       },
       include: {
         store: true
+      }
+    });
+  }
+
+  createCustomDomain(input: {
+    host: string;
+    storeId: string;
+    dnsTargetValue: string;
+  }) {
+    return prisma.storeDomain.create({
+      data: {
+        host: input.host,
+        type: StoreDomainType.CUSTOM_DOMAIN,
+        status: DomainStatus.AWAITING_DNS,
+        dnsTargetValue: input.dnsTargetValue,
+        storeId: input.storeId
       }
     });
   }
