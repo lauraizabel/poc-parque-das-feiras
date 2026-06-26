@@ -33,6 +33,7 @@ describe("tenant resolution", () => {
   const secondarySlug = `tenant-secondary-${suffix}`;
   const primarySubdomainHost = `${primarySlug}.lvh.me`;
   const primaryCustomHost = `www.${primarySlug}.com`;
+  const secondaryPendingCustomHost = `www.pending-${secondarySlug}.com`;
 
   let app: INestApplication;
   let baseUrl = "";
@@ -118,6 +119,15 @@ describe("tenant resolution", () => {
         status: DomainStatus.ACTIVE,
         activatedAt: new Date(),
         storeId: primaryStore.id
+      }
+    });
+
+    await prisma.storeDomain.create({
+      data: {
+        host: secondaryPendingCustomHost,
+        type: StoreDomainType.CUSTOM_DOMAIN,
+        status: DomainStatus.SSL_PENDING,
+        storeId: secondaryStore.id
       }
     });
   });
@@ -246,6 +256,46 @@ describe("tenant resolution", () => {
       code: "STOREFRONT_STORE_CONTEXT_CONFLICT",
       resolvedStoreId: primaryStoreId,
       conflictingStoreId: secondaryStoreId
+    });
+  });
+
+  it("keeps the store subdomain available while the custom domain is still pending ssl", async () => {
+    const pendingHostResponse = await requestJson<{
+      kind: string;
+      matchedHost: string;
+    }>({
+      path: "/domains/resolve",
+      headers: {
+        host: secondaryPendingCustomHost
+      }
+    });
+
+    const subdomainResponse = await requestJson<{
+      kind: string;
+      matchedHost: string;
+      storeId: string;
+      storeSlug: string;
+      source: string;
+    }>({
+      path: "/domains/resolve",
+      headers: {
+        host: `${secondarySlug}.lvh.me`
+      }
+    });
+
+    assert.equal(pendingHostResponse.statusCode, 200);
+    assert.deepEqual(pendingHostResponse.body, {
+      kind: "unknown",
+      matchedHost: secondaryPendingCustomHost
+    });
+
+    assert.equal(subdomainResponse.statusCode, 200);
+    assert.deepEqual(subdomainResponse.body, {
+      kind: "storefront-store",
+      matchedHost: `${secondarySlug}.lvh.me`,
+      storeId: secondaryStoreId,
+      storeSlug: secondarySlug,
+      source: "subdomain"
     });
   });
 

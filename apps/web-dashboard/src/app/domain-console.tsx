@@ -9,6 +9,10 @@ type DomainRecord = {
   storeId: string;
   status?: string;
   dnsTargetValue?: string | null;
+  dnsErrorMessage?: string | null;
+  sslErrorMessage?: string | null;
+  sslLastCheckedAt?: string | null;
+  activatedAt?: string | null;
 };
 
 type ApiState = {
@@ -192,7 +196,24 @@ export function DomainConsole() {
             <span>CNAME esperado</span>
             <strong>{domain.dnsTargetValue ?? "n/a"}</strong>
           </div>
+          <div>
+            <span>Ultima checagem SSL</span>
+            <strong>{domain.sslLastCheckedAt ?? "n/a"}</strong>
+          </div>
         </div>
+      ) : null}
+
+      {domain ? (
+        <p className="subtitle">
+          Enquanto o status nao virar `ACTIVE`, a loja continua disponivel pelo subdominio
+          padrao e o dominio proprio ainda nao participa da resolucao publica.
+        </p>
+      ) : null}
+
+      {domain?.dnsErrorMessage || domain?.sslErrorMessage ? (
+        <p className="feedback error">
+          {domain.sslErrorMessage ?? domain.dnsErrorMessage}
+        </p>
       ) : null}
 
       {domain ? (
@@ -244,6 +265,54 @@ export function DomainConsole() {
             type="button"
           >
             Verificar DNS
+          </button>
+          <button
+            className="secondary-button"
+            disabled={isSubmitting}
+            onClick={async () => {
+              setIsSubmitting(true);
+              setState({ kind: "idle" });
+
+              try {
+                const response = await fetch(
+                  `${env.NEXT_PUBLIC_API_URL}/domains/${storeId}/sync-ssl`,
+                  {
+                    method: "POST",
+                    headers: {
+                      authorization: `Bearer ${token}`
+                    }
+                  }
+                );
+                const payload = (await response.json()) as {
+                  queued?: boolean;
+                  message?: string;
+                };
+
+                if (!response.ok) {
+                  setState({
+                    kind: "error",
+                    message: payload.message ?? "Nao foi possivel atualizar o status do SSL."
+                  });
+                  return;
+                }
+
+                setState({
+                  kind: "success",
+                  message: "Atualizacao de SSL agendada com sucesso."
+                });
+                await loadCurrentDomain();
+              } catch {
+                setState({
+                  kind: "error",
+                  message: "Falha de rede ao atualizar o SSL."
+                });
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            type="button"
+          >
+            Atualizar SSL
           </button>
         </div>
       ) : null}

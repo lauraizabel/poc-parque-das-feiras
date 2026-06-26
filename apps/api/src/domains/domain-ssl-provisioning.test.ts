@@ -187,6 +187,75 @@ describe("domain ssl provisioning", () => {
     assert.match(updatedDomain.sslProvisioningMetadata ?? "", /certificate-active/);
   });
 
+  it("keeps the domain in SSL_PENDING when the provider still reports certificate provisioning in progress", async () => {
+    const pendingStoreSlug = `ssl-pending-check-${suffix}`;
+    const pendingUser = await prisma.user.create({
+      data: {
+        email: `ssl-pending-check-${suffix}@example.com`,
+        passwordHash: "test-password-hash",
+        platformRole: PlatformRole.CUSTOMER
+      }
+    });
+
+    const pendingStore = await prisma.store.create({
+      data: {
+        name: "SSL Pending Store",
+        slug: pendingStoreSlug,
+        defaultSubdomain: pendingStoreSlug,
+        ownerId: pendingUser.id
+      }
+    });
+
+    const pendingDomain = await prisma.storeDomain.create({
+      data: {
+        host: `www.ssl-pending-${pendingStoreSlug}.com`,
+        storeId: pendingStore.id,
+        status: DomainStatus.SSL_PENDING,
+        dnsTargetValue: `${pendingStoreSlug}.lvh.me`,
+        sslProvisioningId: `local_cloudflare-${pendingStore.id}`
+      }
+    });
+
+    const service = new DomainsService(
+      new DomainsRepository(),
+      {
+        getOrThrow: () => "lvh.me"
+      } as never,
+      new DomainsDnsService(),
+      new DomainsSslService({
+        get: (key: string) => {
+          if (key === "DOMAINS_ENABLED") {
+            return false;
+          }
+
+          if (key === "DOMAIN_PROVIDER") {
+            return "CLOUDFLARE";
+          }
+
+          return undefined;
+        }
+      } as never)
+    );
+
+    await service.processSslStatusSyncJob(pendingDomain.id);
+
+    const updatedDomain = await prisma.storeDomain.findUniqueOrThrow({
+      where: { id: pendingDomain.id }
+    });
+
+    assert.equal(updatedDomain.status, DomainStatus.SSL_PENDING);
+    assert.match(updatedDomain.sslProvisioningMetadata ?? "", /certificate-pending/);
+    assert.equal(updatedDomain.activatedAt, null);
+
+    await prisma.store.delete({
+      where: { id: pendingStore.id }
+    });
+
+    await prisma.user.delete({
+      where: { id: pendingUser.id }
+    });
+  });
+
   it("marks the domain as ERROR when the provider rejects the host", async () => {
     const service = new DomainsService(
       new DomainsRepository(),

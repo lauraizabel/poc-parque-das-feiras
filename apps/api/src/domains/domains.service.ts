@@ -17,6 +17,8 @@ import {
   createDomainSslStatusQueue
 } from "./domains.queue";
 
+const SSL_STATUS_RECHECK_DELAY_MS = 30_000;
+
 @Injectable()
 export class DomainsService {
   constructor(
@@ -99,6 +101,20 @@ export class DomainsService {
     }
 
     return this.enqueueDnsVerification(domain.id);
+  }
+
+  async syncStoreDomainSsl(storeId: string) {
+    const domain = await this.domainsRepository.findCustomDomainByStoreId(storeId);
+
+    if (!domain) {
+      throw new NotFoundException({
+        message: "Store custom domain not found",
+        code: "STORE_CUSTOM_DOMAIN_NOT_FOUND",
+        storeId
+      });
+    }
+
+    return this.enqueueSslStatusSync(domain.id);
   }
 
   async enqueueDnsVerification(domainId: string) {
@@ -218,7 +234,7 @@ export class DomainsService {
     }
   }
 
-  async enqueueSslStatusSync(domainId: string) {
+  async enqueueSslStatusSync(domainId: string, delayMs = 0) {
     const queue = createDomainSslStatusQueue();
 
     try {
@@ -232,9 +248,15 @@ export class DomainsService {
         });
       }
 
-      const job = await queue.add("sync-domain-ssl-status", {
-        domainId
-      });
+      const job = await queue.add(
+        "sync-domain-ssl-status",
+        {
+          domainId
+        },
+        {
+          delay: delayMs
+        }
+      );
 
       return {
         queued: true,
@@ -353,7 +375,7 @@ export class DomainsService {
       });
     }
 
-    return this.domainsRepository.updateDomainSslStatus(domainId, {
+    const updatedDomain = await this.domainsRepository.updateDomainSslStatus(domainId, {
       status: DomainStatus.SSL_PENDING,
       sslProvisioningId: domain.sslProvisioningId,
       sslProvisioningMetadata: provisioningMetadata,
@@ -362,6 +384,9 @@ export class DomainsService {
       sslErrorMessage: null,
       activatedAt: null
     });
+
+    await this.enqueueSslStatusSync(domainId, SSL_STATUS_RECHECK_DELAY_MS);
+    return updatedDomain;
   }
 
   async resolveHost(request: {

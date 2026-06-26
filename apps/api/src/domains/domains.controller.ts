@@ -55,4 +55,12 @@ export class DomainsController {
   verifyStoreDomainDns(@Param("storeId") storeId: string) {
     return this.domainsService.verifyStoreDomainDns(storeId);
   }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Post(":storeId/sync-ssl")
+  syncStoreDomainSsl(@Param("storeId") storeId: string) {
+    return this.domainsService.syncStoreDomainSsl(storeId);
+  }
 }

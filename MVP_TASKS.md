@@ -240,10 +240,10 @@ Legenda de prioridade:
 - [x] Dependências: verificação de DNS e escolha de provider.
 
 ### Task 5.6 (P0): Implementar monitoramento de status SSL e tratamento de erro
-- [ ] Criar job para consultar status do certificado e atualizar domínio para `SSL_PENDING`, `ACTIVE` ou `ERROR`.
-- [ ] Critérios de aceite: dashboard reflete status real e mantém subdomínio padrão disponível enquanto o custom não ativa.
-- [ ] Notas técnicas: nunca interromper acesso pelo subdomínio padrão por falha no domínio custom.
-- [ ] Dependências: integração com provider de domínio/SSL.
+- [x] Criar job para consultar status do certificado e atualizar domínio para `SSL_PENDING`, `ACTIVE` ou `ERROR`.
+- [x] Critérios de aceite: dashboard reflete status real e mantém subdomínio padrão disponível enquanto o custom não ativa.
+- [x] Notas técnicas: nunca interromper acesso pelo subdomínio padrão por falha no domínio custom.
+- [x] Dependências: integração com provider de domínio/SSL.
 
 ### Task 5.7 (P1): Implementar remoção e substituição segura do domínio próprio
 - [ ] Permitir remover domínio custom ou substituí-lo respeitando a regra de apenas 1 ativo por loja.
