@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
+import { AuthModule } from "../auth/auth.module";
 import { DomainsModule } from "../domains/domains.module";
 import { PublicStorefrontMiddleware } from "../domains/public-storefront.middleware";
 import { CatalogController } from "./catalog.controller";
@@ -6,7 +7,7 @@ import { CatalogRepository } from "./catalog.repository";
 import { CatalogService } from "./catalog.service";
 
 @Module({
-  imports: [DomainsModule],
+  imports: [AuthModule, DomainsModule],
   controllers: [CatalogController],
   providers: [CatalogService, CatalogRepository],
   exports: [CatalogService, CatalogRepository]
