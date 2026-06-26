@@ -1,6 +1,6 @@
-import { Queue } from "bullmq";
+import { Queue, Worker } from "bullmq";
 
-function getRedisConnectionOptions() {
+export function getRedisConnectionOptions() {
   const url = new URL(process.env.REDIS_URL ?? "redis://localhost:6379");
 
   return {
@@ -17,8 +17,29 @@ export function createQueue(name: string) {
     connection: getRedisConnectionOptions(),
     defaultJobOptions: {
       attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 5_000
+      },
       removeOnComplete: 100,
       removeOnFail: 500
     }
   });
+}
+
+export function createWorker<TData>(
+  name: string,
+  processor: (job: { data: TData; id?: string }) => Promise<unknown>
+) {
+  return new Worker(
+    name,
+    async (job) =>
+      processor({
+        data: job.data as TData,
+        id: job.id
+      }),
+    {
+      connection: getRedisConnectionOptions()
+    }
+  );
 }

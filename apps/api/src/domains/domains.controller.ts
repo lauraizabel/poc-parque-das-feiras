@@ -47,4 +47,12 @@ export class DomainsController {
       parseDomainBody(createStoreDomainSchema, body)
     );
   }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Post(":storeId/verify-dns")
+  verifyStoreDomainDns(@Param("storeId") storeId: string) {
+    return this.domainsService.verifyStoreDomainDns(storeId);
+  }
 }

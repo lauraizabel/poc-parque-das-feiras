@@ -166,7 +166,7 @@ describe("domain registration", () => {
     assert.equal(response.statusCode, 200);
     assert.equal(response.body.domain?.host, "www.primarybrand.com");
     assert.equal(response.body.domain?.storeId, primaryStoreId);
-    assert.equal(response.body.domain?.status, "AWAITING_DNS");
+    assert.equal(response.body.domain?.status, "VERIFYING");
     assert.match(response.body.domain?.dnsTargetValue ?? "", /\.lvh\.me$/);
   });
 

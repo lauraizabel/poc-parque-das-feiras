@@ -43,6 +43,12 @@ export class DomainsRepository {
     });
   }
 
+  findDomainById(domainId: string) {
+    return prisma.storeDomain.findUnique({
+      where: { id: domainId }
+    });
+  }
+
   findActiveDomain(hostname: string) {
     return prisma.storeDomain.findFirst({
       where: {
@@ -67,6 +73,28 @@ export class DomainsRepository {
         status: DomainStatus.AWAITING_DNS,
         dnsTargetValue: input.dnsTargetValue,
         storeId: input.storeId
+      }
+    });
+  }
+
+  updateDomainDnsStatus(
+    domainId: string,
+    input: {
+      status: DomainStatus;
+      dnsConfiguredValue?: string | null;
+      dnsLastCheckedAt?: Date;
+      dnsVerifiedAt?: Date | null;
+      dnsErrorMessage?: string | null;
+    }
+  ) {
+    return prisma.storeDomain.update({
+      where: { id: domainId },
+      data: {
+        status: input.status,
+        dnsConfiguredValue: input.dnsConfiguredValue,
+        dnsLastCheckedAt: input.dnsLastCheckedAt,
+        dnsVerifiedAt: input.dnsVerifiedAt,
+        dnsErrorMessage: input.dnsErrorMessage
       }
     });
   }

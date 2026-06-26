@@ -5,15 +5,19 @@ import {
   NotFoundException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { DomainStatus } from "@prisma/client";
+import { DomainsDnsService } from "./domains-dns.service";
 import { DomainsRepository } from "./domains.repository";
 import { HostResolution } from "./host-resolution.types";
 import { CreateStoreDomainInput } from "./domains.schemas";
+import { createDomainDnsVerificationQueue } from "./domains.queue";
 
 @Injectable()
 export class DomainsService {
   constructor(
     private readonly domainsRepository: DomainsRepository,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly domainsDnsResolver: DomainsDnsService
   ) {}
 
   getBoundary() {
@@ -70,9 +74,111 @@ export class DomainsService {
       dnsTargetValue
     });
 
+    await this.enqueueDnsVerification(domain.id);
+
     return {
       domain
     };
+  }
+
+  async verifyStoreDomainDns(storeId: string) {
+    const domain = await this.domainsRepository.findCustomDomainByStoreId(storeId);
+
+    if (!domain) {
+      throw new NotFoundException({
+        message: "Store custom domain not found",
+        code: "STORE_CUSTOM_DOMAIN_NOT_FOUND",
+        storeId
+      });
+    }
+
+    return this.enqueueDnsVerification(domain.id);
+  }
+
+  async enqueueDnsVerification(domainId: string) {
+    const queue = createDomainDnsVerificationQueue();
+
+    try {
+      const domain = await this.domainsRepository.findDomainById(domainId);
+
+      if (!domain) {
+        throw new NotFoundException({
+          message: "Domain not found",
+          code: "DOMAIN_NOT_FOUND",
+          domainId
+        });
+      }
+
+      await this.domainsRepository.updateDomainDnsStatus(domainId, {
+        status: DomainStatus.VERIFYING,
+        dnsLastCheckedAt: new Date(),
+        dnsErrorMessage: null
+      });
+
+      const job = await queue.add("verify-domain-dns", {
+        domainId
+      });
+
+      return {
+        queued: true,
+        jobId: job.id ?? null,
+        domainId
+      };
+    } finally {
+      await queue.close();
+    }
+  }
+
+  async processDnsVerificationJob(domainId: string) {
+    const domain = await this.domainsRepository.findDomainById(domainId);
+
+    if (!domain) {
+      throw new NotFoundException({
+        message: "Domain not found",
+        code: "DOMAIN_NOT_FOUND",
+        domainId
+      });
+    }
+
+    const checkedAt = new Date();
+
+    try {
+      const dnsResult = await this.domainsDnsResolver.resolveCname(domain.host);
+      const expectedTarget = this.normalizeDnsTarget(domain.dnsTargetValue);
+      const configuredTarget = this.normalizeDnsTarget(dnsResult.configuredTarget);
+
+      if (expectedTarget && configuredTarget === expectedTarget) {
+        return this.domainsRepository.updateDomainDnsStatus(domainId, {
+          status: DomainStatus.SSL_PENDING,
+          dnsConfiguredValue: configuredTarget,
+          dnsLastCheckedAt: checkedAt,
+          dnsVerifiedAt: checkedAt,
+          dnsErrorMessage: null
+        });
+      }
+
+      return this.domainsRepository.updateDomainDnsStatus(domainId, {
+        status: DomainStatus.AWAITING_DNS,
+        dnsConfiguredValue: configuredTarget,
+        dnsLastCheckedAt: checkedAt,
+        dnsVerifiedAt: null,
+        dnsErrorMessage: configuredTarget
+          ? `CNAME mismatch: expected ${expectedTarget}, received ${configuredTarget}`
+          : "No CNAME record found for this host"
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown DNS verification error";
+
+      await this.domainsRepository.updateDomainDnsStatus(domainId, {
+        status: DomainStatus.ERROR,
+        dnsConfiguredValue: null,
+        dnsLastCheckedAt: checkedAt,
+        dnsVerifiedAt: null,
+        dnsErrorMessage: message
+      });
+
+      throw error;
+    }
   }
 
   async resolveHost(request: {
@@ -153,6 +259,10 @@ export class DomainsService {
 
   private extractHostname(url: string) {
     return new URL(url).hostname.toLowerCase();
+  }
+
+  private normalizeDnsTarget(value: string | null | undefined) {
+    return value ? value.toLowerCase().replace(/\.+$/, "") : null;
   }
 
   private normalizeCustomDomainHost(input: string) {

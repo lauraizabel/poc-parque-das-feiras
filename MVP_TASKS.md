@@ -228,10 +228,10 @@ Legenda de prioridade:
 - [ ] Dependências: cadastro de domínio próprio.
 
 ### Task 5.4 (P0): Implementar rotina de verificação de DNS
-- [ ] Criar job assíncrono que verifica se o CNAME está apontando corretamente.
-- [ ] Critérios de aceite: domínio transita entre `AWAITING_DNS`, `VERIFYING` e próximos estados com base na verificação.
-- [ ] Notas técnicas: usar BullMQ para retries, backoff e registro detalhado de erros.
-- [ ] Dependências: Redis/BullMQ e StoreDomain.
+- [x] Criar job assíncrono que verifica se o CNAME está apontando corretamente.
+- [x] Critérios de aceite: domínio transita entre `AWAITING_DNS`, `VERIFYING` e próximos estados com base na verificação.
+- [x] Notas técnicas: usar BullMQ para retries, backoff e registro detalhado de erros.
+- [x] Dependências: Redis/BullMQ e StoreDomain.
 
 ### Task 5.5 (P0): Integrar provisionamento de domínio custom e SSL
 - [ ] Integrar com Cloudflare for SaaS ou alternativa compatível para ativação do domínio e emissão de certificado.

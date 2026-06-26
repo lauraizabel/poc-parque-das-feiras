@@ -194,6 +194,59 @@ export function DomainConsole() {
           </div>
         </div>
       ) : null}
+
+      {domain ? (
+        <div className="button-row">
+          <button
+            className="secondary-button"
+            disabled={isSubmitting}
+            onClick={async () => {
+              setIsSubmitting(true);
+              setState({ kind: "idle" });
+
+              try {
+                const response = await fetch(
+                  `${env.NEXT_PUBLIC_API_URL}/domains/${storeId}/verify-dns`,
+                  {
+                    method: "POST",
+                    headers: {
+                      authorization: `Bearer ${token}`
+                    }
+                  }
+                );
+                const payload = (await response.json()) as {
+                  queued?: boolean;
+                  message?: string;
+                };
+
+                if (!response.ok) {
+                  setState({
+                    kind: "error",
+                    message: payload.message ?? "Nao foi possivel agendar a verificacao."
+                  });
+                  return;
+                }
+
+                setState({
+                  kind: "success",
+                  message: "Verificacao de DNS agendada com sucesso."
+                });
+                await loadCurrentDomain();
+              } catch {
+                setState({
+                  kind: "error",
+                  message: "Falha de rede ao agendar a verificacao."
+                });
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            type="button"
+          >
+            Verificar DNS
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
