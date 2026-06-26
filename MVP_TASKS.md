@@ -380,10 +380,10 @@ Legenda de prioridade:
 ## Epic 9: Checkout, pagamento e webhooks
 
 ### Task 9.1 (P0): Modelar entidades de checkout e pagamento
-- [ ] Criar entidades `Customer`, `Payment` e `PaymentTransaction` com dados mínimos para iniciar e rastrear pagamentos.
-- [ ] Critérios de aceite: modelo suporta status inicial, payload externo, tentativas e auditoria básica.
-- [ ] Notas técnicas: preparar abstração para gateway e futura evolução de split/comissão.
-- [ ] Dependências: Cart e Order.
+- [x] Criar entidades `Customer`, `Payment` e `PaymentTransaction` com dados mínimos para iniciar e rastrear pagamentos.
+- [x] Critérios de aceite: modelo suporta status inicial, payload externo, tentativas e auditoria básica.
+- [x] Notas técnicas: preparar abstração para gateway e futura evolução de split/comissão.
+- [x] Dependências: Cart e Order.
 
 ### Task 9.2 (P0): Modelar entidade Order e OrderItem
 - [ ] Criar entidades `Order` e `OrderItem` com snapshot de itens, preços, cliente, endereço e `storeId`.

@@ -46,6 +46,38 @@ enum PaymentProvider {
   ASAAS
 }
 
+enum CustomerStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  AUTHORIZED
+  APPROVED
+  FAILED
+  CANCELED
+  EXPIRED
+  REFUNDED
+}
+
+enum PaymentTransactionKind {
+  INTENT
+  AUTHORIZATION
+  CAPTURE
+  CANCELLATION
+  REFUND
+  WEBHOOK
+}
+
+enum PaymentTransactionStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
 enum CategoryStatus {
   ACTIVE
   INACTIVE
@@ -93,6 +125,9 @@ model Store {
   storeMembers      StoreMember[]
   domains           StoreDomain[]
   paymentAccounts   PaymentAccount[]
+  customers         Customer[]
+  payments          Payment[]
+  paymentTransactions PaymentTransaction[]
   assets            Asset[]
   categories        Category[]
   products          Product[]
@@ -158,6 +193,26 @@ model PaymentAccount {
 
   @@unique([provider, externalAccountId])
   @@index([storeId])
+}
+
+model Customer {
+  id             String         @id @default(cuid())
+  storeId        String
+  email          String
+  fullName       String?
+  phoneNumber    String?
+  documentNumber String?
+  notes          String?
+  status         CustomerStatus @default(ACTIVE)
+  store          Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  carts          Cart[]
+  payments       Payment[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([id, storeId])
+  @@unique([storeId, email])
+  @@index([storeId, status])
 }
 
 model Asset {
@@ -227,6 +282,7 @@ model Cart {
   id            String      @id @default(cuid())
   storeId       String
   userId        String?
+  customerId    String?
   sessionId     String?
   customerEmail String?
   status        CartStatus  @default(ACTIVE)
@@ -234,12 +290,15 @@ model Cart {
   expiresAt     DateTime?
   store         Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
   user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customer      Customer?   @relation(fields: [customerId, storeId], references: [id, storeId], onDelete: SetNull)
   items         CartItem[]
+  payments      Payment[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
   @@unique([id, storeId])
   @@index([storeId, status])
+  @@index([storeId, customerId, status])
   @@index([storeId, sessionId, status])
   @@index([storeId, userId, status])
   @@index([storeId, customerEmail, status])
@@ -265,6 +324,63 @@ model CartItem {
   @@unique([cartId, productId])
   @@index([cartId, storeId])
   @@index([storeId, productId])
+}
+
+model Payment {
+  id                    String         @id @default(cuid())
+  storeId               String
+  cartId                String
+  customerId            String?
+  provider              PaymentProvider
+  status                PaymentStatus  @default(CREATED)
+  currencyCode          String         @default("BRL")
+  amountCents           Int
+  attemptCount          Int            @default(0)
+  externalPaymentId     String?
+  externalReference     String?
+  providerPayload       String?
+  metadata              String?
+  failureCode           String?
+  failureMessage        String?
+  expiresAt             DateTime?
+  paidAt                DateTime?
+  store                 Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  cart                  Cart           @relation(fields: [cartId, storeId], references: [id, storeId], onDelete: Restrict)
+  customer              Customer?      @relation(fields: [customerId, storeId], references: [id, storeId], onDelete: SetNull)
+  transactions          PaymentTransaction[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@unique([id, storeId])
+  @@index([storeId, status])
+  @@index([storeId, cartId])
+  @@index([storeId, customerId])
+  @@index([provider, externalPaymentId])
+}
+
+model PaymentTransaction {
+  id                    String                   @id @default(cuid())
+  paymentId             String
+  storeId               String
+  provider              PaymentProvider
+  kind                  PaymentTransactionKind
+  status                PaymentTransactionStatus @default(PENDING)
+  idempotencyKey        String?
+  externalTransactionId String?
+  requestPayload        String?
+  responsePayload       String?
+  errorCode             String?
+  errorMessage          String?
+  occurredAt            DateTime?
+  store                 Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  payment               Payment                  @relation(fields: [paymentId, storeId], references: [id, storeId], onDelete: Cascade)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([storeId, paymentId])
+  @@index([paymentId, kind, status])
+  @@index([provider, externalTransactionId])
+  @@index([paymentId, idempotencyKey])
 }
 
 model ProductImage {
