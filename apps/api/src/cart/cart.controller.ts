@@ -1,4 +1,5 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Req } from "@nestjs/common";
+import { PublicStorefrontRequest } from "../auth/auth.types";
 import { CartService } from "./cart.service";
 
 @Controller("cart")
@@ -8,5 +9,12 @@ export class CartController {
   @Get("boundary")
   getBoundary() {
     return this.cartService.getBoundary();
+  }
+
+  @Get("public/context")
+  getPublicContext(@Req() request: PublicStorefrontRequest) {
+    return {
+      store: request.publicStore ?? null
+    };
   }
 }

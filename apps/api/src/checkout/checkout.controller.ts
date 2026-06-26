@@ -1,4 +1,5 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Req } from "@nestjs/common";
+import { PublicStorefrontRequest } from "../auth/auth.types";
 import { CheckoutService } from "./checkout.service";
 
 @Controller("checkout")
@@ -8,5 +9,12 @@ export class CheckoutController {
   @Get("boundary")
   getBoundary() {
     return this.checkoutService.getBoundary();
+  }
+
+  @Get("public/context")
+  getPublicContext(@Req() request: PublicStorefrontRequest) {
+    return {
+      store: request.publicStore ?? null
+    };
   }
 }

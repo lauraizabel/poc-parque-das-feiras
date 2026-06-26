@@ -44,6 +44,7 @@ const serverProviderSchema = z.object({
   STOREFRONT_URL: z.url(),
   DASHBOARD_URL: z.url(),
   API_URL: z.url(),
+  MARKETPLACE_ROOT_DOMAIN: nonEmptyString.default("lvh.me"),
   DATABASE_URL: nonEmptyString,
   REDIS_URL: nonEmptyString,
   JWT_SECRET: nonEmptyString,

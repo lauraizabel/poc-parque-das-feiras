@@ -184,16 +184,16 @@ Legenda de prioridade:
 ## Epic 4: Multi-tenant e resolução por host
 
 ### Task 4.1 (P0): Modelar estratégia de tenant resolution por host
-- [ ] Definir camada responsável por resolver `storeId` a partir do `Host` da request.
-- [ ] Critérios de aceite: requests públicas identificam a loja por subdomínio ou domínio próprio ativo.
-- [ ] Notas técnicas: considerar fallback seguro e distinção entre domínio do dashboard e da vitrine.
-- [ ] Dependências: Store e StoreDomain.
+- [x] Definir camada responsável por resolver `storeId` a partir do `Host` da request.
+- [x] Critérios de aceite: requests públicas identificam a loja por subdomínio ou domínio próprio ativo.
+- [x] Notas técnicas: considerar fallback seguro e distinção entre domínio do dashboard e da vitrine.
+- [x] Dependências: Store e StoreDomain.
 
 ### Task 4.2 (P0): Implementar middleware de resolução pública da loja
-- [ ] Criar middleware/interceptor na API para anexar contexto da loja às requests públicas.
-- [ ] Critérios de aceite: catálogo, carrinho e checkout operam apenas com a loja resolvida pelo host.
-- [ ] Notas técnicas: bloquear acesso quando domínio estiver inválido, removido ou sem correspondência.
-- [ ] Dependências: estratégia de tenant resolution.
+- [x] Criar middleware/interceptor na API para anexar contexto da loja às requests públicas.
+- [x] Critérios de aceite: catálogo, carrinho e checkout operam apenas com a loja resolvida pelo host.
+- [x] Notas técnicas: bloquear acesso quando domínio estiver inválido, removido ou sem correspondência.
+- [x] Dependências: estratégia de tenant resolution.
 
 ### Task 4.3 (P0): Implementar isolamento de dados por `storeId`
 - [ ] Garantir que consultas multi-tenant sempre filtrem por `storeId` quando aplicável.

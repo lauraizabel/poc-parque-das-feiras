@@ -1,11 +1,20 @@
-import { Module } from "@nestjs/common";
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
+import { DomainsModule } from "../domains/domains.module";
+import { PublicStorefrontMiddleware } from "../domains/public-storefront.middleware";
 import { CatalogController } from "./catalog.controller";
 import { CatalogRepository } from "./catalog.repository";
 import { CatalogService } from "./catalog.service";
 
 @Module({
+  imports: [DomainsModule],
   controllers: [CatalogController],
   providers: [CatalogService, CatalogRepository],
   exports: [CatalogService, CatalogRepository]
 })
-export class CatalogModule {}
+export class CatalogModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(PublicStorefrontMiddleware)
+      .forRoutes({ path: "catalog/public/context", method: RequestMethod.GET });
+  }
+}

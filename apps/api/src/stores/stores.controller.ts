@@ -5,7 +5,10 @@ import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { PlatformRoles } from "../auth/platform-roles.decorator";
 import { StoreAccess } from "../auth/store-access.decorator";
 import { StoreRoles } from "../auth/store-roles.decorator";
-import { AuthenticatedRequest } from "../auth/auth.types";
+import {
+  AuthenticatedRequest,
+  PublicStorefrontRequest
+} from "../auth/auth.types";
 import { createStoreSchema, parseStoreBody } from "./stores.schemas";
 import { StoresService } from "./stores.service";
 
@@ -16,6 +19,15 @@ export class StoresController {
   @Get("boundary")
   getBoundary() {
     return this.storesService.getBoundary();
+  }
+
+  @Get("public/current")
+  getPublicCurrent(
+    @Req() request: PublicStorefrontRequest
+  ) {
+    return {
+      store: request.publicStore ?? null
+    };
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)
