@@ -310,10 +310,10 @@ Legenda de prioridade:
 ## Epic 7: Vitrine pública da loja
 
 ### Task 7.1 (P0): Definir shell da storefront pública por tenant
-- [ ] Criar estrutura de páginas públicas orientada por host da loja resolvida.
-- [ ] Critérios de aceite: a mesma app pública renderiza lojas diferentes conforme domínio/subdomínio.
-- [ ] Notas técnicas: centralizar busca do contexto da loja no carregamento da requisição.
-- [ ] Dependências: resolução por host.
+- [x] Criar estrutura de páginas públicas orientada por host da loja resolvida.
+- [x] Critérios de aceite: a mesma app pública renderiza lojas diferentes conforme domínio/subdomínio.
+- [x] Notas técnicas: centralizar busca do contexto da loja no carregamento da requisição.
+- [x] Dependências: resolução por host.
 
 ### Task 7.2 (P1): Implementar tema básico e personalização visual mínima
 - [ ] Criar entidade/configuração `StoreTheme` com cores, logo, banner e textos básicos.

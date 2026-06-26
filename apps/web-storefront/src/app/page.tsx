@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { env } from "../lib/env";
+import { getStorefrontContext } from "../lib/storefront-context";
 
 const pillars = [
   {
@@ -16,13 +17,28 @@ const pillars = [
   }
 ];
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+function prettyStoreName(slug: string) {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export default async function HomePage() {
+  const storefront = await getStorefrontContext();
+  const isResolvedStore = storefront.kind === "store";
+  const storeTitle = isResolvedStore ? prettyStoreName(storefront.storeSlug) : "Marketplace";
+
   return (
     <main className="shell">
       <header className="nav">
         <div>
           <div className="eyebrow">Storefront</div>
-          <strong>{env.NEXT_PUBLIC_APP_URL}</strong>
+          <strong>{storeTitle}</strong>
+          <div className="host-badge">{storefront.matchedHost}</div>
         </div>
         <nav className="nav-links">
           <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
@@ -31,11 +47,26 @@ export default function HomePage() {
       </header>
 
       <section className="hero">
-        <span className="pill">Public commerce surface</span>
-        <h1 className="title">Vitrine publica pronta para tenants, dominios e conversao.</h1>
+        <span className="pill">
+          {isResolvedStore
+            ? storefront.source === "custom-domain"
+              ? "Dominio proprio ativo"
+              : "Subdominio da loja"
+            : storefront.kind === "unknown"
+              ? "Host sem loja resolvida"
+              : "Marketplace root"}
+        </span>
+        <h1 className="title">
+          {isResolvedStore
+            ? `${storeTitle} ja nasce em uma shell publica orientada por host.`
+            : "A mesma storefront agora responde lojas diferentes conforme o host."}
+        </h1>
         <p className="subtitle">
-          Essa frente separada do dashboard deixa o caminho aberto para middlewares por host,
-          SEO da loja, catalogo publico e experiencias de compra sem misturar concerns internos.
+          {isResolvedStore
+            ? `A requisicao foi resolvida para a loja ${storefront.storeSlug}, o que abre caminho para homepage, catalogo, carrinho e checkout sem trocar de app.`
+            : storefront.kind === "unknown"
+              ? "Esse host ainda nao resolveu uma loja publica. Enquanto isso, o shell mostra um estado neutro e seguro para a vitrine."
+              : "Esse host representa a raiz da storefront. O shell agora centraliza a leitura do tenant e prepara o caminho para paginas publicas especificas de cada loja."}
         </p>
       </section>
 
@@ -49,12 +80,37 @@ export default function HomePage() {
       </section>
 
       <section className="card" style={{ marginBottom: 64 }}>
-        <h2>Proximo fluxo natural</h2>
-        <p>
-          Separar a vitrine do painel nos permite evoluir onboarding, host resolution e dominio
-          proprio sem travar a experiencia do lojista.
-        </p>
-        <Link href="/">Explorar base publica</Link>
+        <h2>Estado da resolucao</h2>
+        {isResolvedStore ? (
+          <>
+            <p>
+              Loja resolvida com sucesso por <strong>{storefront.source}</strong>. O proximo passo
+              natural e plugar homepage, produtos ativos e categorias publicas nesse mesmo shell.
+            </p>
+            <dl className="facts">
+              <div>
+                <dt>Store ID</dt>
+                <dd>{storefront.storeId}</dd>
+              </div>
+              <div>
+                <dt>Slug</dt>
+                <dd>{storefront.storeSlug}</dd>
+              </div>
+              <div>
+                <dt>Host</dt>
+                <dd>{storefront.matchedHost}</dd>
+              </div>
+            </dl>
+          </>
+        ) : (
+          <>
+            <p>
+              O shell publico ja sabe diferenciar host raiz, host desconhecido e host de loja.
+              Isso prepara a renderizacao multi-tenant sem duplicar app publica.
+            </p>
+            <Link href="/">Recarregar shell publico</Link>
+          </>
+        )}
       </section>
     </main>
   );
