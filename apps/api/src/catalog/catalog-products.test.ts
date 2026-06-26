@@ -23,6 +23,7 @@ describe("catalog products", () => {
   const suffix = Date.now().toString(36);
   const primaryEmail = `product-primary-${suffix}@example.com`;
   const secondaryEmail = `product-secondary-${suffix}@example.com`;
+  const primaryStoreSlug = `product-primary-${suffix}`;
   const password = "StrongPass123";
 
   let app: INestApplication;
@@ -65,7 +66,7 @@ describe("catalog products", () => {
         password,
         fullName: "Primary Product Owner",
         storeName: "Primary Product Store",
-        storeSlug: `product-primary-${suffix}`
+        storeSlug: primaryStoreSlug
       }
     });
 
@@ -200,6 +201,105 @@ describe("catalog products", () => {
     assert.equal(response.body.products.length, 1);
     assert.equal(response.body.products[0]?.id, productId);
     assert.equal(response.body.products[0]?.storeId, primaryStoreId);
+  });
+
+  it("exposes only active in-stock products on the public storefront endpoints", async () => {
+    const publishResponse = await requestJson<{
+      product: { status: string };
+    }>({
+      method: "POST",
+      path: `/catalog/${primaryStoreId}/products/${productId}/publish`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(publishResponse.statusCode, 201);
+    assert.equal(publishResponse.body.product.status, "ACTIVE");
+
+    const hiddenProductResponse = await requestJson<{
+      product: { id: string };
+    }>({
+      method: "POST",
+      path: "/catalog/products",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        categoryId,
+        name: "Produto Rascunho",
+        slug: "produto-rascunho",
+        priceCents: 159900,
+        stockQuantity: 4,
+        status: "DRAFT"
+      }
+    });
+
+    assert.equal(hiddenProductResponse.statusCode, 201);
+
+    const outOfStockResponse = await requestJson<{
+      product: { id: string };
+    }>({
+      method: "POST",
+      path: "/catalog/products",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        categoryId,
+        name: "Produto Sem Estoque",
+        slug: "produto-sem-estoque",
+        priceCents: 259900,
+        stockQuantity: 0,
+        status: "ACTIVE"
+      }
+    });
+
+    assert.equal(outOfStockResponse.statusCode, 201);
+
+    const homeResponse = await requestJson<{
+      store: { id: string; slug: string; matchedHost: string };
+      categories: Array<{ slug: string }>;
+      products: Array<{ id: string; slug: string; status: string }>;
+    }>({
+      path: "/catalog/public/home",
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(homeResponse.statusCode, 200);
+    assert.equal(homeResponse.body.store.id, primaryStoreId);
+    assert.equal(homeResponse.body.store.slug, primaryStoreSlug);
+    assert.equal(homeResponse.body.store.matchedHost, `${primaryStoreSlug}.lvh.me`);
+    assert.equal(homeResponse.body.categories.length, 1);
+    assert.deepEqual(
+      homeResponse.body.products.map((product) => product.slug),
+      ["notebook-pro"]
+    );
+
+    const catalogResponse = await requestJson<{
+      selectedCategorySlug: string | null;
+      products: Array<{ id: string; slug: string }>;
+      pagination: { page: number; totalItems: number; totalPages: number };
+    }>({
+      path: "/catalog/public/products?category=eletronicos&page=1&pageSize=1",
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(catalogResponse.statusCode, 200);
+    assert.equal(catalogResponse.body.selectedCategorySlug, "eletronicos");
+    assert.equal(catalogResponse.body.pagination.page, 1);
+    assert.equal(catalogResponse.body.pagination.totalItems, 1);
+    assert.equal(catalogResponse.body.pagination.totalPages, 1);
+    assert.deepEqual(
+      catalogResponse.body.products.map((product) => product.slug),
+      ["notebook-pro"]
+    );
   });
 
   it("rejects invalid compareAt price and foreign category access", async () => {

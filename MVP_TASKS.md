@@ -322,16 +322,16 @@ Legenda de prioridade:
 - [ ] Dependências: Store e upload de mídia.
 
 ### Task 7.3 (P0): Construir homepage pública da loja
-- [ ] Implementar página inicial com identidade da loja, destaques e listagem básica de produtos/categorias.
-- [ ] Critérios de aceite: homepage responde ao tenant correto e exibe produtos publicados.
-- [ ] Notas técnicas: tratar loja sem produtos com estado vazio amigável.
-- [ ] Dependências: StoreTheme e catálogo.
+- [x] Implementar página inicial com identidade da loja, destaques e listagem básica de produtos/categorias.
+- [x] Critérios de aceite: homepage responde ao tenant correto e exibe produtos publicados.
+- [x] Notas técnicas: tratar loja sem produtos com estado vazio amigável.
+- [x] Dependências: StoreTheme e catálogo.
 
 ### Task 7.4 (P0): Construir listagem de produtos e filtros básicos
-- [ ] Implementar página de catálogo com paginação e filtros simples por categoria.
-- [ ] Critérios de aceite: apenas produtos `ACTIVE` e disponíveis aparecem publicamente.
-- [ ] Notas técnicas: usar query params simples e SEO básico do Next.js.
-- [ ] Dependências: homepage pública e catálogo.
+- [x] Implementar página de catálogo com paginação e filtros simples por categoria.
+- [x] Critérios de aceite: apenas produtos `ACTIVE` e disponíveis aparecem publicamente.
+- [x] Notas técnicas: usar query params simples e SEO básico do Next.js.
+- [x] Dependências: homepage pública e catálogo.
 
 ### Task 7.5 (P0): Construir página de detalhe do produto
 - [ ] Implementar página com fotos, descrição, preço, estoque e ação de adicionar ao carrinho.

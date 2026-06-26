@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { StoreMemberRole } from "@prisma/client";
 import { AuthorizationGuard } from "../auth/authorization.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -8,7 +8,9 @@ import { StoreRoles } from "../auth/store-roles.decorator";
 import { CatalogService } from "./catalog.service";
 import {
   createCategorySchema,
+  parseCatalogQuery,
   createProductSchema,
+  publicCatalogProductsQuerySchema,
   parseCatalogBody,
   updateCategorySchema,
   updateProductSchema
@@ -28,6 +30,19 @@ export class CatalogController {
     return {
       store: request.publicStore ?? null
     };
+  }
+
+  @Get("public/home")
+  getPublicHomepage(@Req() request: PublicStorefrontRequest) {
+    return this.catalogService.getPublicHomepage(request.publicStore!);
+  }
+
+  @Get("public/products")
+  listPublicProducts(@Req() request: PublicStorefrontRequest, @Query() query: unknown) {
+    return this.catalogService.listPublicProducts(
+      request.publicStore!,
+      parseCatalogQuery(publicCatalogProductsQuerySchema, query)
+    );
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

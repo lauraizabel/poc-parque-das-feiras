@@ -5,10 +5,12 @@ import {
   NotFoundException
 } from "@nestjs/common";
 import { CategoryStatus, ProductStatus } from "@prisma/client";
+import { PublicStorefrontContext } from "../auth/auth.types";
 import { CatalogRepository } from "./catalog.repository";
 import {
   CreateCategoryInput,
   CreateProductInput,
+  PublicCatalogProductsQuery,
   UpdateCategoryInput,
   UpdateProductInput
 } from "./catalog.schemas";
@@ -22,6 +24,76 @@ export class CatalogService {
 
   getBoundary() {
     return this.catalogRepository.getBoundary();
+  }
+
+  async getPublicHomepage(publicStore: PublicStorefrontContext) {
+    const store = await this.getResolvedPublicStore(publicStore);
+    const [categories, featuredProducts] = await Promise.all([
+      this.catalogRepository.listPublicCategoriesByStore(publicStore.storeId),
+      this.catalogRepository.listPublicProductsByStore({
+        storeId: publicStore.storeId,
+        take: 6,
+        featuredFirst: true
+      })
+    ]);
+
+    return {
+      store,
+      categories,
+      products: featuredProducts
+    };
+  }
+
+  async listPublicProducts(
+    publicStore: PublicStorefrontContext,
+    query: PublicCatalogProductsQuery
+  ) {
+    const store = await this.getResolvedPublicStore(publicStore);
+    const categories = await this.catalogRepository.listPublicCategoriesByStore(publicStore.storeId);
+    const requestedCategorySlug = query.category?.trim().toLowerCase() ?? null;
+    const selectedCategory =
+      categories.find((category) => category.slug === requestedCategorySlug) ?? null;
+
+    if (requestedCategorySlug && !selectedCategory) {
+      return {
+        store,
+        categories,
+        selectedCategorySlug: requestedCategorySlug,
+        products: [],
+        pagination: {
+          page: 1,
+          pageSize: query.pageSize,
+          totalItems: 0,
+          totalPages: 0
+        }
+      };
+    }
+
+    const totalItems = await this.catalogRepository.countPublicProductsByStore(
+      publicStore.storeId,
+      selectedCategory?.id
+    );
+    const totalPages = totalItems > 0 ? Math.ceil(totalItems / query.pageSize) : 0;
+    const page = totalPages > 0 ? Math.min(query.page, totalPages) : 1;
+    const products = await this.catalogRepository.listPublicProductsByStore({
+      storeId: publicStore.storeId,
+      categoryId: selectedCategory?.id,
+      skip: (page - 1) * query.pageSize,
+      take: query.pageSize
+    });
+
+    return {
+      store,
+      categories,
+      selectedCategorySlug: selectedCategory?.slug ?? null,
+      products,
+      pagination: {
+        page,
+        pageSize: query.pageSize,
+        totalItems,
+        totalPages
+      }
+    };
   }
 
   async listStoreCategories(storeId: string) {
@@ -371,5 +443,23 @@ export class CatalogService {
     }
 
     return product;
+  }
+
+  private async getResolvedPublicStore(publicStore: PublicStorefrontContext) {
+    const store = await this.catalogRepository.findPublicStoreById(publicStore.storeId);
+
+    if (!store) {
+      throw new NotFoundException({
+        message: "Store not found",
+        code: "STORE_NOT_FOUND",
+        storeId: publicStore.storeId
+      });
+    }
+
+    return {
+      ...store,
+      source: publicStore.source,
+      matchedHost: publicStore.matchedHost
+    };
   }
 }

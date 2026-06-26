@@ -41,6 +41,32 @@ export class CatalogRepository {
     });
   }
 
+  findPublicStoreById(storeId: string) {
+    return prisma.store.findUnique({
+      where: { id: storeId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        currencyCode: true,
+        locale: true
+      }
+    });
+  }
+
+  listPublicCategoriesByStore(storeId: string) {
+    return prisma.category.findMany({
+      where: {
+        storeId,
+        status: CategoryStatus.ACTIVE
+      },
+      orderBy: [
+        { sortOrder: "asc" },
+        { createdAt: "asc" }
+      ]
+    });
+  }
+
   createCategory(input: {
     storeId: string;
     name: string;
@@ -101,6 +127,54 @@ export class CatalogRepository {
           sku
         }
       }
+    });
+  }
+
+  countPublicProductsByStore(storeId: string, categoryId?: string) {
+    return prisma.product.count({
+      where: {
+        storeId,
+        categoryId,
+        status: ProductStatus.ACTIVE,
+        stockQuantity: {
+          gt: 0
+        }
+      }
+    });
+  }
+
+  listPublicProductsByStore(input: {
+    storeId: string;
+    categoryId?: string;
+    skip?: number;
+    take?: number;
+    featuredFirst?: boolean;
+  }) {
+    return prisma.product.findMany({
+      where: {
+        storeId: input.storeId,
+        categoryId: input.categoryId,
+        status: ProductStatus.ACTIVE,
+        stockQuantity: {
+          gt: 0
+        }
+      },
+      include: {
+        category: true,
+        images: {
+          orderBy: [
+            { isPrimary: "desc" },
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ],
+          take: 1
+        }
+      },
+      orderBy: input.featuredFirst
+        ? [{ isFeatured: "desc" }, { createdAt: "desc" }]
+        : [{ createdAt: "desc" }],
+      skip: input.skip ?? 0,
+      take: input.take
     });
   }
 

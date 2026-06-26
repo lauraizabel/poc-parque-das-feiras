@@ -20,14 +20,77 @@ export type StorefrontContext =
       matchedHost: string;
     };
 
-export async function getStorefrontContext(): Promise<StorefrontContext> {
+export type PublicStorefrontStore = {
+  id: string;
+  name: string;
+  slug: string;
+  currencyCode: string;
+  locale: string;
+  source: "subdomain" | "custom-domain";
+  matchedHost: string;
+};
+
+export type PublicStorefrontCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sortOrder: number;
+};
+
+export type PublicStorefrontProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  priceCents: number;
+  compareAtCents: number | null;
+  currencyCode: string;
+  stockQuantity: number;
+  isFeatured: boolean;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+  images: Array<{
+    imageUrl: string;
+    altText: string | null;
+  }>;
+};
+
+export type StorefrontHomepageData = {
+  store: PublicStorefrontStore;
+  categories: PublicStorefrontCategory[];
+  products: PublicStorefrontProduct[];
+};
+
+export type StorefrontCatalogData = {
+  store: PublicStorefrontStore;
+  categories: PublicStorefrontCategory[];
+  selectedCategorySlug: string | null;
+  products: PublicStorefrontProduct[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+};
+
+async function getMatchedHost() {
   const requestHeaders = await headers();
-  const matchedHost =
+
+  return (
     requestHeaders.get("x-forwarded-host") ??
     requestHeaders.get("host") ??
-    new URL(env.NEXT_PUBLIC_APP_URL).host;
+    new URL(env.NEXT_PUBLIC_APP_URL).host
+  );
+}
 
-  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/public/current`, {
+async function fetchStorefrontApi<T>(path: string): Promise<T | null> {
+  const matchedHost = await getMatchedHost();
+  const response = await fetch(`${env.NEXT_PUBLIC_API_URL}${path}`, {
     headers: {
       "x-forwarded-host": matchedHost
     },
@@ -35,20 +98,29 @@ export async function getStorefrontContext(): Promise<StorefrontContext> {
   });
 
   if (!response.ok) {
-    return {
-      kind: "unknown",
-      matchedHost
-    };
+    return null;
   }
 
-  const payload = (await response.json()) as {
+  return (await response.json()) as T;
+}
+
+export async function getStorefrontContext(): Promise<StorefrontContext> {
+  const matchedHost = await getMatchedHost();
+  const payload = await fetchStorefrontApi<{
     store?: {
       storeId: string;
       storeSlug: string;
       source: "subdomain" | "custom-domain";
       matchedHost: string;
     } | null;
-  };
+  }>("/stores/public/current");
+
+  if (!payload) {
+    return {
+      kind: "unknown",
+      matchedHost
+    };
+  }
 
   if (!payload.store) {
     return {
@@ -64,4 +136,33 @@ export async function getStorefrontContext(): Promise<StorefrontContext> {
     storeSlug: payload.store.storeSlug,
     source: payload.store.source
   };
+}
+
+export async function getStorefrontHomepage() {
+  return fetchStorefrontApi<StorefrontHomepageData>("/catalog/public/home");
+}
+
+export async function getStorefrontCatalog(input: {
+  category?: string | null;
+  page?: number;
+  pageSize?: number;
+}) {
+  const search = new URLSearchParams();
+
+  if (input.category) {
+    search.set("category", input.category);
+  }
+
+  if (input.page && input.page > 1) {
+    search.set("page", input.page.toString());
+  }
+
+  if (input.pageSize) {
+    search.set("pageSize", input.pageSize.toString());
+  }
+
+  const query = search.toString();
+  return fetchStorefrontApi<StorefrontCatalogData>(
+    `/catalog/public/products${query ? `?${query}` : ""}`
+  );
 }

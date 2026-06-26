@@ -49,18 +49,37 @@ export const updateProductSchema = z.object({
   isFeatured: z.boolean().optional()
 });
 
+export const publicCatalogProductsQuerySchema = z.object({
+  category: z.string().trim().min(1).max(80).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(24).default(12)
+});
+
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type PublicCatalogProductsQuery = z.infer<typeof publicCatalogProductsQuerySchema>;
 
 export function parseCatalogBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
+  return parseCatalogInput(schema, input, "body");
+}
+
+export function parseCatalogQuery<T>(schema: z.ZodSchema<T>, input: unknown): T {
+  return parseCatalogInput(schema, input, "query");
+}
+
+function parseCatalogInput<T>(
+  schema: z.ZodSchema<T>,
+  input: unknown,
+  source: "body" | "query"
+) {
   try {
     return schema.parse(input);
   } catch (error) {
     if (error instanceof ZodError) {
       throw new BadRequestException({
-        message: "Invalid request body",
+        message: `Invalid request ${source}`,
         issues: error.issues.map((issue) => ({
           path: issue.path.join("."),
           message: issue.message

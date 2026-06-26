@@ -30,9 +30,7 @@ export type AuthenticatedRequest = {
   body?: {
     storeId?: string;
   };
-  query?: {
-    storeId?: string | string[];
-  };
+  query?: Record<string, string | string[] | undefined>;
   user: AuthTokenPayload;
   storeContext?: {
     storeId: string;
@@ -50,8 +48,6 @@ export type PublicStorefrontRequest = {
   body?: {
     storeId?: string;
   };
-  query?: {
-    storeId?: string | string[];
-  };
+  query?: Record<string, string | string[] | undefined>;
   publicStore?: PublicStorefrontContext;
 };

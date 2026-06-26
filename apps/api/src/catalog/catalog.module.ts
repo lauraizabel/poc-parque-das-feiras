@@ -16,6 +16,10 @@ export class CatalogModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(PublicStorefrontMiddleware)
-      .forRoutes({ path: "catalog/public/context", method: RequestMethod.GET });
+      .forRoutes(
+        { path: "catalog/public/context", method: RequestMethod.GET },
+        { path: "catalog/public/home", method: RequestMethod.GET },
+        { path: "catalog/public/products", method: RequestMethod.GET }
+      );
   }
 }
