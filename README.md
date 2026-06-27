@@ -363,6 +363,10 @@ Os fluxos que hoje melhor representam a base do projeto sao:
 
 O caminho mais rapido para verificar esse conjunto e rodar a suite smoke da API.
 
+## Runbooks operacionais
+
+O troubleshooting mínimo para webhook, domínio/SSL, notificações e filas está em [RUNBOOKS.md](/Users/laura/poc/RUNBOOKS.md).
+
 ## Limitacoes conhecidas do MVP
 
 Decisoes deliberadas desta base inicial:

@@ -612,10 +612,10 @@ Legenda de prioridade:
 - [x] Dependências: arquitetura base e decisões de infra.
 
 ### Task 14.5 (P1): Criar runbooks mínimos para incidentes operacionais
-- [ ] Documentar como investigar falha de webhook, falha de domínio/SSL, falha de e-mail e falha de fila.
-- [ ] Critérios de aceite: time consegue executar troubleshooting básico sem depender de conhecimento implícito.
-- [ ] Notas técnicas: manter procedimentos curtos e acionáveis.
-- [ ] Dependências: observabilidade e integrações.
+- [x] Documentar como investigar falha de webhook, falha de domínio/SSL, falha de e-mail e falha de fila.
+- [x] Critérios de aceite: time consegue executar troubleshooting básico sem depender de conhecimento implícito.
+- [x] Notas técnicas: manter procedimentos curtos e acionáveis.
+- [x] Dependências: observabilidade e integrações.
 
 ### Task 14.6 (P1): Preparar checklist de deploy inicial
 - [ ] Documentar migrations, seeds, variáveis obrigatórias, providers externos e validações pós-deploy.
