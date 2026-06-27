@@ -16,6 +16,7 @@
     "test:cart": "node --test dist/cart/cart-modeling.test.js",
     "test:cart-api": "node --test dist/cart/cart-api.test.js",
     "test:checkout-api": "node --test dist/checkout/checkout-api.test.js",
+    "test:orders-public": "node --test dist/orders/orders-public-api.test.js",
     "test:orders-modeling": "node --test dist/orders/orders-modeling.test.js",
     "test:payments-api": "node --test dist/payments/payments-api.test.js",
     "test:payments-state-machine": "node --test dist/payments/payments-state-machine.test.js",

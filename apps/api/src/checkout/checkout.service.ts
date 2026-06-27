@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException
 } from "@nestjs/common";
+import { createHash, randomBytes } from "node:crypto";
 import { OrderStatus, ProductStatus, ShippingMethodType } from "@prisma/client";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
@@ -185,12 +186,15 @@ export class CheckoutService {
     const billingStreet = input.billingStreet?.trim() || input.shippingStreet.trim();
     const billingNumber = input.billingNumber?.trim() || input.shippingNumber.trim();
     const billingComplement = input.billingComplement?.trim() || input.shippingComplement?.trim() || null;
+    const publicAccessToken = randomBytes(24).toString("hex");
+    const publicAccessTokenHash = this.hashPublicAccessToken(publicAccessToken);
 
     const order = await this.checkoutRepository.createOrderFromCart({
       storeId: publicStore.storeId,
       cartId: cart.id,
       customerId: customer.id,
       shippingMethodId: selectedShippingOption.id,
+      publicAccessTokenHash,
       shippingMethodName: selectedShippingOption.name,
       shippingEstimatedDaysMin: selectedShippingOption.estimatedDaysMin,
       shippingEstimatedDaysMax: selectedShippingOption.estimatedDaysMax,
@@ -245,6 +249,11 @@ export class CheckoutService {
 
     return {
       store: publicStore,
+      customerAccess: {
+        orderId: order.id,
+        token: publicAccessToken,
+        path: `/orders/${order.id}?token=${publicAccessToken}`
+      },
       order: {
         ...storedOrder,
         status: storedOrder?.status ?? OrderStatus.CREATED
@@ -299,5 +308,9 @@ export class CheckoutService {
           ? "Retirada local sem integracao logística no MVP."
           : "Frete calculado por regra fixa simples no MVP."
     }));
+  }
+
+  private hashPublicAccessToken(token: string) {
+    return createHash("sha256").update(token).digest("hex");
   }
 }

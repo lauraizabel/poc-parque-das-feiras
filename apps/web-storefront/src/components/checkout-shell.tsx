@@ -5,6 +5,7 @@ import { ensureCartSession, getCartSession } from "../lib/cart-session";
 import {
   calculateShippingOptions,
   ClientCart,
+  CustomerOrderAccess,
   ClientOrder,
   ClientStore,
   createOrLoadCart,
@@ -44,6 +45,7 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
   const [cart, setCart] = useState<ClientCart | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{
+    customerAccess: CustomerOrderAccess;
     order: ClientOrder;
     intent: PaymentIntentResult;
   } | null>(null);
@@ -168,6 +170,7 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
                   });
 
                   setSuccess({
+                    customerAccess: orderResponse.customerAccess,
                     order: orderResponse.order,
                     intent: intentResponse.intent
                   });
@@ -456,6 +459,11 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
             <div className="success-card">
               <h3>Pagamento iniciado</h3>
               <p>Pedido `{success.order.id}` criado e intent pronta no provider.</p>
+              <p>
+                <a className="button-link" href={success.customerAccess.path}>
+                  Acompanhar pedido
+                </a>
+              </p>
               <dl className="facts">
                 <div>
                   <dt>Provider</dt>

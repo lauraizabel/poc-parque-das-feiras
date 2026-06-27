@@ -448,10 +448,10 @@ Legenda de prioridade:
 - [x] Dependências: ShippingMethod e checkout.
 
 ### Task 10.3 (P1): Implementar consulta e acompanhamento de pedido pelo cliente
-- [ ] Criar página/endpoint para cliente acompanhar status do pedido.
-- [ ] Critérios de aceite: cliente visualiza status e resumo do pedido após compra.
-- [ ] Notas técnicas: acesso pode ocorrer por link seguro/token ou autenticação simples, conforme recorte do MVP.
-- [ ] Dependências: Order e storefront.
+- [x] Criar página/endpoint para cliente acompanhar status do pedido.
+- [x] Critérios de aceite: cliente visualiza status e resumo do pedido após compra.
+- [x] Notas técnicas: acesso pode ocorrer por link seguro/token ou autenticação simples, conforme recorte do MVP.
+- [x] Dependências: Order e storefront.
 
 ### Task 10.4 (P0): Implementar gestão operacional de pedidos no painel
 - [ ] Permitir listar pedidos e atualizar status operacionais como `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELED`.

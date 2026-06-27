@@ -89,6 +89,57 @@ export type StorefrontProductData = {
   };
 };
 
+export type StorefrontPublicOrderData = {
+  order: {
+    id: string;
+    status: string;
+    customerEmail: string;
+    customerFullName: string | null;
+    subtotalCents: number;
+    shippingCents: number;
+    discountCents: number;
+    totalCents: number;
+    currencyCode: string;
+    payment: {
+      status: string;
+      amountCents: number;
+      paidAt: string | null;
+    } | null;
+    shippingMethod: {
+      id: string;
+      name: string;
+      type: string;
+    } | null;
+    shipment: {
+      status: string;
+      shippingMethodName: string;
+      carrierName: string | null;
+      serviceName: string | null;
+      trackingCode: string | null;
+      trackingUrl: string | null;
+      estimatedDaysMin: number | null;
+      estimatedDaysMax: number | null;
+    } | null;
+    items: Array<{
+      id: string;
+      productName: string;
+      quantity: number;
+      unitPriceCents: number;
+      totalCents: number;
+    }>;
+    shippingAddress: {
+      recipientName: string | null;
+      postalCode: string | null;
+      state: string | null;
+      city: string | null;
+      district: string | null;
+      street: string | null;
+      number: string | null;
+      complement: string | null;
+    };
+  };
+};
+
 async function getMatchedHost() {
   const requestHeaders = await headers();
 
@@ -181,5 +232,11 @@ export async function getStorefrontCatalog(input: {
 export async function getStorefrontProduct(productSlug: string) {
   return fetchStorefrontApi<StorefrontProductData>(
     `/catalog/public/products/${encodeURIComponent(productSlug)}`
+  );
+}
+
+export async function getStorefrontPublicOrder(orderId: string, token: string) {
+  return fetchStorefrontApi<StorefrontPublicOrderData>(
+    `/orders/public/${encodeURIComponent(orderId)}?token=${encodeURIComponent(token)}`
   );
 }

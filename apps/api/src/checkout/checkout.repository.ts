@@ -19,6 +19,7 @@ export class CheckoutRepository {
     cartId: string;
     customerId?: string | null;
     shippingMethodId: string;
+    publicAccessTokenHash: string;
     shippingMethodName: string;
     shippingEstimatedDaysMin?: number | null;
     shippingEstimatedDaysMax?: number | null;
@@ -75,6 +76,7 @@ export class CheckoutRepository {
           cartId: input.cartId,
           customerId: input.customerId ?? null,
           shippingMethodId: input.shippingMethodId,
+          publicAccessTokenHash: input.publicAccessTokenHash,
           status: OrderStatus.CREATED,
           currencyCode: input.currencyCode,
           subtotalCents: input.subtotalCents,

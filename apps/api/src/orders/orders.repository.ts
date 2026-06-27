@@ -20,6 +20,7 @@ export class OrdersRepository {
     customerId?: string | null;
     paymentId?: string | null;
     shippingMethodId?: string | null;
+    publicAccessTokenHash?: string | null;
     status?: OrderStatus;
     currencyCode?: string;
     subtotalCents: number;
@@ -56,6 +57,7 @@ export class OrdersRepository {
         customerId: input.customerId ?? null,
         paymentId: input.paymentId ?? null,
         shippingMethodId: input.shippingMethodId ?? null,
+        publicAccessTokenHash: input.publicAccessTokenHash ?? null,
         status: input.status ?? OrderStatus.CREATED,
         currencyCode: input.currencyCode ?? "BRL",
         subtotalCents: input.subtotalCents,
@@ -164,6 +166,25 @@ export class OrdersRepository {
             items: true
           }
         },
+        items: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+  }
+
+  getOrderByIdAndPublicAccessHash(orderId: string, publicAccessTokenHash: string) {
+    return prisma.order.findFirst({
+      where: {
+        id: orderId,
+        publicAccessTokenHash
+      },
+      include: {
+        payment: true,
+        shippingMethod: true,
+        shipment: true,
         items: {
           orderBy: {
             createdAt: "asc"

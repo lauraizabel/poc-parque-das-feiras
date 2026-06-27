@@ -57,6 +57,12 @@ export type ClientOrder = {
   }>;
 };
 
+export type CustomerOrderAccess = {
+  orderId: string;
+  token: string;
+  path: string;
+};
+
 export type ShippingOption = {
   id: string;
   name: string;
@@ -201,6 +207,7 @@ export async function createOrderFromCart(input: {
 }) {
   return apiRequest<{
     store: ClientStore;
+    customerAccess: CustomerOrderAccess;
     order: ClientOrder;
   }>("checkout/public/current/order", {
     method: "POST",

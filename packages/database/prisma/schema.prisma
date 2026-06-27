@@ -551,6 +551,7 @@ model Order {
   customerId               String?
   paymentId                String?
   shippingMethodId         String?
+  publicAccessTokenHash    String?
   status                   OrderStatus @default(CREATED)
   currencyCode             String      @default("BRL")
   subtotalCents            Int
