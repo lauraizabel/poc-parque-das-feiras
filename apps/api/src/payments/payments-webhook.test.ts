@@ -39,6 +39,7 @@ describe("payments webhook api", () => {
   let productId = "";
   let orderId = "";
   let paymentId = "";
+  let shippingMethodId = "";
 
   before(async () => {
     process.env.STRIPE_WEBHOOK_SECRET = webhookSecret;
@@ -98,6 +99,29 @@ describe("payments webhook api", () => {
     });
     productId = productResponse.body.product.id;
 
+    const shippingMethodResponse = await requestJson<{
+      shippingMethod: { id: string };
+    }>({
+      method: "POST",
+      path: "/shipping/methods",
+      headers: {
+        authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        storeId,
+        name: "Entrega padrão",
+        type: "FIXED_PRICE",
+        priceCents: 1200,
+        estimatedDaysMin: 2,
+        estimatedDaysMax: 5,
+        minimumOrderCents: 0,
+        maximumOrderCents: 50000,
+        sortOrder: 1,
+        isDefault: true
+      })
+    });
+    shippingMethodId = shippingMethodResponse.body.shippingMethod.id;
+
     await requestJson({
       method: "POST",
       path: "/cart/public/current/items",
@@ -130,7 +154,8 @@ describe("payments webhook api", () => {
         shippingCity: "Recife",
         shippingDistrict: "Boa Viagem",
         shippingStreet: "Rua do Farol",
-        shippingNumber: "99"
+        shippingNumber: "99",
+        shippingMethodId
       })
     });
 
@@ -304,6 +329,37 @@ describe("payments webhook api", () => {
 
     assert.equal(response.statusCode, 403);
     assert.equal(response.body.code, "STRIPE_SIGNATURE_INVALID");
+  });
+
+  it("rejects webhook bodies with blank event identifiers after sanitization", async () => {
+    const payload = JSON.stringify({
+      id: " \n\t ",
+      type: "payment_intent.succeeded",
+      data: {
+        object: {
+          metadata: {
+            paymentId,
+            orderId,
+            storeId
+          }
+        }
+      }
+    });
+
+    const response = await requestJson<{
+      message: string;
+      code: string;
+    }>({
+      method: "POST",
+      path: "/payments/webhooks/stripe",
+      headers: {
+        "stripe-signature": createStripeSignature(payload, webhookSecret)
+      },
+      body: payload
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.body.code, "STRIPE_WEBHOOK_EVENT_ID_REQUIRED");
   });
 
   async function requestJson<T>(options: RequestOptions): Promise<JsonResponse<T>> {

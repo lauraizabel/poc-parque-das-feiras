@@ -1,10 +1,11 @@
 import { BadRequestException } from "@nestjs/common";
+import { sanitizedString } from "../platform/validation";
 import { z, ZodError } from "zod";
 
 export const createStoreDomainSchema = z.object({
-  storeId: z.string().trim().min(1),
-  host: z.string().trim().min(1).max(255)
-});
+  storeId: sanitizedString({ min: 1, max: 100 }),
+  host: sanitizedString({ min: 1, max: 255 })
+}).strict();
 
 export type CreateStoreDomainInput = z.infer<typeof createStoreDomainSchema>;
 

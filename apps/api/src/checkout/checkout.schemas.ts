@@ -1,42 +1,47 @@
 import { BadRequestException } from "@nestjs/common";
+import {
+  sanitizedEmail,
+  sanitizedOptionalString,
+  sanitizedString
+} from "../platform/validation";
 import { z, ZodError } from "zod";
 
 export const createOrderFromCartSchema = z.object({
-  sessionId: z.string().trim().min(6).max(120).optional(),
-  customerEmail: z.email().trim().max(320),
-  customerFullName: z.string().trim().min(2).max(160),
-  customerPhoneNumber: z.string().trim().min(8).max(40).optional(),
-  shippingRecipientName: z.string().trim().min(2).max(160),
-  shippingPhoneNumber: z.string().trim().min(8).max(40).optional(),
-  shippingPostalCode: z.string().trim().min(5).max(20),
-  shippingState: z.string().trim().min(2).max(80),
-  shippingCity: z.string().trim().min(2).max(120),
-  shippingDistrict: z.string().trim().min(2).max(120),
-  shippingStreet: z.string().trim().min(2).max(160),
-  shippingNumber: z.string().trim().min(1).max(40),
-  shippingComplement: z.string().trim().max(160).optional(),
-  billingRecipientName: z.string().trim().min(2).max(160).optional(),
-  billingPhoneNumber: z.string().trim().min(8).max(40).optional(),
-  billingPostalCode: z.string().trim().min(5).max(20).optional(),
-  billingState: z.string().trim().min(2).max(80).optional(),
-  billingCity: z.string().trim().min(2).max(120).optional(),
-  billingDistrict: z.string().trim().min(2).max(120).optional(),
-  billingStreet: z.string().trim().min(2).max(160).optional(),
-  billingNumber: z.string().trim().min(1).max(40).optional(),
-  billingComplement: z.string().trim().max(160).optional(),
-  shippingMethodId: z.string().trim().min(1),
+  sessionId: sanitizedOptionalString({ min: 6, max: 120 }),
+  customerEmail: sanitizedEmail(),
+  customerFullName: sanitizedString({ min: 2, max: 160 }),
+  customerPhoneNumber: sanitizedOptionalString({ min: 8, max: 40 }),
+  shippingRecipientName: sanitizedString({ min: 2, max: 160 }),
+  shippingPhoneNumber: sanitizedOptionalString({ min: 8, max: 40 }),
+  shippingPostalCode: sanitizedString({ min: 5, max: 20 }),
+  shippingState: sanitizedString({ min: 2, max: 80 }),
+  shippingCity: sanitizedString({ min: 2, max: 120 }),
+  shippingDistrict: sanitizedString({ min: 2, max: 120 }),
+  shippingStreet: sanitizedString({ min: 2, max: 160 }),
+  shippingNumber: sanitizedString({ min: 1, max: 40 }),
+  shippingComplement: sanitizedOptionalString({ max: 160 }),
+  billingRecipientName: sanitizedOptionalString({ min: 2, max: 160 }),
+  billingPhoneNumber: sanitizedOptionalString({ min: 8, max: 40 }),
+  billingPostalCode: sanitizedOptionalString({ min: 5, max: 20 }),
+  billingState: sanitizedOptionalString({ min: 2, max: 80 }),
+  billingCity: sanitizedOptionalString({ min: 2, max: 120 }),
+  billingDistrict: sanitizedOptionalString({ min: 2, max: 120 }),
+  billingStreet: sanitizedOptionalString({ min: 2, max: 160 }),
+  billingNumber: sanitizedOptionalString({ min: 1, max: 40 }),
+  billingComplement: sanitizedOptionalString({ max: 160 }),
+  shippingMethodId: sanitizedString({ min: 1, max: 100 }),
   discountCents: z.number().int().min(0).default(0),
-  notes: z.string().trim().max(500).optional()
-});
+  notes: sanitizedOptionalString({ max: 500, preserveNewlines: true })
+}).strict();
 
 export const calculateShippingOptionsSchema = z.object({
-  sessionId: z.string().trim().min(6).max(120).optional(),
-  customerEmail: z.email().trim().max(320),
-  shippingPostalCode: z.string().trim().min(5).max(20),
-  shippingState: z.string().trim().min(2).max(80),
-  shippingCity: z.string().trim().min(2).max(120),
-  shippingDistrict: z.string().trim().min(2).max(120).optional()
-});
+  sessionId: sanitizedOptionalString({ min: 6, max: 120 }),
+  customerEmail: sanitizedEmail(),
+  shippingPostalCode: sanitizedString({ min: 5, max: 20 }),
+  shippingState: sanitizedString({ min: 2, max: 80 }),
+  shippingCity: sanitizedString({ min: 2, max: 120 }),
+  shippingDistrict: sanitizedOptionalString({ min: 2, max: 120 })
+}).strict();
 
 export type CreateOrderFromCartInput = z.infer<typeof createOrderFromCartSchema>;
 export type CalculateShippingOptionsInput = z.infer<typeof calculateShippingOptionsSchema>;

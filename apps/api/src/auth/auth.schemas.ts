@@ -1,44 +1,45 @@
 import { BadRequestException } from "@nestjs/common";
+import { sanitizedEmail, sanitizedString } from "../platform/validation";
 import { z, ZodError } from "zod";
 
 const passwordPolicyMessage =
   "Password must be at least 8 characters and include upper, lower and numeric characters";
 
 export const registerSchema = z.object({
-  email: z.string().email(),
+  email: sanitizedEmail(),
   password: z
     .string()
     .min(8, passwordPolicyMessage)
     .regex(/[a-z]/, passwordPolicyMessage)
     .regex(/[A-Z]/, passwordPolicyMessage)
     .regex(/[0-9]/, passwordPolicyMessage),
-  fullName: z.string().trim().min(2).max(120).optional()
-});
+  fullName: sanitizedString({ min: 2, max: 120 }).optional()
+}).strict();
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: sanitizedEmail(),
   password: z.string().min(1)
-});
+}).strict();
 
 export const refreshSchema = z.object({
   refreshToken: z.string().min(1)
-});
+}).strict();
 
 export const registerMerchantSchema = z.object({
-  email: z.string().email(),
+  email: sanitizedEmail(),
   password: z
     .string()
     .min(8, passwordPolicyMessage)
     .regex(/[a-z]/, passwordPolicyMessage)
     .regex(/[A-Z]/, passwordPolicyMessage)
     .regex(/[0-9]/, passwordPolicyMessage),
-  fullName: z.string().trim().min(2).max(120),
-  storeName: z.string().trim().min(2).max(120),
-  storeSlug: z.string().trim().min(2).max(60),
-  supportEmail: z.string().email().optional(),
-  currencyCode: z.string().trim().length(3).optional(),
-  locale: z.string().trim().min(2).max(10).optional()
-});
+  fullName: sanitizedString({ min: 2, max: 120 }),
+  storeName: sanitizedString({ min: 2, max: 120 }),
+  storeSlug: sanitizedString({ min: 2, max: 60 }),
+  supportEmail: sanitizedEmail().optional(),
+  currencyCode: sanitizedString({ min: 3, max: 3 }).optional(),
+  locale: sanitizedString({ min: 2, max: 10 }).optional()
+}).strict();
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

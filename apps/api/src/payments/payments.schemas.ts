@@ -1,10 +1,11 @@
 import { BadRequestException } from "@nestjs/common";
+import { sanitizedEmail, sanitizedOptionalString } from "../platform/validation";
 import { z, ZodError } from "zod";
 
 export const createOrderPaymentIntentSchema = z.object({
-  sessionId: z.string().trim().min(6).max(120).optional(),
-  customerEmail: z.email().trim().max(320)
-});
+  sessionId: sanitizedOptionalString({ min: 6, max: 120 }),
+  customerEmail: sanitizedEmail()
+}).strict();
 
 export type CreateOrderPaymentIntentInput = z.infer<typeof createOrderPaymentIntentSchema>;
 

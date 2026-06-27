@@ -212,6 +212,28 @@ describe("domain registration", () => {
     assert.equal(response.body.host, "www.primarybrand.com");
   });
 
+  it("rejects unexpected fields in the custom domain payload", async () => {
+    const response = await requestJson<{
+      message: string;
+      issues?: Array<{ path: string; message: string }>;
+    }>({
+      method: "POST",
+      path: "/domains",
+      headers: {
+        authorization: `Bearer ${secondaryToken}`
+      },
+      body: {
+        storeId: secondaryStoreId,
+        host: "www.secondarybrand.com",
+        bypassDns: true
+      }
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.body.message, "Invalid request body");
+    assert.match(response.body.issues?.[0]?.message ?? "", /unrecognized key/i);
+  });
+
   async function requestJson<T>(options: RequestOptions): Promise<JsonResponse<T>> {
     const payload = options.body ? JSON.stringify(options.body) : undefined;
 

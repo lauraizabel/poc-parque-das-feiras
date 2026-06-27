@@ -588,10 +588,10 @@ Legenda de prioridade:
 ## Epic 14: Qualidade, segurança e documentação
 
 ### Task 14.1 (P0): Implementar validação de entrada e sanitização
-- [ ] Aplicar validações server-side em payloads críticos e sanitização básica de campos textuais.
-- [ ] Critérios de aceite: entradas inválidas são rejeitadas com mensagens previsíveis.
-- [ ] Notas técnicas: revisar especialmente auth, produtos, domínios, checkout e webhooks.
-- [ ] Dependências: endpoints principais.
+- [x] Aplicar validações server-side em payloads críticos e sanitização básica de campos textuais.
+- [x] Critérios de aceite: entradas inválidas são rejeitadas com mensagens previsíveis.
+- [x] Notas técnicas: revisar especialmente auth, produtos, domínios, checkout e webhooks.
+- [x] Dependências: endpoints principais.
 
 ### Task 14.2 (P0): Revisar controles mínimos de segurança do MVP
 - [ ] Implementar rate limit em autenticação e webhooks, headers básicos, proteção CSRF conforme estratégia e políticas de sessão.

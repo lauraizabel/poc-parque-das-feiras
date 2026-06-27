@@ -1,59 +1,64 @@
 import { BadRequestException } from "@nestjs/common";
+import {
+  sanitizedNullableOptionalString,
+  sanitizedOptionalString,
+  sanitizedString
+} from "../platform/validation";
 import { CategoryStatus, ProductStatus } from "@prisma/client";
 import { z, ZodError } from "zod";
 
 export const createCategorySchema = z.object({
-  storeId: z.string().trim().min(1),
-  name: z.string().trim().min(2).max(120),
-  slug: z.string().trim().min(2).max(80),
-  description: z.string().trim().max(500).optional(),
+  storeId: sanitizedString({ min: 1, max: 100 }),
+  name: sanitizedString({ min: 2, max: 120 }),
+  slug: sanitizedString({ min: 2, max: 80 }),
+  description: sanitizedOptionalString({ max: 500, preserveNewlines: true }),
   sortOrder: z.number().int().min(0).max(10_000).optional()
-});
+}).strict();
 
 export const updateCategorySchema = z.object({
-  storeId: z.string().trim().min(1),
-  name: z.string().trim().min(2).max(120).optional(),
-  slug: z.string().trim().min(2).max(80).optional(),
-  description: z.string().trim().max(500).nullable().optional(),
+  storeId: sanitizedString({ min: 1, max: 100 }),
+  name: sanitizedOptionalString({ min: 2, max: 120 }),
+  slug: sanitizedOptionalString({ min: 2, max: 80 }),
+  description: sanitizedNullableOptionalString({ max: 500, preserveNewlines: true }),
   status: z.nativeEnum(CategoryStatus).optional(),
   sortOrder: z.number().int().min(0).max(10_000).optional()
-});
+}).strict();
 
 export const createProductSchema = z.object({
-  storeId: z.string().trim().min(1),
-  categoryId: z.string().trim().min(1).optional(),
-  name: z.string().trim().min(2).max(160),
-  slug: z.string().trim().min(2).max(120),
-  description: z.string().trim().max(4_000).optional(),
-  sku: z.string().trim().min(2).max(80).optional(),
+  storeId: sanitizedString({ min: 1, max: 100 }),
+  categoryId: sanitizedOptionalString({ min: 1, max: 100 }),
+  name: sanitizedString({ min: 2, max: 160 }),
+  slug: sanitizedString({ min: 2, max: 120 }),
+  description: sanitizedOptionalString({ max: 4_000, preserveNewlines: true }),
+  sku: sanitizedOptionalString({ min: 2, max: 80 }),
   priceCents: z.number().int().min(0),
   compareAtCents: z.number().int().min(0).nullable().optional(),
-  currencyCode: z.string().trim().length(3).optional(),
+  currencyCode: sanitizedOptionalString({ min: 3, max: 3 }),
   stockQuantity: z.number().int().min(0),
   status: z.nativeEnum(ProductStatus).optional(),
   isFeatured: z.boolean().optional()
-});
+}).strict();
 
 export const updateProductSchema = z.object({
-  storeId: z.string().trim().min(1),
-  categoryId: z.string().trim().min(1).nullable().optional(),
-  name: z.string().trim().min(2).max(160).optional(),
-  slug: z.string().trim().min(2).max(120).optional(),
-  description: z.string().trim().max(4_000).nullable().optional(),
-  sku: z.string().trim().min(2).max(80).nullable().optional(),
+  storeId: sanitizedString({ min: 1, max: 100 }),
+  categoryId: sanitizedString({ min: 1, max: 100 }).nullable().optional(),
+  name: sanitizedOptionalString({ min: 2, max: 160 }),
+  slug: sanitizedOptionalString({ min: 2, max: 120 }),
+  description: sanitizedNullableOptionalString({ max: 4_000, preserveNewlines: true }),
+  sku: sanitizedNullableOptionalString({ min: 2, max: 80 }),
   priceCents: z.number().int().min(0).optional(),
   compareAtCents: z.number().int().min(0).nullable().optional(),
-  currencyCode: z.string().trim().length(3).optional(),
+  currencyCode: sanitizedOptionalString({ min: 3, max: 3 }),
   stockQuantity: z.number().int().min(0).optional(),
   status: z.nativeEnum(ProductStatus).optional(),
   isFeatured: z.boolean().optional()
-});
+}).strict();
 
 export const publicCatalogProductsQuerySchema = z.object({
-  category: z.string().trim().min(1).max(80).optional(),
+  category: sanitizedOptionalString({ min: 1, max: 80 }),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(24).default(12)
-});
+}).strict();
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;

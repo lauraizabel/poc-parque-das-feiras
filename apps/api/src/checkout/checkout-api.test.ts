@@ -398,6 +398,37 @@ describe("checkout api", () => {
     assert.equal(stockResponse.body.code, "PRODUCT_NOT_AVAILABLE");
   });
 
+  it("rejects unexpected fields in checkout payloads", async () => {
+    const response = await requestJson<{
+      message: string;
+      issues?: Array<{ path: string; message: string }>;
+    }>({
+      method: "POST",
+      path: "/checkout/public/current/order",
+      headers: {
+        host: `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: `strict-${suffix}`,
+        customerEmail: `strict-${suffix}@example.com`,
+        customerFullName: "Strict Customer",
+        shippingRecipientName: "Strict Customer",
+        shippingPostalCode: "50000-000",
+        shippingState: "PE",
+        shippingCity: "Recife",
+        shippingDistrict: "Boa Vista",
+        shippingStreet: "Rua do Sol",
+        shippingNumber: "100",
+        shippingMethodId,
+        adminOverride: true
+      }
+    });
+
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.body.message, "Invalid request body");
+    assert.match(response.body.issues?.[0]?.message ?? "", /unrecognized key/i);
+  });
+
   async function requestJson<T>(options: RequestOptions): Promise<JsonResponse<T>> {
     const payload = options.body ? JSON.stringify(options.body) : undefined;
 
