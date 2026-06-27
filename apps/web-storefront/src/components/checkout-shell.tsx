@@ -3,13 +3,15 @@
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import { ensureCartSession, getCartSession } from "../lib/cart-session";
 import {
+  calculateShippingOptions,
   ClientCart,
   ClientOrder,
   ClientStore,
   createOrLoadCart,
   createOrderFromCart,
   createPaymentIntent,
-  PaymentIntentResult
+  PaymentIntentResult,
+  ShippingOption
 } from "../lib/storefront-api";
 
 type CheckoutShellProps = {
@@ -47,6 +49,9 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [isShippingPending, startShippingTransition] = useTransition();
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState("");
   const [form, setForm] = useState<CheckoutFormState>({
     customerEmail: "",
     customerFullName: "",
@@ -115,6 +120,11 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
     );
   }
 
+  const selectedShippingOption =
+    shippingOptions.find((option) => option.id === selectedShippingMethodId) ?? null;
+  const checkoutTotalCents =
+    cart.summary.subtotalCents + (selectedShippingOption?.priceCents ?? 0);
+
   return (
     <section className="checkout-layout">
       <div className="checkout-main">
@@ -140,6 +150,7 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
                     customerEmail: form.customerEmail,
                     customerFullName: form.customerFullName,
                     customerPhoneNumber: form.customerPhoneNumber || undefined,
+                    shippingMethodId: selectedShippingMethodId,
                     shippingRecipientName: form.shippingRecipientName,
                     shippingPhoneNumber: form.shippingPhoneNumber || undefined,
                     shippingPostalCode: form.shippingPostalCode,
@@ -315,9 +326,91 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
               </label>
             </div>
 
+            <div className="card inset-card">
+              <div className="summary-row">
+                <strong>Frete</strong>
+                <button
+                  className={`button-link button-button ${isShippingPending ? "button-link-disabled" : ""}`}
+                  disabled={
+                    isShippingPending ||
+                    !form.customerEmail ||
+                    !form.shippingPostalCode ||
+                    !form.shippingState ||
+                    !form.shippingCity
+                  }
+                  onClick={() => {
+                    startShippingTransition(async () => {
+                      try {
+                        setError(null);
+                        const sessionId = ensureCartSession(store.id) ?? undefined;
+                        const response = await calculateShippingOptions({
+                          sessionId,
+                          customerEmail: form.customerEmail,
+                          shippingPostalCode: form.shippingPostalCode,
+                          shippingState: form.shippingState,
+                          shippingCity: form.shippingCity,
+                          shippingDistrict: form.shippingDistrict || undefined
+                        });
+                        setShippingOptions(response.shippingOptions);
+
+                        const defaultOption =
+                          response.shippingOptions.find((option) => option.isDefault) ??
+                          response.shippingOptions[0] ??
+                          null;
+
+                        setSelectedShippingMethodId(defaultOption?.id ?? "");
+                      } catch (caughtError) {
+                        const nextMessage =
+                          typeof caughtError === "object" &&
+                          caughtError !== null &&
+                          "message" in caughtError &&
+                          typeof (caughtError as { message?: unknown }).message === "string"
+                            ? (caughtError as { message: string }).message
+                            : "Nao foi possivel calcular o frete.";
+                        setError(nextMessage);
+                      }
+                    });
+                  }}
+                  type="button"
+                >
+                  {isShippingPending ? "Calculando..." : "Calcular frete"}
+                </button>
+              </div>
+
+              {shippingOptions.length > 0 ? (
+                <div className="field">
+                  <span className="field-label">Opcao de entrega</span>
+                  <select
+                    className="field-input"
+                    onChange={(event) => setSelectedShippingMethodId(event.target.value)}
+                    required
+                    value={selectedShippingMethodId}
+                  >
+                    <option value="">Selecione uma opcao</option>
+                    {shippingOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name} - {formatMoney(option.priceCents, cart.currencyCode, store.locale)}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedShippingOption ? (
+                    <p className="subtitle">
+                      {selectedShippingOption.note} Prazo estimado:{" "}
+                      {selectedShippingOption.estimatedDaysMin ?? 0} a{" "}
+                      {selectedShippingOption.estimatedDaysMax ?? 0} dias.
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="subtitle">
+                  Informe o endereco basico e calcule o frete antes de concluir o pedido.
+                </p>
+              )}
+            </div>
+
             <button
               className={`button-link button-button ${isPending ? "button-link-disabled" : ""}`}
-              disabled={isPending}
+              disabled={isPending || !selectedShippingMethodId}
               type="submit"
             >
               {isPending ? "Processando..." : "Concluir pedido e iniciar pagamento"}
@@ -346,6 +439,18 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
           <div className="summary-row">
             <span>Subtotal</span>
             <strong>{formatMoney(cart.summary.subtotalCents, cart.currencyCode, store.locale)}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Frete</span>
+            <strong>
+              {selectedShippingOption
+                ? formatMoney(selectedShippingOption.priceCents, cart.currencyCode, store.locale)
+                : "Calcule para ver"}
+            </strong>
+          </div>
+          <div className="summary-row">
+            <span>Total estimado</span>
+            <strong>{formatMoney(checkoutTotalCents, cart.currencyCode, store.locale)}</strong>
           </div>
           {success ? (
             <div className="success-card">

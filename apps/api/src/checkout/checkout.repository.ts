@@ -18,6 +18,10 @@ export class CheckoutRepository {
     storeId: string;
     cartId: string;
     customerId?: string | null;
+    shippingMethodId: string;
+    shippingMethodName: string;
+    shippingEstimatedDaysMin?: number | null;
+    shippingEstimatedDaysMax?: number | null;
     currencyCode: string;
     subtotalCents: number;
     shippingCents: number;
@@ -70,6 +74,7 @@ export class CheckoutRepository {
           storeId: input.storeId,
           cartId: input.cartId,
           customerId: input.customerId ?? null,
+          shippingMethodId: input.shippingMethodId,
           status: OrderStatus.CREATED,
           currencyCode: input.currencyCode,
           subtotalCents: input.subtotalCents,
@@ -118,6 +123,19 @@ export class CheckoutRepository {
           categoryName: item.categoryName ?? null,
           categorySlug: item.categorySlug ?? null
         }))
+      });
+
+      await tx.shipment.create({
+        data: {
+          orderId: order.id,
+          storeId: input.storeId,
+          shippingMethodId: input.shippingMethodId,
+          shippingMethodName: input.shippingMethodName,
+          priceCents: input.shippingCents,
+          estimatedDaysMin: input.shippingEstimatedDaysMin ?? null,
+          estimatedDaysMax: input.shippingEstimatedDaysMax ?? null,
+          status: "PENDING"
+        }
       });
 
       for (const adjustment of input.stockAdjustments) {

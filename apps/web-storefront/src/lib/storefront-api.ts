@@ -39,6 +39,7 @@ export type ClientOrder = {
   id: string;
   storeId: string;
   paymentId: string | null;
+  shippingMethodId: string | null;
   status: string;
   subtotalCents: number;
   shippingCents: number;
@@ -54,6 +55,19 @@ export type ClientOrder = {
     unitPriceCents: number;
     totalCents: number;
   }>;
+};
+
+export type ShippingOption = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string;
+  priceCents: number;
+  estimatedDaysMin: number | null;
+  estimatedDaysMax: number | null;
+  isDefault: boolean;
+  totalCents: number;
+  note: string;
 };
 
 export type PaymentIntentResult = {
@@ -181,7 +195,7 @@ export async function createOrderFromCart(input: {
   billingStreet?: string;
   billingNumber?: string;
   billingComplement?: string;
-  shippingCents?: number;
+  shippingMethodId: string;
   discountCents?: number;
   notes?: string;
 }) {
@@ -189,6 +203,28 @@ export async function createOrderFromCart(input: {
     store: ClientStore;
     order: ClientOrder;
   }>("checkout/public/current/order", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export async function calculateShippingOptions(input: {
+  sessionId?: string;
+  customerEmail: string;
+  shippingPostalCode: string;
+  shippingState: string;
+  shippingCity: string;
+  shippingDistrict?: string;
+}) {
+  return apiRequest<{
+    store: ClientStore;
+    cart: {
+      id: string;
+      currencyCode: string;
+      subtotalCents: number;
+    };
+    shippingOptions: ShippingOption[];
+  }>("checkout/public/current/shipping-options", {
     method: "POST",
     body: JSON.stringify(input)
   });

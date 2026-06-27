@@ -33,6 +33,7 @@ describe("checkout api", () => {
   let storeId = "";
   let token = "";
   let productId = "";
+  let shippingMethodId = "";
   let emptySessionId = `empty-${suffix}`;
 
   before(async () => {
@@ -92,6 +93,29 @@ describe("checkout api", () => {
     });
     productId = productResponse.body.product.id;
 
+    const shippingMethodResponse = await requestJson<{
+      shippingMethod: { id: string };
+    }>({
+      method: "POST",
+      path: "/shipping/methods",
+      headers: {
+        authorization: `Bearer ${token}`
+      },
+      body: {
+        storeId,
+        name: "PAC Econômico",
+        type: "FIXED_PRICE",
+        priceCents: 1500,
+        estimatedDaysMin: 3,
+        estimatedDaysMax: 6,
+        minimumOrderCents: 0,
+        maximumOrderCents: 30000,
+        sortOrder: 1,
+        isDefault: true
+      }
+    });
+    shippingMethodId = shippingMethodResponse.body.shippingMethod.id;
+
     await requestJson({
       method: "POST",
       path: "/cart/public/current/items",
@@ -136,6 +160,7 @@ describe("checkout api", () => {
       order: {
         id: string;
         storeId: string;
+        shippingMethodId: string | null;
         status: string;
         subtotalCents: number;
         shippingCents: number;
@@ -163,13 +188,14 @@ describe("checkout api", () => {
         shippingStreet: "Rua do Sol",
         shippingNumber: "100",
         shippingComplement: "Casa",
-        shippingCents: 1500,
+        shippingMethodId,
         discountCents: 500
       }
     });
 
     assert.equal(response.statusCode, 201);
     assert.equal(response.body.order.storeId, storeId);
+    assert.equal(response.body.order.shippingMethodId, shippingMethodId);
     assert.equal(response.body.order.status, "CREATED");
     assert.equal(response.body.order.subtotalCents, 25980);
     assert.equal(response.body.order.shippingCents, 1500);
@@ -191,6 +217,64 @@ describe("checkout api", () => {
       }
     });
     assert.equal(convertedCart?.status, CartStatus.CONVERTED);
+
+    const shipment = await prisma.shipment.findFirst({
+      where: {
+        orderId: response.body.order.id
+      }
+    });
+    assert.equal(shipment?.shippingMethodId, shippingMethodId);
+    assert.equal(shipment?.priceCents, 1500);
+  });
+
+  it("calculates valid shipping options and total estimates before creating the order", async () => {
+    const quoteSessionId = `quote-${suffix}`;
+
+    await requestJson({
+      method: "POST",
+      path: "/cart/public/current/items",
+      headers: {
+        host: `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: quoteSessionId,
+        customerEmail: `quote-${suffix}@example.com`,
+        productId,
+        quantity: 1
+      }
+    });
+
+    const response = await requestJson<{
+      cart: { subtotalCents: number };
+      shippingOptions: Array<{
+        id: string;
+        priceCents: number;
+        totalCents: number;
+        isDefault: boolean;
+      }>;
+    }>({
+      method: "POST",
+      path: "/checkout/public/current/shipping-options",
+      headers: {
+        host: `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: quoteSessionId,
+        customerEmail: `quote-${suffix}@example.com`,
+        shippingPostalCode: "50000-000",
+        shippingState: "PE",
+        shippingCity: "Recife",
+        shippingDistrict: "Boa Vista"
+      }
+    });
+
+    assert.equal(response.statusCode, 201);
+    assert.equal(response.body.cart.subtotalCents, 12990);
+    assert.equal(response.body.shippingOptions.length, 1);
+    assert.equal(response.body.shippingOptions[0]?.id, shippingMethodId);
+    assert.equal(response.body.shippingOptions[0]?.priceCents, 1500);
+    assert.equal(response.body.shippingOptions[0]?.totalCents, 14490);
+    assert.equal(response.body.shippingOptions[0]?.isDefault, true);
   });
 
   it("rejects empty carts and carts with insufficient stock at conversion time", async () => {
@@ -212,12 +296,55 @@ describe("checkout api", () => {
         shippingCity: "Recife",
         shippingDistrict: "Boa Vista",
         shippingStreet: "Rua do Sol",
-        shippingNumber: "100"
+        shippingNumber: "100",
+        shippingMethodId
       }
     });
 
     assert.equal(emptyResponse.statusCode, 400);
     assert.equal(emptyResponse.body.code, "CART_EMPTY");
+
+    const invalidShippingSessionId = `invalid-shipping-${suffix}`;
+
+    await requestJson({
+      method: "POST",
+      path: "/cart/public/current/items",
+      headers: {
+        host: `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: invalidShippingSessionId,
+        customerEmail: `invalid-shipping-${suffix}@example.com`,
+        productId,
+        quantity: 1
+      }
+    });
+
+    const invalidShippingResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "POST",
+      path: "/checkout/public/current/order",
+      headers: {
+        host: `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: invalidShippingSessionId,
+        customerEmail: `invalid-shipping-${suffix}@example.com`,
+        customerFullName: "Order Customer",
+        shippingRecipientName: "Order Customer",
+        shippingPostalCode: "50000-000",
+        shippingState: "PE",
+        shippingCity: "Recife",
+        shippingDistrict: "Boa Vista",
+        shippingStreet: "Rua do Sol",
+        shippingNumber: "100",
+        shippingMethodId: "shipping-method-inexistente"
+      }
+    });
+
+    assert.equal(invalidShippingResponse.statusCode, 400);
+    assert.equal(invalidShippingResponse.body.code, "SHIPPING_METHOD_UNAVAILABLE");
 
     const stockSessionId = `stock-${suffix}`;
 
@@ -262,7 +389,8 @@ describe("checkout api", () => {
         shippingCity: "Recife",
         shippingDistrict: "Boa Vista",
         shippingStreet: "Rua do Sol",
-        shippingNumber: "100"
+        shippingNumber: "100",
+        shippingMethodId
       }
     });
 

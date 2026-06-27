@@ -31,6 +31,16 @@ export class ShippingRepository {
     });
   }
 
+  listActiveShippingMethodsByStore(storeId: string) {
+    return prisma.shippingMethod.findMany({
+      where: {
+        storeId,
+        status: ShippingMethodStatus.ACTIVE
+      },
+      orderBy: [{ isDefault: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }]
+    });
+  }
+
   createShippingMethod(input: {
     storeId: string;
     name: string;

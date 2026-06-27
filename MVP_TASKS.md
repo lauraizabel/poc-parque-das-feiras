@@ -442,10 +442,10 @@ Legenda de prioridade:
 - [x] Dependências: Store e Order.
 
 ### Task 10.2 (P0): Implementar cálculo simples de frete no checkout
-- [ ] Calcular frete com regra simples por loja antes de criar o pedido final.
-- [ ] Critérios de aceite: checkout apresenta opções válidas e total final atualizado.
-- [ ] Notas técnicas: documentar limitações do cálculo no MVP.
-- [ ] Dependências: ShippingMethod e checkout.
+- [x] Calcular frete com regra simples por loja antes de criar o pedido final.
+- [x] Critérios de aceite: checkout apresenta opções válidas e total final atualizado.
+- [x] Notas técnicas: documentar limitações do cálculo no MVP.
+- [x] Dependências: ShippingMethod e checkout.
 
 ### Task 10.3 (P1): Implementar consulta e acompanhamento de pedido pelo cliente
 - [ ] Criar página/endpoint para cliente acompanhar status do pedido.

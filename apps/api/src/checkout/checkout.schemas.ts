@@ -24,12 +24,22 @@ export const createOrderFromCartSchema = z.object({
   billingStreet: z.string().trim().min(2).max(160).optional(),
   billingNumber: z.string().trim().min(1).max(40).optional(),
   billingComplement: z.string().trim().max(160).optional(),
-  shippingCents: z.number().int().min(0).default(0),
+  shippingMethodId: z.string().trim().min(1),
   discountCents: z.number().int().min(0).default(0),
   notes: z.string().trim().max(500).optional()
 });
 
+export const calculateShippingOptionsSchema = z.object({
+  sessionId: z.string().trim().min(6).max(120).optional(),
+  customerEmail: z.email().trim().max(320),
+  shippingPostalCode: z.string().trim().min(5).max(20),
+  shippingState: z.string().trim().min(2).max(80),
+  shippingCity: z.string().trim().min(2).max(120),
+  shippingDistrict: z.string().trim().min(2).max(120).optional()
+});
+
 export type CreateOrderFromCartInput = z.infer<typeof createOrderFromCartSchema>;
+export type CalculateShippingOptionsInput = z.infer<typeof calculateShippingOptionsSchema>;
 
 export function parseCheckoutBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
   try {

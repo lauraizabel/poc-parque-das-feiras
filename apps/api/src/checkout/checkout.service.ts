@@ -3,14 +3,15 @@ import {
   Injectable,
   NotFoundException
 } from "@nestjs/common";
-import { OrderStatus, ProductStatus } from "@prisma/client";
+import { OrderStatus, ProductStatus, ShippingMethodType } from "@prisma/client";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
 import { CatalogRepository } from "../catalog/catalog.repository";
 import { OrdersRepository } from "../orders/orders.repository";
 import { PaymentsRepository } from "../payments/payments.repository";
+import { ShippingRepository } from "../shipping/shipping.repository";
 import { CheckoutRepository } from "./checkout.repository";
-import { CreateOrderFromCartInput } from "./checkout.schemas";
+import { CalculateShippingOptionsInput, CreateOrderFromCartInput } from "./checkout.schemas";
 
 @Injectable()
 export class CheckoutService {
@@ -19,11 +20,49 @@ export class CheckoutService {
     private readonly cartRepository: CartRepository,
     private readonly catalogRepository: CatalogRepository,
     private readonly ordersRepository: OrdersRepository,
-    private readonly paymentsRepository: PaymentsRepository
+    private readonly paymentsRepository: PaymentsRepository,
+    private readonly shippingRepository: ShippingRepository
   ) {}
 
   getBoundary() {
     return this.checkoutRepository.getBoundary();
+  }
+
+  async calculateShippingOptions(
+    publicStore: PublicStorefrontContext,
+    input: CalculateShippingOptionsInput
+  ) {
+    const cart = await this.findActiveCart(publicStore.storeId, input);
+
+    if (!cart) {
+      throw new NotFoundException({
+        message: "Cart not found",
+        code: "CART_NOT_FOUND"
+      });
+    }
+
+    if (cart.items.length === 0) {
+      throw new BadRequestException({
+        message: "Cart is empty",
+        code: "CART_EMPTY"
+      });
+    }
+
+    const subtotalCents = cart.items.reduce(
+      (sum, item) => sum + item.unitPriceCents * item.quantity,
+      0
+    );
+    const shippingOptions = await this.resolveShippingOptions(publicStore.storeId, subtotalCents);
+
+    return {
+      store: publicStore,
+      cart: {
+        id: cart.id,
+        currencyCode: cart.currencyCode,
+        subtotalCents
+      },
+      shippingOptions
+    };
   }
 
   async createOrderFromCart(
@@ -110,7 +149,20 @@ export class CheckoutService {
       (sum, item) => sum + item.unitPriceCents * item.quantity,
       0
     );
-    const shippingCents = input.shippingCents ?? 0;
+    const shippingOptions = await this.resolveShippingOptions(publicStore.storeId, subtotalCents);
+    const selectedShippingOption = shippingOptions.find(
+      (option) => option.id === input.shippingMethodId
+    );
+
+    if (!selectedShippingOption) {
+      throw new BadRequestException({
+        message: "Shipping method is not available for this order",
+        code: "SHIPPING_METHOD_UNAVAILABLE",
+        shippingMethodId: input.shippingMethodId
+      });
+    }
+
+    const shippingCents = selectedShippingOption.priceCents;
     const discountCents = input.discountCents ?? 0;
     const totalCents = subtotalCents + shippingCents - discountCents;
 
@@ -138,6 +190,10 @@ export class CheckoutService {
       storeId: publicStore.storeId,
       cartId: cart.id,
       customerId: customer.id,
+      shippingMethodId: selectedShippingOption.id,
+      shippingMethodName: selectedShippingOption.name,
+      shippingEstimatedDaysMin: selectedShippingOption.estimatedDaysMin,
+      shippingEstimatedDaysMax: selectedShippingOption.estimatedDaysMax,
       currencyCode: cart.currencyCode,
       subtotalCents,
       shippingCents,
@@ -196,12 +252,52 @@ export class CheckoutService {
     };
   }
 
-  private async findActiveCart(storeId: string, input: CreateOrderFromCartInput) {
+  private async findActiveCart(
+    storeId: string,
+    input: Pick<CreateOrderFromCartInput, "sessionId" | "customerEmail"> | CalculateShippingOptionsInput
+  ) {
     const sessionId = input.sessionId?.trim() || null;
     const customerEmail = input.customerEmail.trim().toLowerCase();
 
     return sessionId
       ? await this.cartRepository.findActiveCartBySession(storeId, sessionId)
       : await this.cartRepository.findActiveCartByCustomerEmail(storeId, customerEmail);
+  }
+
+  private async resolveShippingOptions(storeId: string, subtotalCents: number) {
+    const shippingMethods = await this.shippingRepository.listActiveShippingMethodsByStore(storeId);
+
+    const eligibleMethods = shippingMethods.filter((method) => {
+      const meetsMinimum =
+        method.minimumOrderCents === null || subtotalCents >= method.minimumOrderCents;
+      const meetsMaximum =
+        method.maximumOrderCents === null || subtotalCents <= method.maximumOrderCents;
+
+      return meetsMinimum && meetsMaximum;
+    });
+
+    if (eligibleMethods.length === 0) {
+      throw new BadRequestException({
+        message: "No shipping methods are available for this order",
+        code: "NO_SHIPPING_METHODS_AVAILABLE",
+        subtotalCents
+      });
+    }
+
+    return eligibleMethods.map((method) => ({
+      id: method.id,
+      name: method.name,
+      description: method.description,
+      type: method.type,
+      priceCents: method.priceCents,
+      estimatedDaysMin: method.estimatedDaysMin,
+      estimatedDaysMax: method.estimatedDaysMax,
+      isDefault: method.isDefault,
+      totalCents: subtotalCents + method.priceCents,
+      note:
+        method.type === ShippingMethodType.LOCAL_PICKUP
+          ? "Retirada local sem integracao logística no MVP."
+          : "Frete calculado por regra fixa simples no MVP."
+    }));
   }
 }
