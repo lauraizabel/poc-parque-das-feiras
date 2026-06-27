@@ -153,7 +153,8 @@ a {
 }
 
 .field input,
-.field textarea {
+.field textarea,
+.field select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -161,6 +162,10 @@ a {
   font: inherit;
   color: var(--text);
   background: rgba(255, 255, 255, 0.92);
+}
+
+.field-select {
+  appearance: none;
 }
 
 .button-row {
@@ -226,6 +231,85 @@ a {
   margin-bottom: 4px;
 }
 
+.orders-card {
+  display: grid;
+  gap: 18px;
+}
+
+.orders-filter-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.orders-list {
+  display: grid;
+  gap: 18px;
+}
+
+.order-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 18px;
+}
+
+.order-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.order-head h3 {
+  margin: 6px 0 0;
+}
+
+.order-status-badge {
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+.order-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.order-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.order-meta {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.order-items {
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.order-item-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.compact-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 @media (max-width: 720px) {
   .nav {
     flex-direction: column;
@@ -236,5 +320,10 @@ a {
   .domain-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .order-head,
+  .order-item-row {
+    flex-direction: column;
   }
 }

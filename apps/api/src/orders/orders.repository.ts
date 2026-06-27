@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { prisma } from "@acme/database";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, ShipmentStatus } from "@prisma/client";
 import { DomainBoundary } from "../platform/domain-boundary";
 
 @Injectable()
@@ -194,15 +194,67 @@ export class OrdersRepository {
     });
   }
 
+  listOrdersByStore(input: {
+    storeId: string;
+    status?: OrderStatus;
+  }) {
+    return prisma.order.findMany({
+      where: {
+        storeId: input.storeId,
+        ...(input.status ? { status: input.status } : {})
+      },
+      include: {
+        payment: true,
+        shippingMethod: true,
+        shipment: true,
+        items: {
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      },
+      orderBy: [{ createdAt: "desc" }]
+    });
+  }
+
   updateOrder(orderId: string, input: {
     paymentId?: string | null;
     shippingMethodId?: string | null;
     status?: OrderStatus;
     statusUpdatedAt?: Date;
+    approvedAt?: Date | null;
+    canceledAt?: Date | null;
+    refundedAt?: Date | null;
+    shippedAt?: Date | null;
+    deliveredAt?: Date | null;
   }) {
     return prisma.order.update({
       where: {
         id: orderId
+      },
+      data: input
+    });
+  }
+
+  updateShipmentByOrder(orderId: string, storeId: string, input: {
+    status?: ShipmentStatus;
+    carrierName?: string | null;
+    serviceName?: string | null;
+    trackingCode?: string | null;
+    trackingUrl?: string | null;
+    labelUrl?: string | null;
+    postedAt?: Date | null;
+    shippedAt?: Date | null;
+    deliveredAt?: Date | null;
+    canceledAt?: Date | null;
+    notes?: string | null;
+  }) {
+    return prisma.shipment.update({
+      where: {
+        orderId_storeId: {
+          orderId,
+          storeId
+        }
       },
       data: input
     });

@@ -454,10 +454,10 @@ Legenda de prioridade:
 - [x] Dependências: Order e storefront.
 
 ### Task 10.4 (P0): Implementar gestão operacional de pedidos no painel
-- [ ] Permitir listar pedidos e atualizar status operacionais como `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELED`.
-- [ ] Critérios de aceite: lojista consegue operar pedidos respeitando transições válidas.
-- [ ] Notas técnicas: registrar motivo opcional em cancelamentos e eventos relevantes.
-- [ ] Dependências: Order e guards de loja.
+- [x] Permitir listar pedidos e atualizar status operacionais como `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELED`.
+- [x] Critérios de aceite: lojista consegue operar pedidos respeitando transições válidas.
+- [x] Notas técnicas: registrar motivo opcional em cancelamentos e eventos relevantes.
+- [x] Dependências: Order e guards de loja.
 
 ### Task 10.5 (P1): Implementar baixa/ajuste de estoque ligado ao pedido
 - [ ] Definir regra simples para impacto do pedido no estoque.

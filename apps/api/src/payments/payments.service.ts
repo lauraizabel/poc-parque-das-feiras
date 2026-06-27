@@ -18,6 +18,7 @@ import {
 import { AuditRepository } from "../audit/audit.repository";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
+import { canTransitionOrderStatus } from "../orders/order-status.rules";
 import { OrdersRepository } from "../orders/orders.repository";
 import { PaymentsRepository } from "./payments.repository";
 import { createPaymentWebhookQueue } from "./payments.queue";
@@ -778,23 +779,7 @@ export class PaymentsService {
   }
 
   private canTransitionOrderStatus(fromStatus: OrderStatus, toStatus: OrderStatus) {
-    if (fromStatus === toStatus) {
-      return true;
-    }
-
-    const transitions: Record<OrderStatus, OrderStatus[]> = {
-      CREATED: [OrderStatus.WAITING_PAYMENT, OrderStatus.CANCELED],
-      WAITING_PAYMENT: [OrderStatus.PAYMENT_APPROVED, OrderStatus.PAYMENT_FAILED, OrderStatus.CANCELED],
-      PAYMENT_APPROVED: [OrderStatus.PROCESSING, OrderStatus.REFUNDED, OrderStatus.CANCELED],
-      PAYMENT_FAILED: [OrderStatus.WAITING_PAYMENT, OrderStatus.CANCELED],
-      PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELED, OrderStatus.REFUNDED],
-      SHIPPED: [OrderStatus.DELIVERED, OrderStatus.REFUNDED],
-      DELIVERED: [OrderStatus.REFUNDED],
-      CANCELED: [],
-      REFUNDED: []
-    };
-
-    return transitions[fromStatus].includes(toStatus);
+    return canTransitionOrderStatus(fromStatus, toStatus);
   }
 
   private serializeTransitionMetadata(metadata?: Record<string, unknown> | null) {
