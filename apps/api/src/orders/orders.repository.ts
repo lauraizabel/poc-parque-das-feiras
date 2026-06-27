@@ -19,6 +19,7 @@ export class OrdersRepository {
     cartId?: string | null;
     customerId?: string | null;
     paymentId?: string | null;
+    shippingMethodId?: string | null;
     status?: OrderStatus;
     currencyCode?: string;
     subtotalCents: number;
@@ -54,6 +55,7 @@ export class OrdersRepository {
         cartId: input.cartId ?? null,
         customerId: input.customerId ?? null,
         paymentId: input.paymentId ?? null,
+        shippingMethodId: input.shippingMethodId ?? null,
         status: input.status ?? OrderStatus.CREATED,
         currencyCode: input.currencyCode ?? "BRL",
         subtotalCents: input.subtotalCents,
@@ -130,6 +132,8 @@ export class OrdersRepository {
       include: {
         customer: true,
         payment: true,
+        shippingMethod: true,
+        shipment: true,
         cart: {
           include: {
             items: true
@@ -153,6 +157,8 @@ export class OrdersRepository {
       include: {
         customer: true,
         payment: true,
+        shippingMethod: true,
+        shipment: true,
         cart: {
           include: {
             items: true
@@ -169,6 +175,7 @@ export class OrdersRepository {
 
   updateOrder(orderId: string, input: {
     paymentId?: string | null;
+    shippingMethodId?: string | null;
     status?: OrderStatus;
     statusUpdatedAt?: Date;
   }) {

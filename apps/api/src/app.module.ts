@@ -14,6 +14,7 @@ import { IntegrationsModule } from "./integrations/integrations.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { OrdersModule } from "./orders/orders.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { ShippingModule } from "./shipping/shipping.module";
 import { StoresModule } from "./stores/stores.module";
 
 @Module({
@@ -34,6 +35,7 @@ import { StoresModule } from "./stores/stores.module";
     CartModule,
     CheckoutModule,
     PaymentsModule,
+    ShippingModule,
     OrdersModule,
     AdminModule,
     NotificationsModule,

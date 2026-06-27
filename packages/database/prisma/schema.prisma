@@ -103,6 +103,25 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum ShippingMethodType {
+  FIXED_PRICE
+  LOCAL_PICKUP
+}
+
+enum ShippingMethodStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ShipmentStatus {
+  PENDING
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  CANCELED
+  RETURNED
+}
+
 enum CategoryStatus {
   ACTIVE
   INACTIVE
@@ -155,6 +174,8 @@ model Store {
   paymentTransactions PaymentTransaction[]
   paymentWebhookEvents PaymentWebhookEvent[]
   statusTransitionAudits StatusTransitionAudit[]
+  shippingMethods   ShippingMethod[]
+  shipments         Shipment[]
   orders            Order[]
   orderItems        OrderItem[]
   assets            Asset[]
@@ -468,12 +489,68 @@ model StatusTransitionAudit {
   @@index([allowed, createdAt])
 }
 
+model ShippingMethod {
+  id                String               @id @default(cuid())
+  storeId           String
+  name              String
+  description       String?
+  type              ShippingMethodType   @default(FIXED_PRICE)
+  status            ShippingMethodStatus @default(ACTIVE)
+  priceCents        Int                  @default(0)
+  estimatedDaysMin  Int?
+  estimatedDaysMax  Int?
+  minimumOrderCents Int?
+  maximumOrderCents Int?
+  sortOrder         Int                  @default(0)
+  isDefault         Boolean              @default(false)
+  store             Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orders            Order[]
+  shipments         Shipment[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([storeId, status, sortOrder])
+  @@index([storeId, type])
+}
+
+model Shipment {
+  id                String         @id @default(cuid())
+  storeId           String
+  orderId           String         @unique
+  shippingMethodId  String?
+  status            ShipmentStatus @default(PENDING)
+  shippingMethodName String
+  carrierName       String?
+  serviceName       String?
+  trackingCode      String?
+  trackingUrl       String?
+  labelUrl          String?
+  priceCents        Int            @default(0)
+  estimatedDaysMin  Int?
+  estimatedDaysMax  Int?
+  postedAt          DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  canceledAt        DateTime?
+  notes             String?
+  store             Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  order             Order          @relation(fields: [orderId, storeId], references: [id, storeId], onDelete: Cascade)
+  shippingMethod    ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([orderId, storeId])
+  @@index([storeId, status])
+  @@index([shippingMethodId])
+}
+
 model Order {
   id                       String      @id @default(cuid())
   storeId                  String
   cartId                   String?
   customerId               String?
   paymentId                String?
+  shippingMethodId         String?
   status                   OrderStatus @default(CREATED)
   currencyCode             String      @default("BRL")
   subtotalCents            Int
@@ -512,6 +589,8 @@ model Order {
   cart                     Cart?       @relation(fields: [cartId, storeId], references: [id, storeId], onDelete: SetNull)
   customer                 Customer?   @relation(fields: [customerId, storeId], references: [id, storeId], onDelete: SetNull)
   payment                  Payment?    @relation(fields: [paymentId, storeId], references: [id, storeId], onDelete: SetNull)
+  shippingMethod           ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
+  shipment                 Shipment?
   items                    OrderItem[]
   createdAt                DateTime    @default(now())
   updatedAt                DateTime    @updatedAt
@@ -521,6 +600,7 @@ model Order {
   @@index([storeId, customerId])
   @@index([storeId, paymentId])
   @@index([storeId, cartId])
+  @@index([storeId, shippingMethodId])
 }
 
 model OrderItem {

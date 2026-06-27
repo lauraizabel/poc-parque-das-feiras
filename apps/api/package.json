@@ -22,6 +22,8 @@
     "test:payments-webhook": "node --test dist/payments/payments-webhook.test.js",
     "test:payments-processing": "node --test dist/payments/payments-processing.test.js",
     "test:payments-modeling": "node --test dist/payments/payments-modeling.test.js",
+    "test:shipping-api": "node --test dist/shipping/shipping-api.test.js",
+    "test:shipping-modeling": "node --test dist/shipping/shipping-modeling.test.js",
     "test:tenant-resolution": "node --test dist/domains/tenant-resolution.test.js",
     "test:domains": "node --test dist/domains/tenant-resolution.test.js dist/domains/domain-registration.test.js dist/domains/domain-dns-verification.test.js dist/domains/domain-ssl-provisioning.test.js"
   },

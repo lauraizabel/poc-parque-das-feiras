@@ -436,10 +436,10 @@ Legenda de prioridade:
 ## Epic 10: Pedidos, frete e pós-compra
 
 ### Task 10.1 (P0): Modelar frete simples e envio
-- [ ] Criar entidades `ShippingMethod` e `Shipment` com abordagem simples para o MVP.
-- [ ] Critérios de aceite: loja consegue configurar ao menos opções básicas de frete e prazo estimado.
-- [ ] Notas técnicas: frete pode ser fixo ou por faixa simples para não travar o MVP.
-- [ ] Dependências: Store e Order.
+- [x] Criar entidades `ShippingMethod` e `Shipment` com abordagem simples para o MVP.
+- [x] Critérios de aceite: loja consegue configurar ao menos opções básicas de frete e prazo estimado.
+- [x] Notas técnicas: frete pode ser fixo ou por faixa simples para não travar o MVP.
+- [x] Dependências: Store e Order.
 
 ### Task 10.2 (P0): Implementar cálculo simples de frete no checkout
 - [ ] Calcular frete com regra simples por loja antes de criar o pedido final.
