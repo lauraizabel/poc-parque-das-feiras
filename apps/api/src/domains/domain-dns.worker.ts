@@ -1,9 +1,13 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { prisma } from "@acme/database";
+import { attachWorkerLifecycleLogging } from "@acme/queue";
 import { AppModule } from "../app.module";
 import { DomainsService } from "./domains.service";
-import { createDomainDnsVerificationWorker } from "./domains.queue";
+import {
+  createDomainDnsVerificationWorker,
+  DOMAIN_DNS_VERIFICATION_QUEUE
+} from "./domains.queue";
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -15,18 +19,7 @@ async function bootstrap() {
     await domainsService.processDnsVerificationJob(job.data.domainId);
   });
 
-  worker.on("failed", (job, error) => {
-    console.error("domain-dns-verification failed", {
-      jobId: job?.id,
-      error: error.message
-    });
-  });
-
-  worker.on("completed", (job) => {
-    console.log("domain-dns-verification completed", {
-      jobId: job.id
-    });
-  });
+  attachWorkerLifecycleLogging(worker, DOMAIN_DNS_VERIFICATION_QUEUE);
 
   const shutdown = async () => {
     await worker.close();

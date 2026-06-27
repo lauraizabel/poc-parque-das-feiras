@@ -14,7 +14,8 @@
     "dev": "tsc --project tsconfig.json --watch",
     "build": "tsc --project tsconfig.json",
     "lint": "tsc --project tsconfig.json --noEmit",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node --test dist/index.test.js"
   },
   "dependencies": {
     "bullmq": "^5.56.7"

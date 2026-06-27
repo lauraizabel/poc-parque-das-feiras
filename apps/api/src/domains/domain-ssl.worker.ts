@@ -1,9 +1,12 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { prisma } from "@acme/database";
+import { attachWorkerLifecycleLogging } from "@acme/queue";
 import { AppModule } from "../app.module";
 import { DomainsService } from "./domains.service";
 import {
+  DOMAIN_SSL_PROVISIONING_QUEUE,
+  DOMAIN_SSL_STATUS_QUEUE,
   createDomainSslProvisioningWorker,
   createDomainSslStatusWorker
 } from "./domains.queue";
@@ -27,19 +30,8 @@ async function bootstrap() {
     await statusWorker.close();
   };
 
-  provisioningWorker.on("failed", (job, error) => {
-    console.error("domain-ssl-provisioning failed", {
-      jobId: job?.id,
-      error: error.message
-    });
-  });
-
-  statusWorker.on("failed", (job, error) => {
-    console.error("domain-ssl-status failed", {
-      jobId: job?.id,
-      error: error.message
-    });
-  });
+  attachWorkerLifecycleLogging(provisioningWorker, DOMAIN_SSL_PROVISIONING_QUEUE);
+  attachWorkerLifecycleLogging(statusWorker, DOMAIN_SSL_STATUS_QUEUE);
 
   const shutdown = async () => {
     await closeWorkers();

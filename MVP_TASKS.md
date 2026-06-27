@@ -562,10 +562,10 @@ Legenda de prioridade:
 - [ ] Dependências: autenticação, pedidos e domínios.
 
 ### Task 13.4 (P0): Implementar fila de jobs para notificações e rotinas assíncronas
-- [ ] Configurar BullMQ para envio de e-mail, verificação de domínio e processamento de webhook.
-- [ ] Critérios de aceite: jobs executam com retries, logging e monitoramento básico.
-- [ ] Notas técnicas: definir nomes de fila, políticas de retry e timeout por job.
-- [ ] Dependências: Redis e módulos assíncronos.
+- [x] Configurar BullMQ para envio de e-mail, verificação de domínio e processamento de webhook.
+- [x] Critérios de aceite: jobs executam com retries, logging e monitoramento básico.
+- [x] Notas técnicas: definir nomes de fila, políticas de retry e timeout por job.
+- [x] Dependências: Redis e módulos assíncronos.
 
 ### Task 13.5 (P1): Implementar logging estruturado da aplicação
 - [ ] Padronizar logs com contexto de request, usuário, loja e módulo.

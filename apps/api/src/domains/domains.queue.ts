@@ -1,4 +1,4 @@
-import { createQueue, createWorker } from "@acme/queue";
+import { createQueue, createWorker, getQueueMonitoringSnapshot } from "@acme/queue";
 
 export const DOMAIN_DNS_VERIFICATION_QUEUE = "domain-dns-verification";
 export const DOMAIN_SSL_PROVISIONING_QUEUE = "domain-ssl-provisioning";
@@ -9,7 +9,7 @@ export type DomainDnsVerificationJob = {
 };
 
 export function createDomainDnsVerificationQueue() {
-  return createQueue(DOMAIN_DNS_VERIFICATION_QUEUE);
+  return createQueue(DOMAIN_DNS_VERIFICATION_QUEUE, "domain-dns-verification");
 }
 
 export function createDomainDnsVerificationWorker(
@@ -17,26 +17,43 @@ export function createDomainDnsVerificationWorker(
 ) {
   return createWorker<DomainDnsVerificationJob>(
     DOMAIN_DNS_VERIFICATION_QUEUE,
-    processor
+    processor,
+    "domain-dns-verification"
   );
 }
 
 export function createDomainSslProvisioningQueue() {
-  return createQueue(DOMAIN_SSL_PROVISIONING_QUEUE);
+  return createQueue(DOMAIN_SSL_PROVISIONING_QUEUE, "domain-ssl-provisioning");
 }
 
 export function createDomainSslStatusQueue() {
-  return createQueue(DOMAIN_SSL_STATUS_QUEUE);
+  return createQueue(DOMAIN_SSL_STATUS_QUEUE, "domain-ssl-status");
 }
 
 export function createDomainSslProvisioningWorker(
   processor: (job: { data: DomainDnsVerificationJob; id?: string }) => Promise<unknown>
 ) {
-  return createWorker<DomainDnsVerificationJob>(DOMAIN_SSL_PROVISIONING_QUEUE, processor);
+  return createWorker<DomainDnsVerificationJob>(
+    DOMAIN_SSL_PROVISIONING_QUEUE,
+    processor,
+    "domain-ssl-provisioning"
+  );
 }
 
 export function createDomainSslStatusWorker(
   processor: (job: { data: DomainDnsVerificationJob; id?: string }) => Promise<unknown>
 ) {
-  return createWorker<DomainDnsVerificationJob>(DOMAIN_SSL_STATUS_QUEUE, processor);
+  return createWorker<DomainDnsVerificationJob>(
+    DOMAIN_SSL_STATUS_QUEUE,
+    processor,
+    "domain-ssl-status"
+  );
+}
+
+export function getDomainQueueMonitoring() {
+  return [
+    getQueueMonitoringSnapshot(DOMAIN_DNS_VERIFICATION_QUEUE, "domain-dns-verification"),
+    getQueueMonitoringSnapshot(DOMAIN_SSL_PROVISIONING_QUEUE, "domain-ssl-provisioning"),
+    getQueueMonitoringSnapshot(DOMAIN_SSL_STATUS_QUEUE, "domain-ssl-status")
+  ];
 }

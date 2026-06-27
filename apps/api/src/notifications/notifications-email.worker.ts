@@ -3,20 +3,23 @@ import { NestFactory } from "@nestjs/core";
 import { prisma } from "@acme/database";
 import { attachWorkerLifecycleLogging } from "@acme/queue";
 import { AppModule } from "../app.module";
-import { PaymentsService } from "./payments.service";
-import { createPaymentWebhookWorker, PAYMENT_WEBHOOK_QUEUE } from "./payments.queue";
+import { NotificationsService } from "./notifications.service";
+import {
+  createEmailNotificationWorker,
+  EMAIL_NOTIFICATION_QUEUE
+} from "./notifications.queue";
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ["error", "warn", "log"]
   });
-  const paymentsService = app.get(PaymentsService);
+  const notificationsService = app.get(NotificationsService);
 
-  const worker = createPaymentWebhookWorker(async (job) => {
-    await paymentsService.processPaymentWebhookJob(job.data.webhookEventId);
+  const worker = createEmailNotificationWorker(async (job) => {
+    await notificationsService.processEmailNotificationJob(job.data);
   });
 
-  attachWorkerLifecycleLogging(worker, PAYMENT_WEBHOOK_QUEUE);
+  attachWorkerLifecycleLogging(worker, EMAIL_NOTIFICATION_QUEUE);
 
   const shutdown = async () => {
     await worker.close();
