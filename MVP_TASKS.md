@@ -416,10 +416,10 @@ Legenda de prioridade:
 - [x] Dependências: integração com gateway.
 
 ### Task 9.7 (P0): Implementar processamento assíncrono de webhooks
-- [ ] Enfileirar eventos recebidos e atualizar `Payment`, `PaymentTransaction` e `Order`.
-- [ ] Critérios de aceite: sistema trata aprovado, recusado, expirado e reembolsado.
-- [ ] Notas técnicas: registrar payload bruto, chave idempotente, retries e dead-letter simples se necessário.
-- [ ] Dependências: endpoint de webhook e BullMQ.
+- [x] Enfileirar eventos recebidos e atualizar `Payment`, `PaymentTransaction` e `Order`.
+- [x] Critérios de aceite: sistema trata aprovado, recusado, expirado e reembolsado.
+- [x] Notas técnicas: registrar payload bruto, chave idempotente, retries e dead-letter simples se necessário.
+- [x] Dependências: endpoint de webhook e BullMQ.
 
 ### Task 9.8 (P0): Implementar máquina de estados de pagamento e pedido
 - [ ] Formalizar transições válidas entre estados de pagamento e pedido.

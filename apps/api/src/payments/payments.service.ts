@@ -6,11 +6,19 @@ import {
 } from "@nestjs/common";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { ConfigService } from "@nestjs/config";
-import { PaymentProvider, PaymentStatus, PaymentTransactionKind, PaymentTransactionStatus } from "@prisma/client";
+import {
+  OrderStatus,
+  PaymentProvider,
+  PaymentStatus,
+  PaymentTransactionKind,
+  PaymentTransactionStatus,
+  PaymentWebhookStatus
+} from "@prisma/client";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
 import { OrdersRepository } from "../orders/orders.repository";
 import { PaymentsRepository } from "./payments.repository";
+import { createPaymentWebhookQueue } from "./payments.queue";
 import { StripeConnectPaymentGatewayAdapter } from "./stripe-connect.adapter";
 import { CreateOrderPaymentIntentInput } from "./payments.schemas";
 
@@ -214,11 +222,114 @@ export class PaymentsService {
       livemode: event.livemode
     });
 
+    const queued = await this.enqueuePaymentWebhookEvent(persistedEvent.id);
+
     return {
       received: true,
       duplicate: false,
+      queued,
       event: persistedEvent
     };
+  }
+
+  async enqueuePaymentWebhookEvent(webhookEventId: string) {
+    const queue = createPaymentWebhookQueue();
+
+    try {
+      const job = await queue.add(
+        "process-payment-webhook",
+        {
+          webhookEventId
+        },
+        {
+          jobId: webhookEventId
+        }
+      );
+
+      return {
+        queued: true,
+        jobId: job.id ?? webhookEventId
+      };
+    } finally {
+      await queue.close();
+    }
+  }
+
+  async processPaymentWebhookJob(webhookEventId: string) {
+    const webhookEvent = await this.paymentsRepository.findPaymentWebhookEventById(webhookEventId);
+
+    if (!webhookEvent) {
+      throw new NotFoundException({
+        message: "Payment webhook event not found",
+        code: "PAYMENT_WEBHOOK_EVENT_NOT_FOUND",
+        webhookEventId
+      });
+    }
+
+    await this.paymentsRepository.updatePaymentWebhookEvent(webhookEvent.id, {
+      status: PaymentWebhookStatus.PROCESSING,
+      failureMessage: null
+    });
+
+    try {
+      const payload = this.parsePersistedWebhookPayload(webhookEvent.payload);
+      const nextState = this.resolvePaymentWebhookState(payload);
+
+      if (!webhookEvent.paymentId || !webhookEvent.orderId || !webhookEvent.storeId) {
+        throw new BadRequestException({
+          message: "Webhook metadata is incomplete for processing",
+          code: "PAYMENT_WEBHOOK_METADATA_INCOMPLETE",
+          webhookEventId
+        });
+      }
+
+      await this.paymentsRepository.updatePayment(webhookEvent.paymentId, {
+        status: nextState.paymentStatus,
+        failureCode: nextState.failureCode,
+        failureMessage: nextState.failureMessage,
+        paidAt: nextState.paymentStatus === PaymentStatus.APPROVED ? new Date() : undefined
+      });
+
+      await this.ordersRepository.updateOrder(webhookEvent.orderId, {
+        status: nextState.orderStatus,
+        statusUpdatedAt: new Date()
+      });
+
+      await this.paymentsRepository.createPaymentTransaction({
+        paymentId: webhookEvent.paymentId,
+        storeId: webhookEvent.storeId,
+        provider: webhookEvent.provider,
+        kind: PaymentTransactionKind.WEBHOOK,
+        status: nextState.transactionStatus,
+        idempotencyKey: `${webhookEvent.externalEventId}:webhook`,
+        externalTransactionId: this.readString(payload.data.object, "id") ?? webhookEvent.externalEventId,
+        requestPayload: webhookEvent.payload,
+        responsePayload: JSON.stringify({
+          eventType: payload.type,
+          mappedPaymentStatus: nextState.paymentStatus,
+          mappedOrderStatus: nextState.orderStatus
+        }),
+        errorCode: nextState.failureCode,
+        errorMessage: nextState.failureMessage,
+        occurredAt: new Date()
+      });
+
+      await this.paymentsRepository.updatePaymentWebhookEvent(webhookEvent.id, {
+        status: PaymentWebhookStatus.PROCESSED,
+        processedAt: new Date(),
+        failureMessage: null
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown webhook processing error";
+
+      await this.paymentsRepository.updatePaymentWebhookEvent(webhookEvent.id, {
+        status: PaymentWebhookStatus.FAILED,
+        processedAt: new Date(),
+        failureMessage: message
+      });
+
+      throw error;
+    }
   }
 
   private isOrderPayable(status: string) {
@@ -314,6 +425,97 @@ export class PaymentsService {
 
   private extractIdempotencyKey(event: { request: { idempotency_key?: unknown } | null }) {
     const value = event.request?.idempotency_key;
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+  }
+
+  private parsePersistedWebhookPayload(payload: string) {
+    const parsed = JSON.parse(payload) as {
+      type?: unknown;
+      data?: { object?: Record<string, unknown> } | null;
+    };
+
+    if (typeof parsed.type !== "string") {
+      throw new BadRequestException({
+        message: "Persisted webhook payload is missing the event type",
+        code: "PAYMENT_WEBHOOK_PAYLOAD_INVALID"
+      });
+    }
+
+    return {
+      type: parsed.type,
+      data: {
+        object:
+          parsed.data?.object && typeof parsed.data.object === "object"
+            ? parsed.data.object
+            : {}
+      }
+    };
+  }
+
+  private resolvePaymentWebhookState(payload: {
+    type: string;
+    data: { object: Record<string, unknown> };
+  }) {
+    if (payload.type === "payment_intent.succeeded") {
+      return {
+        paymentStatus: PaymentStatus.APPROVED,
+        orderStatus: OrderStatus.PAYMENT_APPROVED,
+        transactionStatus: PaymentTransactionStatus.SUCCEEDED,
+        failureCode: null,
+        failureMessage: null
+      };
+    }
+
+    if (payload.type === "payment_intent.payment_failed") {
+      return {
+        paymentStatus: PaymentStatus.FAILED,
+        orderStatus: OrderStatus.PAYMENT_FAILED,
+        transactionStatus: PaymentTransactionStatus.FAILED,
+        failureCode: this.readString(payload.data.object, "last_payment_error.code"),
+        failureMessage:
+          this.readString(payload.data.object, "last_payment_error.message") ?? "Payment failed"
+      };
+    }
+
+    if (payload.type === "payment_intent.canceled") {
+      const cancellationReason = this.readString(payload.data.object, "cancellation_reason");
+      const isExpired = cancellationReason === "abandoned";
+
+      return {
+        paymentStatus: isExpired ? PaymentStatus.EXPIRED : PaymentStatus.CANCELED,
+        orderStatus: OrderStatus.PAYMENT_FAILED,
+        transactionStatus: PaymentTransactionStatus.CANCELED,
+        failureCode: cancellationReason,
+        failureMessage: isExpired ? "Payment expired before completion" : "Payment was canceled"
+      };
+    }
+
+    if (payload.type === "charge.refunded") {
+      return {
+        paymentStatus: PaymentStatus.REFUNDED,
+        orderStatus: OrderStatus.REFUNDED,
+        transactionStatus: PaymentTransactionStatus.SUCCEEDED,
+        failureCode: null,
+        failureMessage: null
+      };
+    }
+
+    throw new BadRequestException({
+      message: "Webhook event type is not supported for processing",
+      code: "PAYMENT_WEBHOOK_EVENT_UNSUPPORTED",
+      eventType: payload.type
+    });
+  }
+
+  private readString(object: Record<string, unknown>, path: string) {
+    const value = path.split(".").reduce<unknown>((current, key) => {
+      if (!current || typeof current !== "object") {
+        return undefined;
+      }
+
+      return (current as Record<string, unknown>)[key];
+    }, object);
+
     return typeof value === "string" && value.trim().length > 0 ? value : null;
   }
 }

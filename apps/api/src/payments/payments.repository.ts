@@ -191,6 +191,14 @@ export class PaymentsRepository {
     });
   }
 
+  findPaymentWebhookEventById(eventId: string) {
+    return prisma.paymentWebhookEvent.findUnique({
+      where: {
+        id: eventId
+      }
+    });
+  }
+
   createPaymentWebhookEvent(input: {
     provider: PaymentProvider;
     status?: PaymentWebhookStatus;
@@ -228,6 +236,19 @@ export class PaymentsRepository {
         processedAt: input.processedAt ?? null,
         failureMessage: input.failureMessage ?? null
       }
+    });
+  }
+
+  updatePaymentWebhookEvent(eventId: string, input: {
+    status?: PaymentWebhookStatus;
+    processedAt?: Date | null;
+    failureMessage?: string | null;
+  }) {
+    return prisma.paymentWebhookEvent.update({
+      where: {
+        id: eventId
+      },
+      data: input
     });
   }
 }

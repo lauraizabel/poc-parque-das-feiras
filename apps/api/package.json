@@ -8,6 +8,7 @@
     "start": "node dist/main.js",
     "worker:domains-dns": "node dist/domains/domain-dns.worker.js",
     "worker:domains-ssl": "node dist/domains/domain-ssl.worker.js",
+    "worker:payments-webhooks": "node dist/payments/payments-webhook.worker.js",
     "lint": "tsc --project tsconfig.json --noEmit",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test:catalog": "node --test dist/catalog/catalog-categories.test.js",
@@ -18,6 +19,7 @@
     "test:orders-modeling": "node --test dist/orders/orders-modeling.test.js",
     "test:payments-api": "node --test dist/payments/payments-api.test.js",
     "test:payments-webhook": "node --test dist/payments/payments-webhook.test.js",
+    "test:payments-processing": "node --test dist/payments/payments-processing.test.js",
     "test:payments-modeling": "node --test dist/payments/payments-modeling.test.js",
     "test:tenant-resolution": "node --test dist/domains/tenant-resolution.test.js",
     "test:domains": "node --test dist/domains/tenant-resolution.test.js dist/domains/domain-registration.test.js dist/domains/domain-dns-verification.test.js dist/domains/domain-ssl-provisioning.test.js"
