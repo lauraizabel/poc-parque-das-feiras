@@ -606,10 +606,10 @@ Legenda de prioridade:
 - [x] Dependências: módulos core concluídos.
 
 ### Task 14.4 (P1): Criar documentação mínima de arquitetura e operação
-- [ ] Documentar setup local, env vars, módulos, fluxo multi-tenant, domínio custom e pagamentos.
-- [ ] Critérios de aceite: novo desenvolvedor consegue subir o projeto e entender os fluxos principais.
-- [ ] Notas técnicas: incluir decisões técnicas do MVP e limitações conhecidas.
-- [ ] Dependências: arquitetura base e decisões de infra.
+- [x] Documentar setup local, env vars, módulos, fluxo multi-tenant, domínio custom e pagamentos.
+- [x] Critérios de aceite: novo desenvolvedor consegue subir o projeto e entender os fluxos principais.
+- [x] Notas técnicas: incluir decisões técnicas do MVP e limitações conhecidas.
+- [x] Dependências: arquitetura base e decisões de infra.
 
 ### Task 14.5 (P1): Criar runbooks mínimos para incidentes operacionais
 - [ ] Documentar como investigar falha de webhook, falha de domínio/SSL, falha de e-mail e falha de fila.
