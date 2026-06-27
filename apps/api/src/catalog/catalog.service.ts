@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { CategoryStatus, ProductStatus } from "@prisma/client";
+import { createHash } from "node:crypto";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CatalogRepository } from "./catalog.repository";
 import {
@@ -12,7 +14,8 @@ import {
   CreateProductInput,
   PublicCatalogProductsQuery,
   UpdateCategoryInput,
-  UpdateProductInput
+  UpdateProductInput,
+  UploadProductImageInput
 } from "./catalog.schemas";
 
 const RESERVED_CATEGORY_SLUGS = new Set(["all", "new", "sale", "search"]);
@@ -20,7 +23,10 @@ const RESERVED_PRODUCT_SLUGS = new Set(["cart", "checkout", "category", "new", "
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly catalogRepository: CatalogRepository) {}
+  constructor(
+    private readonly catalogRepository: CatalogRepository,
+    private readonly configService: ConfigService
+  ) {}
 
   getBoundary() {
     return this.catalogRepository.getBoundary();
@@ -384,6 +390,55 @@ export class CatalogService {
     };
   }
 
+  async uploadProductImage(productId: string, input: UploadProductImageInput) {
+    const product = await this.ensureStoreProduct(input.storeId, productId);
+    const mimeType = input.mimeType.trim().toLowerCase();
+    this.assertSupportedImageMimeType(mimeType);
+
+    const normalizedBase64 = input.contentBase64.replace(/\s+/g, "");
+    const contentBuffer = Buffer.from(normalizedBase64, "base64");
+
+    if (contentBuffer.length === 0) {
+      throw new BadRequestException({
+        message: "Image content is empty",
+        code: "PRODUCT_IMAGE_CONTENT_REQUIRED"
+      });
+    }
+
+    if (contentBuffer.length > 5 * 1024 * 1024) {
+      throw new BadRequestException({
+        message: "Image exceeds the maximum size of 5MB",
+        code: "PRODUCT_IMAGE_TOO_LARGE",
+        sizeBytes: contentBuffer.length
+      });
+    }
+
+    const safeFileName = this.normalizeAssetFileName(input.fileName);
+    const contentHash = createHash("sha1").update(contentBuffer).digest("hex").slice(0, 12);
+    const extension = this.resolveImageExtension(mimeType);
+    const bucket = this.configService.getOrThrow<string>("S3_BUCKET");
+    const storageKey = `products/${product.storeId}/${product.id}/${Date.now()}-${contentHash}-${safeFileName}.${extension}`;
+    const imageUrl = `data:${mimeType};base64,${normalizedBase64}`;
+    const currentImageCount = await this.catalogRepository.countProductImages(product.id);
+    const isPrimary = input.isPrimary ?? currentImageCount === 0;
+
+    return {
+      image: await this.catalogRepository.createProductImage({
+        productId: product.id,
+        storeId: product.storeId,
+        bucket,
+        key: storageKey,
+        mimeType,
+        sizeBytes: contentBuffer.length,
+        publicUrl: imageUrl,
+        imageUrl,
+        altText: input.altText?.trim() ?? null,
+        sortOrder: input.sortOrder ?? currentImageCount,
+        isPrimary
+      })
+    };
+  }
+
   private normalizeSlug(value: string, entity: "Category" | "Product") {
     const normalized = value
       .trim()
@@ -421,6 +476,44 @@ export class CatalogService {
 
     const normalized = value.trim().toUpperCase();
     return normalized.length > 0 ? normalized : undefined;
+  }
+
+  private assertSupportedImageMimeType(mimeType: string) {
+    const supportedMimeTypes = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif"
+    ]);
+
+    if (!supportedMimeTypes.has(mimeType)) {
+      throw new BadRequestException({
+        message: "Image MIME type is not supported",
+        code: "PRODUCT_IMAGE_MIME_UNSUPPORTED",
+        mimeType
+      });
+    }
+  }
+
+  private resolveImageExtension(mimeType: string) {
+    if (mimeType === "image/jpeg") {
+      return "jpg";
+    }
+
+    return mimeType.split("/")[1] ?? "bin";
+  }
+
+  private normalizeAssetFileName(fileName: string) {
+    const normalized = fileName
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\.[a-z0-9]+$/i, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    return normalized.length > 0 ? normalized : "product-image";
   }
 
   private validateCompareAtPrice(priceCents: number, compareAtCents: number | null | undefined) {

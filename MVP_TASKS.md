@@ -663,7 +663,7 @@ Legenda de prioridade:
 ### Fluxo: Cadastro e publicação de produto
 - [ ] Lojista cria categoria.
 - [ ] Lojista cria produto em `DRAFT`.
-- [ ] Lojista faz upload de imagens.
+- [x] Lojista faz upload de imagens.
 - [ ] Lojista revisa preço, estoque e conteúdo.
 - [ ] Lojista publica produto como `ACTIVE`.
 - [ ] Produto passa a aparecer na vitrine da loja.

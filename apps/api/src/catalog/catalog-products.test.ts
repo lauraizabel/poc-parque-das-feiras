@@ -303,24 +303,61 @@ describe("catalog products", () => {
   });
 
   it("returns a public product detail by slug and keeps out-of-stock products visible but blocked", async () => {
-    await prisma.productImage.createMany({
-      data: [
-        {
-          productId,
-          imageUrl: "https://cdn.example.com/notebook-pro-primary.jpg",
-          altText: "Notebook Pro aberto",
-          isPrimary: true,
-          sortOrder: 0
-        },
-        {
-          productId,
-          imageUrl: "https://cdn.example.com/notebook-pro-side.jpg",
-          altText: "Notebook Pro lateral",
-          isPrimary: false,
-          sortOrder: 1
-        }
-      ]
+    const primaryImageResponse = await requestJson<{
+      image: {
+        imageUrl: string;
+        altText: string | null;
+        isPrimary: boolean;
+        asset: { mimeType: string; sizeBytes: number } | null;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "notebook-pro-primary.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Notebook Pro aberto",
+        isPrimary: true,
+        sortOrder: 0
+      }
     });
+
+    assert.equal(primaryImageResponse.statusCode, 201);
+    assert.equal(primaryImageResponse.body.image.isPrimary, true);
+    assert.equal(primaryImageResponse.body.image.altText, "Notebook Pro aberto");
+    assert.equal(primaryImageResponse.body.image.asset?.mimeType, "image/png");
+    assert.ok((primaryImageResponse.body.image.asset?.sizeBytes ?? 0) > 0);
+    assert.match(primaryImageResponse.body.image.imageUrl, /^data:image\/png;base64,/);
+
+    const secondaryImageResponse = await requestJson<{
+      image: {
+        imageUrl: string;
+        isPrimary: boolean;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "notebook-pro-side.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Notebook Pro lateral",
+        isPrimary: false,
+        sortOrder: 1
+      }
+    });
+
+    assert.equal(secondaryImageResponse.statusCode, 201);
+    assert.equal(secondaryImageResponse.body.image.isPrimary, false);
 
     const activeResponse = await requestJson<{
       product: { slug: string; status: string; images: Array<{ imageUrl: string }> };
@@ -374,6 +411,47 @@ describe("catalog products", () => {
     assert.equal(blockedPurchaseResponse.body.availability.canAddToCart, false);
     assert.equal(blockedPurchaseResponse.body.availability.isInStock, false);
     assert.equal(blockedPurchaseResponse.body.availability.status, "OUT_OF_STOCK");
+  });
+
+  it("rejects unsupported image uploads and foreign-store image writes", async () => {
+    const unsupportedMimeResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "manual.pdf",
+        mimeType: "application/pdf",
+        contentBase64: "JVBERi0xLjQK",
+        altText: "Manual"
+      }
+    });
+
+    assert.equal(unsupportedMimeResponse.statusCode, 400);
+    assert.equal(unsupportedMimeResponse.body.code, "PRODUCT_IMAGE_MIME_UNSUPPORTED");
+
+    const foreignStoreResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${secondaryToken}`
+      },
+      body: {
+        storeId: secondaryStoreId,
+        fileName: "foreign.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII="
+      }
+    });
+
+    assert.equal(foreignStoreResponse.statusCode, 404);
+    assert.equal(foreignStoreResponse.body.code, "PRODUCT_NOT_FOUND");
   });
 
   it("rejects invalid compareAt price and foreign category access", async () => {

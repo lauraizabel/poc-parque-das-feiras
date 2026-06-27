@@ -217,7 +217,14 @@ export class CatalogRepository {
     return prisma.product.findMany({
       where: { storeId },
       include: {
-        category: true
+        category: true,
+        images: {
+          orderBy: [
+            { isPrimary: "desc" },
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ]
+        }
       },
       orderBy: [
         { createdAt: "desc" }
@@ -276,6 +283,64 @@ export class CatalogRepository {
     return prisma.product.update({
       where: { id: productId },
       data: input
+    });
+  }
+
+  countProductImages(productId: string) {
+    return prisma.productImage.count({
+      where: { productId }
+    });
+  }
+
+  createProductImage(input: {
+    productId: string;
+    storeId: string;
+    bucket: string;
+    key: string;
+    mimeType: string;
+    sizeBytes: number;
+    publicUrl: string;
+    imageUrl: string;
+    altText?: string | null;
+    sortOrder: number;
+    isPrimary: boolean;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      if (input.isPrimary) {
+        await tx.productImage.updateMany({
+          where: {
+            productId: input.productId
+          },
+          data: {
+            isPrimary: false
+          }
+        });
+      }
+
+      const asset = await tx.asset.create({
+        data: {
+          storeId: input.storeId,
+          key: input.key,
+          bucket: input.bucket,
+          mimeType: input.mimeType,
+          sizeBytes: input.sizeBytes,
+          publicUrl: input.publicUrl
+        }
+      });
+
+      return tx.productImage.create({
+        data: {
+          productId: input.productId,
+          assetId: asset.id,
+          altText: input.altText ?? null,
+          imageUrl: input.imageUrl,
+          sortOrder: input.sortOrder,
+          isPrimary: input.isPrimary
+        },
+        include: {
+          asset: true
+        }
+      });
     });
   }
 }
