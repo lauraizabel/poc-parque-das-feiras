@@ -116,6 +116,18 @@ export class AuthRepository {
     });
   }
 
+  listStoreMembershipsByUser(userId: string) {
+    return prisma.storeMember.findMany({
+      where: {
+        userId
+      },
+      include: {
+        store: true
+      },
+      orderBy: [{ createdAt: "asc" }]
+    });
+  }
+
   toAuthenticatedUser(user: User) {
     return {
       id: user.id,

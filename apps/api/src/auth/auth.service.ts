@@ -173,7 +173,25 @@ export class AuthService {
       throw new UnauthorizedException("User not found");
     }
 
-    return this.authRepository.toAuthenticatedUser(user);
+    const memberships = await this.authRepository.listStoreMembershipsByUser(userId);
+
+    return {
+      ...this.authRepository.toAuthenticatedUser(user),
+      memberships: memberships.map((membership) => ({
+        storeId: membership.storeId,
+        role: membership.role,
+        createdAt: membership.createdAt,
+        store: {
+          id: membership.store.id,
+          name: membership.store.name,
+          slug: membership.store.slug,
+          defaultSubdomain: membership.store.defaultSubdomain,
+          currencyCode: membership.store.currencyCode,
+          locale: membership.store.locale,
+          supportEmail: membership.store.supportEmail
+        }
+      }))
+    };
   }
 
   private async issueAuthSession(

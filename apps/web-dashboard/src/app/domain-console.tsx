@@ -20,19 +20,23 @@ type ApiState = {
   message?: string;
 };
 
-export function DomainConsole() {
-  const [token, setToken] = useState("");
-  const [storeId, setStoreId] = useState("");
+type DomainConsoleProps = {
+  token: string;
+  storeId: string;
+  storeLabel: string;
+};
+
+export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps) {
   const [host, setHost] = useState("www.sualoja.com");
   const [domain, setDomain] = useState<DomainRecord | null>(null);
   const [state, setState] = useState<ApiState>({ kind: "idle" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function loadCurrentDomain() {
-    if (!token || !storeId) {
+    if (!storeId) {
       setState({
         kind: "error",
-        message: "Preencha access token e storeId para consultar o dominio atual."
+        message: "Selecione uma loja para consultar o dominio atual."
       });
       return;
     }
@@ -127,7 +131,7 @@ export function DomainConsole() {
       <div className="domain-head">
         <div>
           <div className="eyebrow">Custom domain</div>
-          <h2 className="section-title">Cadastro inicial de dominio proprio</h2>
+          <h2 className="section-title">Dominio proprio de {storeLabel}</h2>
         </div>
         <button className="secondary-button" onClick={loadCurrentDomain} type="button">
           Consultar atual
@@ -139,22 +143,12 @@ export function DomainConsole() {
       </p>
 
       <form className="domain-form" onSubmit={handleSubmit}>
-        <label className="field">
-          <span>Access token</span>
-          <textarea
-            rows={4}
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-            placeholder="Bearer token retornado pelo login do lojista"
-          />
-        </label>
-
         <div className="field-grid">
           <label className="field">
             <span>Store ID</span>
             <input
+              disabled
               value={storeId}
-              onChange={(event) => setStoreId(event.target.value)}
               placeholder="cm..."
             />
           </label>

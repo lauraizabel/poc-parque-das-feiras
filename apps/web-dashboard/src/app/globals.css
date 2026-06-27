@@ -75,6 +75,7 @@ a {
   display: flex;
   gap: 18px;
   color: var(--muted);
+  align-items: center;
 }
 
 .card {
@@ -114,7 +115,78 @@ a {
   font-size: 0.95rem;
 }
 
+.host-badge {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
 .domain-card {
+  display: grid;
+  gap: 18px;
+}
+
+.dashboard-shell {
+  padding-bottom: 48px;
+}
+
+.dashboard-frame {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-sidebar {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.dashboard-main {
+  display: grid;
+  gap: 24px;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-link {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.sidebar-link span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.sidebar-link.active {
+  background: var(--accent-soft);
+  border-color: rgba(13, 122, 100, 0.2);
+}
+
+.auth-card {
   display: grid;
   gap: 18px;
 }
@@ -315,6 +387,14 @@ a {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .dashboard-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidebar {
+    position: static;
   }
 
   .domain-head {

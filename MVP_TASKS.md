@@ -474,10 +474,10 @@ Legenda de prioridade:
 ## Epic 11: Painel do lojista
 
 ### Task 11.1 (P0): Definir shell do dashboard multi-store
-- [ ] Criar estrutura base do painel com seleção de loja, navegação lateral e proteção de rotas.
-- [ ] Critérios de aceite: usuário autenticado acessa apenas lojas das quais é membro.
-- [ ] Notas técnicas: isolar contexto de loja do painel do contexto público por host.
-- [ ] Dependências: autenticação e StoreMember.
+- [x] Criar estrutura base do painel com seleção de loja, navegação lateral e proteção de rotas.
+- [x] Critérios de aceite: usuário autenticado acessa apenas lojas das quais é membro.
+- [x] Notas técnicas: isolar contexto de loja do painel do contexto público por host.
+- [x] Dependências: autenticação e StoreMember.
 
 ### Task 11.2 (P1): Implementar dashboard inicial da loja
 - [ ] Construir visão geral com métricas simples: pedidos, faturamento básico, produtos e status de domínio.

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { env } from "../lib/env";
 
 type ApiState = {
@@ -96,11 +96,13 @@ function normalizeMessage(payload: unknown, fallback: string) {
   return fallback;
 }
 
-export function OrdersConsole() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [token, setToken] = useState("");
-  const [storeId, setStoreId] = useState("");
+type OrdersConsoleProps = {
+  token: string;
+  storeId: string;
+  storeLabel: string;
+};
+
+export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps) {
   const [statusFilter, setStatusFilter] = useState("");
   const [orders, setOrders] = useState<ManagedOrder[]>([]);
   const [state, setState] = useState<ApiState>({ kind: "idle" });
@@ -122,55 +124,11 @@ export function OrdersConsole() {
     [drafts, orders]
   );
 
-  async function loginMerchant(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsLoading(true);
-    setState({ kind: "idle" });
-
-    try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      });
-      const payload = (await response.json()) as {
-        tokens?: { accessToken: string };
-        message?: string;
-      };
-
-      if (!response.ok || !payload.tokens?.accessToken) {
-        setState({
-          kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel autenticar o lojista.")
-        });
-        return;
-      }
-
-      setToken(payload.tokens.accessToken);
-      setState({
-        kind: "success",
-        message: "Token de acesso carregado. Informe o storeId e consulte os pedidos."
-      });
-    } catch {
-      setState({
-        kind: "error",
-        message: "Falha de rede ao autenticar o lojista."
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   async function loadOrders() {
     if (!token || !storeId) {
       setState({
         kind: "error",
-        message: "Preencha access token e storeId para consultar os pedidos."
+        message: "Selecione uma loja valida para consultar os pedidos."
       });
       return;
     }
@@ -312,7 +270,7 @@ export function OrdersConsole() {
       <div className="domain-head">
         <div>
           <div className="eyebrow">Orders ops</div>
-          <h2 className="section-title">Gestao operacional de pedidos</h2>
+          <h2 className="section-title">Gestao operacional de pedidos de {storeLabel}</h2>
         </div>
         <button className="secondary-button" onClick={loadOrders} type="button">
           Atualizar lista
@@ -320,52 +278,16 @@ export function OrdersConsole() {
       </div>
 
       <p className="subtitle">
-        Enquanto o shell multi-store nao chega, essa superficie usa login direto do lojista,
-        `storeId` explicito e o token de acesso atual para operar pedidos da loja.
+        Os pedidos abaixo respeitam a loja selecionada no shell e so usam o token do usuario
+        autenticado no dashboard.
       </p>
 
-      <form className="domain-form" onSubmit={loginMerchant}>
-        <div className="field-grid">
-          <label className="field">
-            <span>E-mail do lojista</span>
-            <input
-              onChange={(event) => setEmail(event.target.value)}
-              type="email"
-              value={email}
-            />
-          </label>
-          <label className="field">
-            <span>Senha</span>
-            <input
-              onChange={(event) => setPassword(event.target.value)}
-              type="password"
-              value={password}
-            />
-          </label>
-        </div>
-
-        <div className="button-row">
-          <button className="primary-button" disabled={isLoading} type="submit">
-            {isLoading ? "Autenticando..." : "Entrar e carregar token"}
-          </button>
-        </div>
-      </form>
-
       <div className="field-grid">
-        <label className="field">
-          <span>Access token</span>
-          <textarea
-            rows={4}
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-            placeholder="Bearer token do lojista"
-          />
-        </label>
         <div className="orders-filter-stack">
           <label className="field">
             <span>Store ID</span>
             <input
-              onChange={(event) => setStoreId(event.target.value)}
+              disabled
               placeholder="cm..."
               value={storeId}
             />
