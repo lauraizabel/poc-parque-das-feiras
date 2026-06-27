@@ -285,6 +285,15 @@ export class PaymentsService {
       });
     }
 
+    if (webhookEvent.status === PaymentWebhookStatus.PROCESSED) {
+      return {
+        processed: false,
+        skipped: true,
+        reason: "already_processed",
+        webhookEventId
+      };
+    }
+
     await this.paymentsRepository.updatePaymentWebhookEvent(webhookEvent.id, {
       status: PaymentWebhookStatus.PROCESSING,
       failureMessage: null
@@ -300,6 +309,27 @@ export class PaymentsService {
           code: "PAYMENT_WEBHOOK_METADATA_INCOMPLETE",
           webhookEventId
         });
+      }
+
+      const webhookTransactionIdempotencyKey = `${webhookEvent.externalEventId}:webhook`;
+      const existingWebhookTransaction = await this.paymentsRepository.findPaymentTransactionByIdempotencyKey(
+        webhookEvent.paymentId,
+        webhookTransactionIdempotencyKey
+      );
+
+      if (existingWebhookTransaction) {
+        await this.paymentsRepository.updatePaymentWebhookEvent(webhookEvent.id, {
+          status: PaymentWebhookStatus.PROCESSED,
+          processedAt: new Date(),
+          failureMessage: null
+        });
+
+        return {
+          processed: false,
+          skipped: true,
+          reason: "transaction_already_recorded",
+          webhookEventId
+        };
       }
 
       await this.transitionPaymentStatus({
@@ -337,7 +367,7 @@ export class PaymentsService {
         provider: webhookEvent.provider,
         kind: PaymentTransactionKind.WEBHOOK,
         status: nextState.transactionStatus,
-        idempotencyKey: `${webhookEvent.externalEventId}:webhook`,
+        idempotencyKey: webhookTransactionIdempotencyKey,
         externalTransactionId: this.readString(payload.data.object, "id") ?? webhookEvent.externalEventId,
         requestPayload: webhookEvent.payload,
         responsePayload: JSON.stringify({
@@ -355,6 +385,12 @@ export class PaymentsService {
         processedAt: new Date(),
         failureMessage: null
       });
+
+      return {
+        processed: true,
+        skipped: false,
+        webhookEventId
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown webhook processing error";
 

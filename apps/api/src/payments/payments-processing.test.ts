@@ -133,6 +133,35 @@ describe("payments webhook processing", () => {
     assert.equal(event?.status, "PROCESSED");
   });
 
+  it("keeps checkout-created orders reproducible before webhook reconciliation", async () => {
+    const orderOnly = await createOrderOnly("created");
+
+    const createdOrder = await prisma.order.findUnique({
+      where: { id: orderOnly.orderId }
+    });
+
+    assert.equal(createdOrder?.status, "CREATED");
+    assert.equal(createdOrder?.paymentId, null);
+
+    const paymentStart = await startPaymentForOrder({
+      label: "created",
+      orderId: orderOnly.orderId,
+      sessionId: orderOnly.sessionId,
+      customerEmail: orderOnly.customerEmail
+    });
+
+    const payableOrder = await prisma.order.findUnique({
+      where: { id: orderOnly.orderId }
+    });
+    const pendingPayment = await prisma.payment.findUnique({
+      where: { id: paymentStart.paymentId }
+    });
+
+    assert.equal(payableOrder?.status, "WAITING_PAYMENT");
+    assert.equal(payableOrder?.paymentId, paymentStart.paymentId);
+    assert.equal(pendingPayment?.status, PaymentStatus.PENDING);
+  });
+
   it("processes failed payments asynchronously", async () => {
     const checkout = await createOrderAndPayment("failed");
     const webhook = await deliverWebhook({
@@ -213,7 +242,54 @@ describe("payments webhook processing", () => {
     assert.equal(order?.status, "REFUNDED");
   });
 
+  it("keeps webhook reconciliation idempotent when the same job is retried", async () => {
+    const checkout = await createOrderAndPayment("idempotent");
+    const webhook = await deliverWebhook({
+      id: `evt_idempotent_${suffix}`,
+      type: "payment_intent.succeeded",
+      paymentId: checkout.paymentId,
+      orderId: checkout.orderId
+    });
+
+    const firstRun = await paymentsService.processPaymentWebhookJob(webhook.body.event.id);
+    const secondRun = await paymentsService.processPaymentWebhookJob(webhook.body.event.id);
+
+    const webhookTransactions = await prisma.paymentTransaction.findMany({
+      where: {
+        paymentId: checkout.paymentId,
+        kind: "WEBHOOK"
+      }
+    });
+    const payment = await prisma.payment.findUnique({
+      where: { id: checkout.paymentId }
+    });
+    const order = await prisma.order.findUnique({
+      where: { id: checkout.orderId }
+    });
+
+    assert.equal(firstRun?.processed, true);
+    assert.equal(secondRun?.skipped, true);
+    assert.equal(webhookTransactions.length, 1);
+    assert.equal(payment?.status, PaymentStatus.APPROVED);
+    assert.equal(order?.status, "PAYMENT_APPROVED");
+  });
+
   async function createOrderAndPayment(label: string) {
+    const orderOnly = await createOrderOnly(label);
+    const paymentStart = await startPaymentForOrder({
+      label,
+      orderId: orderOnly.orderId,
+      sessionId: orderOnly.sessionId,
+      customerEmail: orderOnly.customerEmail
+    });
+
+    return {
+      orderId: orderOnly.orderId,
+      paymentId: paymentStart.paymentId
+    };
+  }
+
+  async function createOrderOnly(label: string) {
     const sessionId = `payments-processing-session-${label}-${suffix}`;
     const customerEmail = `buyer-${label}-${suffix}@example.com`;
 
@@ -255,22 +331,34 @@ describe("payments webhook processing", () => {
 
     const orderId = orderResponse.body.order.id;
 
+    return {
+      orderId,
+      sessionId,
+      customerEmail
+    };
+  }
+
+  async function startPaymentForOrder(input: {
+    label: string;
+    orderId: string;
+    sessionId: string;
+    customerEmail: string;
+  }) {
     const paymentIntentResponse = await requestJson<{
       payment: { id: string };
     }>({
       method: "POST",
-      path: `/payments/public/orders/${orderId}/intent`,
+      path: `/payments/public/orders/${input.orderId}/intent`,
       headers: {
         host: `${storeSlug}.lvh.me`
       },
       body: JSON.stringify({
-        sessionId,
-        customerEmail
+        sessionId: input.sessionId,
+        customerEmail: input.customerEmail
       })
     });
 
     return {
-      orderId,
       paymentId: paymentIntentResponse.body.payment.id
     };
   }

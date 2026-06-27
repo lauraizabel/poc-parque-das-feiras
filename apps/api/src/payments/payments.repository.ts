@@ -180,6 +180,18 @@ export class PaymentsRepository {
     });
   }
 
+  findPaymentTransactionByIdempotencyKey(paymentId: string, idempotencyKey: string) {
+    return prisma.paymentTransaction.findFirst({
+      where: {
+        paymentId,
+        idempotencyKey
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+  }
+
   findPaymentWebhookEvent(provider: PaymentProvider, externalEventId: string) {
     return prisma.paymentWebhookEvent.findUnique({
       where: {

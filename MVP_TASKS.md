@@ -428,10 +428,10 @@ Legenda de prioridade:
 - [x] Dependências: Order e Payment.
 
 ### Task 9.9 (P1): Implementar testes de checkout e webhooks
-- [ ] Criar testes para pedido criado, pagamento aprovado, recusado, expirado e reembolsado.
-- [ ] Critérios de aceite: reconciliação entre pedido e pagamento funciona de forma reproduzível.
-- [ ] Notas técnicas: mockar gateway e validar idempotência de webhook.
-- [ ] Dependências: checkout e processamento de webhooks.
+- [x] Criar testes para pedido criado, pagamento aprovado, recusado, expirado e reembolsado.
+- [x] Critérios de aceite: reconciliação entre pedido e pagamento funciona de forma reproduzível.
+- [x] Notas técnicas: mockar gateway e validar idempotência de webhook.
+- [x] Dependências: checkout e processamento de webhooks.
 
 ## Epic 10: Pedidos, frete e pós-compra
 
