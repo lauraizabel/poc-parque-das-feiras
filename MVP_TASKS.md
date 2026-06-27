@@ -272,10 +272,10 @@ Legenda de prioridade:
 - [x] Dependências: Prisma baseline e Store.
 
 ### Task 6.2 (P0): Implementar CRUD backend de categorias
-- [ ] Criar endpoints para criar, listar, editar, ordenar e desativar categorias da loja.
-- [ ] Critérios de aceite: loja gerencia apenas suas próprias categorias.
-- [ ] Notas técnicas: considerar slug único por loja.
-- [ ] Dependências: entidades de catálogo e autorização por loja.
+- [x] Criar endpoints para criar, listar, editar, ordenar e desativar categorias da loja.
+- [x] Critérios de aceite: loja gerencia apenas suas próprias categorias.
+- [x] Notas técnicas: considerar slug único por loja.
+- [x] Dependências: entidades de catálogo e autorização por loja.
 
 ### Task 6.3 (P0): Implementar CRUD backend de produtos
 - [x] Criar endpoints para criar, editar, publicar, desativar e arquivar produtos.
