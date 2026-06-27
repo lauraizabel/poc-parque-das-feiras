@@ -39,6 +39,18 @@ const optionalUrl = z.preprocess((value) => {
   return trimmed.length === 0 ? undefined : trimmed;
 }, z.url().optional());
 
+const positiveIntFromEnv = z.preprocess((value) => {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    return Number(value);
+  }
+
+  return value;
+}, z.number().int().positive());
+
 const serverProviderSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   STOREFRONT_URL: z.url(),
@@ -49,7 +61,11 @@ const serverProviderSchema = z.object({
   REDIS_URL: nonEmptyString,
   JWT_SECRET: nonEmptyString,
   JWT_ACCESS_TTL: nonEmptyString.default("15m"),
-  JWT_REFRESH_TTL: nonEmptyString.default("7d")
+  JWT_REFRESH_TTL: nonEmptyString.default("7d"),
+  AUTH_RATE_LIMIT_MAX: positiveIntFromEnv.default(10),
+  AUTH_RATE_LIMIT_WINDOW_MS: positiveIntFromEnv.default(60_000),
+  WEBHOOK_RATE_LIMIT_MAX: positiveIntFromEnv.default(30),
+  WEBHOOK_RATE_LIMIT_WINDOW_MS: positiveIntFromEnv.default(60_000)
 });
 
 const paymentsProviderSchema = z

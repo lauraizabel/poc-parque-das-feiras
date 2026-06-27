@@ -102,6 +102,28 @@ Detalhes da implementacao:
 - refresh token com rotacao e hash persistido no banco
 - rota protegida via Bearer token em `Authorization`
 
+## Hardening minimo da API
+
+A base da API agora aplica um conjunto minimo de protecoes nas superfícies mais sensiveis do MVP:
+
+- rate limit em `POST /auth/register`, `POST /auth/register-merchant`, `POST /auth/login`, `POST /auth/refresh` e `POST /payments/webhooks/stripe`
+- headers basicos de seguranca como `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` e `Permissions-Policy`
+- respostas de autenticacao com `Cache-Control: no-store`
+- politica de sessao stateless: a API aceita autenticacao apenas por Bearer token e rejeita fluxos com cookie em rotas de auth ou mutacoes autenticadas
+
+Variaveis de ambiente relacionadas:
+
+- `AUTH_RATE_LIMIT_MAX`
+- `AUTH_RATE_LIMIT_WINDOW_MS`
+- `WEBHOOK_RATE_LIMIT_MAX`
+- `WEBHOOK_RATE_LIMIT_WINDOW_MS`
+
+Estrategia CSRF adotada neste MVP:
+
+- nao usar cookie de sessao nem cookie de refresh token
+- exigir `Authorization: Bearer ...` para rotas autenticadas
+- rejeitar tentativas de usar cookies nesses fluxos para reduzir superficie de CSRF e sessao implicita
+
 ## Autorizacao base
 
 A API agora separa autenticacao de autorizacao:

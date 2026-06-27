@@ -594,10 +594,10 @@ Legenda de prioridade:
 - [x] Dependências: endpoints principais.
 
 ### Task 14.2 (P0): Revisar controles mínimos de segurança do MVP
-- [ ] Implementar rate limit em autenticação e webhooks, headers básicos, proteção CSRF conforme estratégia e políticas de sessão.
-- [ ] Critérios de aceite: superfície mais sensível do MVP possui proteção mínima documentada.
-- [ ] Notas técnicas: revisar upload de arquivos, enumeração de usuário e vazamento cross-tenant.
-- [ ] Dependências: autenticação e API pública.
+- [x] Implementar rate limit em autenticação e webhooks, headers básicos, proteção CSRF conforme estratégia e políticas de sessão.
+- [x] Critérios de aceite: superfície mais sensível do MVP possui proteção mínima documentada.
+- [x] Notas técnicas: revisar upload de arquivos, enumeração de usuário e vazamento cross-tenant.
+- [x] Dependências: autenticação e API pública.
 
 ### Task 14.3 (P0): Criar testes end-to-end dos fluxos principais
 - [ ] Automatizar fluxos de onboarding, cadastro de produto, compra, pagamento e atualização de pedido.
