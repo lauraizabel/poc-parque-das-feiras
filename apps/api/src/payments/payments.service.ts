@@ -12,8 +12,10 @@ import {
   PaymentStatus,
   PaymentTransactionKind,
   PaymentTransactionStatus,
-  PaymentWebhookStatus
+  PaymentWebhookStatus,
+  StatusTransitionEntityType
 } from "@prisma/client";
+import { AuditRepository } from "../audit/audit.repository";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
 import { OrdersRepository } from "../orders/orders.repository";
@@ -26,6 +28,7 @@ import { CreateOrderPaymentIntentInput } from "./payments.schemas";
 export class PaymentsService {
   constructor(
     private readonly configService: ConfigService,
+    private readonly auditRepository: AuditRepository,
     private readonly paymentsRepository: PaymentsRepository,
     private readonly ordersRepository: OrdersRepository,
     private readonly cartRepository: CartRepository,
@@ -117,8 +120,17 @@ export class PaymentsService {
 
     const nextAttemptCount = payment.attemptCount + 1;
 
-    const updatedPayment = await this.paymentsRepository.updatePayment(payment.id, {
-      status: PaymentStatus.PENDING,
+    const updatedPayment = await this.transitionPaymentStatus({
+      paymentId: payment.id,
+      storeId: publicStore.storeId,
+      toStatus: PaymentStatus.PENDING,
+      source: "checkout.payment_intent",
+      reason: "Payment intent created for checkout",
+      metadata: {
+        orderId: order.id,
+        attemptCount: nextAttemptCount,
+        providerPaymentId: intent.providerPaymentId
+      },
       attemptCount: nextAttemptCount,
       externalPaymentId: intent.providerPaymentId,
       externalReference: intent.externalReference,
@@ -142,10 +154,17 @@ export class PaymentsService {
       occurredAt: new Date()
     });
 
-    await this.ordersRepository.updateOrder(order.id, {
-      paymentId: payment.id,
-      status: order.status === "PAYMENT_FAILED" ? "WAITING_PAYMENT" : "WAITING_PAYMENT",
-      statusUpdatedAt: new Date()
+    await this.transitionOrderStatus({
+      orderId: order.id,
+      storeId: publicStore.storeId,
+      toStatus: OrderStatus.WAITING_PAYMENT,
+      source: "checkout.payment_intent",
+      reason: "Customer started payment",
+      metadata: {
+        paymentId: payment.id,
+        providerPaymentId: intent.providerPaymentId
+      },
+      paymentId: payment.id
     });
 
     const refreshedOrder = await this.ordersRepository.getOrderByIdAndStore(order.id, publicStore.storeId);
@@ -283,16 +302,33 @@ export class PaymentsService {
         });
       }
 
-      await this.paymentsRepository.updatePayment(webhookEvent.paymentId, {
-        status: nextState.paymentStatus,
+      await this.transitionPaymentStatus({
+        paymentId: webhookEvent.paymentId,
+        storeId: webhookEvent.storeId,
+        toStatus: nextState.paymentStatus,
+        source: `payments.webhook:${payload.type}`,
+        reason: "Webhook processed",
+        metadata: {
+          webhookEventId: webhookEvent.id,
+          externalEventId: webhookEvent.externalEventId,
+          eventType: payload.type
+        },
         failureCode: nextState.failureCode,
         failureMessage: nextState.failureMessage,
         paidAt: nextState.paymentStatus === PaymentStatus.APPROVED ? new Date() : undefined
       });
 
-      await this.ordersRepository.updateOrder(webhookEvent.orderId, {
-        status: nextState.orderStatus,
-        statusUpdatedAt: new Date()
+      await this.transitionOrderStatus({
+        orderId: webhookEvent.orderId,
+        storeId: webhookEvent.storeId,
+        toStatus: nextState.orderStatus,
+        source: `payments.webhook:${payload.type}`,
+        reason: "Payment webhook propagated to order",
+        metadata: {
+          webhookEventId: webhookEvent.id,
+          paymentId: webhookEvent.paymentId,
+          paymentStatus: nextState.paymentStatus
+        }
       });
 
       await this.paymentsRepository.createPaymentTransaction({
@@ -334,6 +370,167 @@ export class PaymentsService {
 
   private isOrderPayable(status: string) {
     return status === "CREATED" || status === "WAITING_PAYMENT" || status === "PAYMENT_FAILED";
+  }
+
+  async transitionPaymentStatus(input: {
+    paymentId: string;
+    storeId?: string | null;
+    toStatus: PaymentStatus;
+    source: string;
+    reason?: string | null;
+    metadata?: Record<string, unknown> | null;
+    attemptCount?: number;
+    externalPaymentId?: string | null;
+    externalReference?: string | null;
+    providerPayload?: string | null;
+    failureCode?: string | null;
+    failureMessage?: string | null;
+    expiresAt?: Date | null;
+    paidAt?: Date | null;
+  }) {
+    const payment = await this.paymentsRepository.getPaymentById(input.paymentId);
+
+    if (!payment) {
+      throw new NotFoundException({
+        message: "Payment not found",
+        code: "PAYMENT_NOT_FOUND",
+        paymentId: input.paymentId
+      });
+    }
+
+    if (input.storeId && payment.storeId !== input.storeId) {
+      throw new ForbiddenException({
+        message: "Payment does not belong to the informed store",
+        code: "PAYMENT_STORE_MISMATCH",
+        paymentId: input.paymentId,
+        storeId: input.storeId
+      });
+    }
+
+    const fromStatus = payment.status;
+    const allowed = this.canTransitionPaymentStatus(fromStatus, input.toStatus);
+
+    if (!allowed) {
+      await this.auditRepository.createStatusTransitionAudit({
+        entityType: StatusTransitionEntityType.PAYMENT,
+        entityId: payment.id,
+        storeId: payment.storeId,
+        fromStatus,
+        toStatus: input.toStatus,
+        allowed: false,
+        reason: input.reason ?? "Invalid payment status transition",
+        source: input.source,
+        metadata: this.serializeTransitionMetadata(input.metadata)
+      });
+
+      throw new BadRequestException({
+        message: "Payment status transition is not allowed",
+        code: "PAYMENT_STATUS_TRANSITION_INVALID",
+        paymentId: payment.id,
+        fromStatus,
+        toStatus: input.toStatus
+      });
+    }
+
+    const updatedPayment = await this.paymentsRepository.updatePayment(payment.id, {
+      status: input.toStatus,
+      attemptCount: input.attemptCount,
+      externalPaymentId: input.externalPaymentId,
+      externalReference: input.externalReference,
+      providerPayload: input.providerPayload,
+      failureCode: input.failureCode,
+      failureMessage: input.failureMessage,
+      expiresAt: input.expiresAt,
+      paidAt: input.paidAt
+    });
+
+    await this.auditRepository.createStatusTransitionAudit({
+      entityType: StatusTransitionEntityType.PAYMENT,
+      entityId: payment.id,
+      storeId: payment.storeId,
+      fromStatus,
+      toStatus: input.toStatus,
+      allowed: true,
+      reason: input.reason ?? null,
+      source: input.source,
+      metadata: this.serializeTransitionMetadata(input.metadata)
+    });
+
+    return updatedPayment;
+  }
+
+  async transitionOrderStatus(input: {
+    orderId: string;
+    storeId?: string | null;
+    toStatus: OrderStatus;
+    source: string;
+    reason?: string | null;
+    metadata?: Record<string, unknown> | null;
+    paymentId?: string | null;
+  }) {
+    const order = await this.ordersRepository.getOrderById(input.orderId);
+
+    if (!order) {
+      throw new NotFoundException({
+        message: "Order not found",
+        code: "ORDER_NOT_FOUND",
+        orderId: input.orderId
+      });
+    }
+
+    if (input.storeId && order.storeId !== input.storeId) {
+      throw new ForbiddenException({
+        message: "Order does not belong to the informed store",
+        code: "ORDER_STORE_MISMATCH",
+        orderId: input.orderId,
+        storeId: input.storeId
+      });
+    }
+
+    const fromStatus = order.status;
+    const allowed = this.canTransitionOrderStatus(fromStatus, input.toStatus);
+
+    if (!allowed) {
+      await this.auditRepository.createStatusTransitionAudit({
+        entityType: StatusTransitionEntityType.ORDER,
+        entityId: order.id,
+        storeId: order.storeId,
+        fromStatus,
+        toStatus: input.toStatus,
+        allowed: false,
+        reason: input.reason ?? "Invalid order status transition",
+        source: input.source,
+        metadata: this.serializeTransitionMetadata(input.metadata)
+      });
+
+      throw new BadRequestException({
+        message: "Order status transition is not allowed",
+        code: "ORDER_STATUS_TRANSITION_INVALID",
+        orderId: order.id,
+        fromStatus,
+        toStatus: input.toStatus
+      });
+    }
+
+    const updatedOrder = await this.ordersRepository.updateOrder(order.id, {
+      paymentId: input.paymentId,
+      status: input.toStatus,
+      statusUpdatedAt: new Date()
+    });
+
+    await this.auditRepository.createStatusTransitionAudit({
+      entityType: StatusTransitionEntityType.ORDER,
+      entityId: order.id,
+      storeId: order.storeId,
+      fromStatus,
+      toStatus: input.toStatus,
+      allowed: true,
+      reason: input.reason ?? null,
+      source: input.source,
+      metadata: this.serializeTransitionMetadata(input.metadata)
+    });
+
+    return updatedOrder;
   }
 
   private assertStripeSignature(secret: string, payload: Buffer, signatureHeader: string) {
@@ -517,5 +714,54 @@ export class PaymentsService {
     }, object);
 
     return typeof value === "string" && value.trim().length > 0 ? value : null;
+  }
+
+  private canTransitionPaymentStatus(fromStatus: PaymentStatus, toStatus: PaymentStatus) {
+    if (fromStatus === toStatus) {
+      return true;
+    }
+
+    const transitions: Record<PaymentStatus, PaymentStatus[]> = {
+      CREATED: [PaymentStatus.PENDING, PaymentStatus.CANCELED, PaymentStatus.EXPIRED, PaymentStatus.FAILED],
+      PENDING: [
+        PaymentStatus.AUTHORIZED,
+        PaymentStatus.APPROVED,
+        PaymentStatus.FAILED,
+        PaymentStatus.CANCELED,
+        PaymentStatus.EXPIRED
+      ],
+      AUTHORIZED: [PaymentStatus.APPROVED, PaymentStatus.CANCELED, PaymentStatus.REFUNDED],
+      APPROVED: [PaymentStatus.REFUNDED],
+      FAILED: [PaymentStatus.PENDING, PaymentStatus.CANCELED, PaymentStatus.EXPIRED],
+      CANCELED: [PaymentStatus.PENDING],
+      EXPIRED: [PaymentStatus.PENDING],
+      REFUNDED: []
+    };
+
+    return transitions[fromStatus].includes(toStatus);
+  }
+
+  private canTransitionOrderStatus(fromStatus: OrderStatus, toStatus: OrderStatus) {
+    if (fromStatus === toStatus) {
+      return true;
+    }
+
+    const transitions: Record<OrderStatus, OrderStatus[]> = {
+      CREATED: [OrderStatus.WAITING_PAYMENT, OrderStatus.CANCELED],
+      WAITING_PAYMENT: [OrderStatus.PAYMENT_APPROVED, OrderStatus.PAYMENT_FAILED, OrderStatus.CANCELED],
+      PAYMENT_APPROVED: [OrderStatus.PROCESSING, OrderStatus.REFUNDED, OrderStatus.CANCELED],
+      PAYMENT_FAILED: [OrderStatus.WAITING_PAYMENT, OrderStatus.CANCELED],
+      PROCESSING: [OrderStatus.SHIPPED, OrderStatus.CANCELED, OrderStatus.REFUNDED],
+      SHIPPED: [OrderStatus.DELIVERED, OrderStatus.REFUNDED],
+      DELIVERED: [OrderStatus.REFUNDED],
+      CANCELED: [],
+      REFUNDED: []
+    };
+
+    return transitions[fromStatus].includes(toStatus);
+  }
+
+  private serializeTransitionMetadata(metadata?: Record<string, unknown> | null) {
+    return metadata ? JSON.stringify(metadata) : null;
   }
 }

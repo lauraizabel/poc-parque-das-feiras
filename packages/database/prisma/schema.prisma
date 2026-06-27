@@ -86,6 +86,11 @@ enum PaymentWebhookStatus {
   FAILED
 }
 
+enum StatusTransitionEntityType {
+  PAYMENT
+  ORDER
+}
+
 enum OrderStatus {
   CREATED
   WAITING_PAYMENT
@@ -149,6 +154,7 @@ model Store {
   payments          Payment[]
   paymentTransactions PaymentTransaction[]
   paymentWebhookEvents PaymentWebhookEvent[]
+  statusTransitionAudits StatusTransitionAudit[]
   orders            Order[]
   orderItems        OrderItem[]
   assets            Asset[]
@@ -439,6 +445,27 @@ model PaymentWebhookEvent {
   @@index([paymentId])
   @@index([orderId])
   @@index([provider, idempotencyKey])
+}
+
+model StatusTransitionAudit {
+  id          String                     @id @default(cuid())
+  entityType  StatusTransitionEntityType
+  entityId    String
+  storeId     String?
+  fromStatus  String?
+  toStatus    String
+  allowed     Boolean                    @default(true)
+  reason      String?
+  source      String
+  actorType   String?
+  actorId     String?
+  metadata    String?
+  store       Store?                     @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  createdAt   DateTime                   @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([storeId, createdAt])
+  @@index([allowed, createdAt])
 }
 
 model Order {

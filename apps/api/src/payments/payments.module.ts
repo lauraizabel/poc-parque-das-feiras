@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
+import { AuditModule } from "../audit/audit.module";
 import { CartModule } from "../cart/cart.module";
 import { DomainsModule } from "../domains/domains.module";
 import { PublicStorefrontMiddleware } from "../domains/public-storefront.middleware";
@@ -9,7 +10,7 @@ import { PaymentsService } from "./payments.service";
 import { StripeConnectPaymentGatewayAdapter } from "./stripe-connect.adapter";
 
 @Module({
-  imports: [DomainsModule, OrdersModule, CartModule],
+  imports: [AuditModule, DomainsModule, OrdersModule, CartModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, PaymentsRepository, StripeConnectPaymentGatewayAdapter],
   exports: [PaymentsService, PaymentsRepository]

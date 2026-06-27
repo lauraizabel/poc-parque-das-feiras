@@ -422,10 +422,10 @@ Legenda de prioridade:
 - [x] Dependências: endpoint de webhook e BullMQ.
 
 ### Task 9.8 (P0): Implementar máquina de estados de pagamento e pedido
-- [ ] Formalizar transições válidas entre estados de pagamento e pedido.
-- [ ] Critérios de aceite: transições inválidas são bloqueadas e auditadas.
-- [ ] Notas técnicas: separar status de pagamento do status operacional do pedido.
-- [ ] Dependências: Order e Payment.
+- [x] Formalizar transições válidas entre estados de pagamento e pedido.
+- [x] Critérios de aceite: transições inválidas são bloqueadas e auditadas.
+- [x] Notas técnicas: separar status de pagamento do status operacional do pedido.
+- [x] Dependências: Order e Payment.
 
 ### Task 9.9 (P1): Implementar testes de checkout e webhooks
 - [ ] Criar testes para pedido criado, pagamento aprovado, recusado, expirado e reembolsado.

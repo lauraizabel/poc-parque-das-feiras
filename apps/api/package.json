@@ -18,6 +18,7 @@
     "test:checkout-api": "node --test dist/checkout/checkout-api.test.js",
     "test:orders-modeling": "node --test dist/orders/orders-modeling.test.js",
     "test:payments-api": "node --test dist/payments/payments-api.test.js",
+    "test:payments-state-machine": "node --test dist/payments/payments-state-machine.test.js",
     "test:payments-webhook": "node --test dist/payments/payments-webhook.test.js",
     "test:payments-processing": "node --test dist/payments/payments-processing.test.js",
     "test:payments-modeling": "node --test dist/payments/payments-modeling.test.js",
