@@ -618,10 +618,10 @@ Legenda de prioridade:
 - [x] Dependências: observabilidade e integrações.
 
 ### Task 14.6 (P1): Preparar checklist de deploy inicial
-- [ ] Documentar migrations, seeds, variáveis obrigatórias, providers externos e validações pós-deploy.
-- [ ] Critérios de aceite: existe procedimento claro para subir primeiro ambiente do MVP.
-- [ ] Notas técnicas: incluir ordem segura de ativação de gateways, storage, DNS e webhook URLs.
-- [ ] Dependências: documentação mínima.
+- [x] Documentar migrations, seeds, variáveis obrigatórias, providers externos e validações pós-deploy.
+- [x] Critérios de aceite: existe procedimento claro para subir primeiro ambiente do MVP.
+- [x] Notas técnicas: incluir ordem segura de ativação de gateways, storage, DNS e webhook URLs.
+- [x] Dependências: documentação mínima.
 
 ## 5. Regras de Negócio Importantes
 

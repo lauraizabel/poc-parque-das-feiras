@@ -367,6 +367,10 @@ O caminho mais rapido para verificar esse conjunto e rodar a suite smoke da API.
 
 O troubleshooting mínimo para webhook, domínio/SSL, notificações e filas está em [RUNBOOKS.md](/Users/laura/poc/RUNBOOKS.md).
 
+## Checklist de deploy
+
+O procedimento de primeira subida do ambiente está em [DEPLOY_CHECKLIST.md](/Users/laura/poc/DEPLOY_CHECKLIST.md).
+
 ## Limitacoes conhecidas do MVP
 
 Decisoes deliberadas desta base inicial:
