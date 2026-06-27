@@ -410,10 +410,10 @@ Legenda de prioridade:
 - [x] Dependências: criação de pedido e integração de pagamento.
 
 ### Task 9.6 (P0): Implementar endpoint de webhooks de pagamento
-- [ ] Criar endpoint seguro para receber eventos do gateway.
-- [ ] Critérios de aceite: webhook valida assinatura/origem e persiste evento recebido.
-- [ ] Notas técnicas: processar webhook de forma idempotente e desacoplada do request síncrono.
-- [ ] Dependências: integração com gateway.
+- [x] Criar endpoint seguro para receber eventos do gateway.
+- [x] Critérios de aceite: webhook valida assinatura/origem e persiste evento recebido.
+- [x] Notas técnicas: processar webhook de forma idempotente e desacoplada do request síncrono.
+- [x] Dependências: integração com gateway.
 
 ### Task 9.7 (P0): Implementar processamento assíncrono de webhooks
 - [ ] Enfileirar eventos recebidos e atualizar `Payment`, `PaymentTransaction` e `Order`.

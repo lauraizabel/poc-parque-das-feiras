@@ -6,6 +6,13 @@ import {
   parsePaymentsBody
 } from "./payments.schemas";
 
+type WebhookRequest = {
+  body: unknown;
+  headers: Record<string, string | string[] | undefined>;
+  ip?: string;
+  rawBody?: Buffer;
+};
+
 @Controller("payments")
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
@@ -26,5 +33,17 @@ export class PaymentsController {
       orderId,
       parsePaymentsBody(createOrderPaymentIntentSchema, body)
     );
+  }
+
+  @Post("webhooks/stripe")
+  receiveStripeWebhook(@Req() request: WebhookRequest & { get(name: string): string | undefined }) {
+    return this.paymentsService.receiveStripeWebhook({
+      body: request.body,
+      rawBody: request.rawBody,
+      signature: request.get("stripe-signature"),
+      userAgent: request.get("user-agent"),
+      sourceIp: request.ip,
+      headers: request.headers
+    });
   }
 }

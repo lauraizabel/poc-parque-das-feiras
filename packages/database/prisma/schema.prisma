@@ -78,6 +78,14 @@ enum PaymentTransactionStatus {
   CANCELED
 }
 
+enum PaymentWebhookStatus {
+  RECEIVED
+  DUPLICATE
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
 enum OrderStatus {
   CREATED
   WAITING_PAYMENT
@@ -140,6 +148,7 @@ model Store {
   customers         Customer[]
   payments          Payment[]
   paymentTransactions PaymentTransaction[]
+  paymentWebhookEvents PaymentWebhookEvent[]
   orders            Order[]
   orderItems        OrderItem[]
   assets            Asset[]
@@ -399,6 +408,37 @@ model PaymentTransaction {
   @@index([paymentId, kind, status])
   @@index([provider, externalTransactionId])
   @@index([paymentId, idempotencyKey])
+}
+
+model PaymentWebhookEvent {
+  id               String               @id @default(cuid())
+  provider         PaymentProvider
+  status           PaymentWebhookStatus @default(RECEIVED)
+  externalEventId  String
+  eventType        String
+  paymentId        String?
+  orderId          String?
+  storeId          String?
+  idempotencyKey   String?
+  signature        String?
+  requestHeaders   String?
+  payload          String
+  userAgent        String?
+  sourceIp         String?
+  livemode         Boolean?
+  receivedAt       DateTime             @default(now())
+  processedAt      DateTime?
+  failureMessage   String?
+  store            Store?               @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@unique([provider, externalEventId])
+  @@index([provider, status])
+  @@index([storeId, status])
+  @@index([paymentId])
+  @@index([orderId])
+  @@index([provider, idempotencyKey])
 }
 
 model Order {

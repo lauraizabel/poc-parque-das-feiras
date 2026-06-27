@@ -4,7 +4,8 @@ import {
   PaymentProvider,
   PaymentStatus,
   PaymentTransactionKind,
-  PaymentTransactionStatus
+  PaymentTransactionStatus,
+  PaymentWebhookStatus
 } from "@prisma/client";
 import { DomainBoundary } from "../platform/domain-boundary";
 
@@ -175,6 +176,57 @@ export class PaymentsRepository {
         errorCode: input.errorCode ?? null,
         errorMessage: input.errorMessage ?? null,
         occurredAt: input.occurredAt ?? null
+      }
+    });
+  }
+
+  findPaymentWebhookEvent(provider: PaymentProvider, externalEventId: string) {
+    return prisma.paymentWebhookEvent.findUnique({
+      where: {
+        provider_externalEventId: {
+          provider,
+          externalEventId
+        }
+      }
+    });
+  }
+
+  createPaymentWebhookEvent(input: {
+    provider: PaymentProvider;
+    status?: PaymentWebhookStatus;
+    externalEventId: string;
+    eventType: string;
+    paymentId?: string | null;
+    orderId?: string | null;
+    storeId?: string | null;
+    idempotencyKey?: string | null;
+    signature?: string | null;
+    requestHeaders?: string | null;
+    payload: string;
+    userAgent?: string | null;
+    sourceIp?: string | null;
+    livemode?: boolean | null;
+    processedAt?: Date | null;
+    failureMessage?: string | null;
+  }) {
+    return prisma.paymentWebhookEvent.create({
+      data: {
+        provider: input.provider,
+        status: input.status ?? PaymentWebhookStatus.RECEIVED,
+        externalEventId: input.externalEventId,
+        eventType: input.eventType,
+        paymentId: input.paymentId ?? null,
+        orderId: input.orderId ?? null,
+        storeId: input.storeId ?? null,
+        idempotencyKey: input.idempotencyKey ?? null,
+        signature: input.signature ?? null,
+        requestHeaders: input.requestHeaders ?? null,
+        payload: input.payload,
+        userAgent: input.userAgent ?? null,
+        sourceIp: input.sourceIp ?? null,
+        livemode: input.livemode ?? null,
+        processedAt: input.processedAt ?? null,
+        failureMessage: input.failureMessage ?? null
       }
     });
   }
