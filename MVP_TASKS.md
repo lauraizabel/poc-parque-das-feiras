@@ -664,7 +664,7 @@ Legenda de prioridade:
 - [ ] Lojista cria categoria.
 - [ ] Lojista cria produto em `DRAFT`.
 - [x] Lojista faz upload de imagens.
-- [ ] Lojista revisa preço, estoque e conteúdo.
+- [x] Lojista revisa preço, estoque e conteúdo.
 - [ ] Lojista publica produto como `ACTIVE`.
 - [ ] Produto passa a aparecer na vitrine da loja.
 

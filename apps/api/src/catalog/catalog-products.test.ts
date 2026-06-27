@@ -203,6 +203,140 @@ describe("catalog products", () => {
     assert.equal(response.body.products[0]?.storeId, primaryStoreId);
   });
 
+  it("lets merchants review and revise draft product pricing, stock and content before publishing", async () => {
+    const draftResponse = await requestJson<{
+      product: {
+        id: string;
+        status: string;
+        description: string | null;
+        priceCents: number;
+        stockQuantity: number;
+      };
+    }>({
+      method: "POST",
+      path: "/catalog/products",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        categoryId,
+        name: "Camera Compacta",
+        slug: "camera-compacta",
+        description: "  Primeira versão do anúncio  ",
+        priceCents: 249900,
+        stockQuantity: 2,
+        status: "DRAFT"
+      }
+    });
+
+    assert.equal(draftResponse.statusCode, 201);
+    assert.equal(draftResponse.body.product.status, "DRAFT");
+
+    const draftProductId = draftResponse.body.product.id;
+
+    const imageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${draftProductId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "camera-compacta-primary.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Camera frontal",
+        isPrimary: true
+      }
+    });
+
+    assert.equal(imageResponse.statusCode, 201);
+    assert.equal(imageResponse.body.image.isPrimary, true);
+
+    const reviewResponse = await requestJson<{
+      product: {
+        id: string;
+        name: string;
+        description: string | null;
+        priceCents: number;
+        compareAtCents: number | null;
+        stockQuantity: number;
+        status: string;
+        isFeatured: boolean;
+      };
+    }>({
+      method: "PATCH",
+      path: `/catalog/products/${draftProductId}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        name: "Camera Compacta 4K",
+        description: "  Revisada com lente grande angular e bateria extra  ",
+        priceCents: 279900,
+        compareAtCents: 319900,
+        stockQuantity: 7,
+        isFeatured: true
+      }
+    });
+
+    assert.equal(reviewResponse.statusCode, 200);
+    assert.equal(reviewResponse.body.product.name, "Camera Compacta 4K");
+    assert.equal(
+      reviewResponse.body.product.description,
+      "Revisada com lente grande angular e bateria extra"
+    );
+    assert.equal(reviewResponse.body.product.priceCents, 279900);
+    assert.equal(reviewResponse.body.product.compareAtCents, 319900);
+    assert.equal(reviewResponse.body.product.stockQuantity, 7);
+    assert.equal(reviewResponse.body.product.status, "DRAFT");
+    assert.equal(reviewResponse.body.product.isFeatured, true);
+
+    const storeProductsResponse = await requestJson<{
+      products: Array<{
+        id: string;
+        name: string;
+        description: string | null;
+        priceCents: number;
+        compareAtCents: number | null;
+        stockQuantity: number;
+        images: Array<{ id: string; altText: string | null; isPrimary: boolean }>;
+      }>;
+    }>({
+      method: "GET",
+      path: `/catalog/${primaryStoreId}/products`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(storeProductsResponse.statusCode, 200);
+
+    const reviewedDraft = storeProductsResponse.body.products.find(
+      (product) => product.id === draftProductId
+    );
+
+    assert.ok(reviewedDraft);
+    assert.equal(reviewedDraft?.name, "Camera Compacta 4K");
+    assert.equal(
+      reviewedDraft?.description,
+      "Revisada com lente grande angular e bateria extra"
+    );
+    assert.equal(reviewedDraft?.priceCents, 279900);
+    assert.equal(reviewedDraft?.compareAtCents, 319900);
+    assert.equal(reviewedDraft?.stockQuantity, 7);
+    assert.equal(reviewedDraft?.images.length, 1);
+    assert.equal(reviewedDraft?.images[0]?.altText, "Camera frontal");
+    assert.equal(reviewedDraft?.images[0]?.isPrimary, true);
+  });
+
   it("exposes only active in-stock products on the public storefront endpoints", async () => {
     const publishResponse = await requestJson<{
       product: { status: string };
