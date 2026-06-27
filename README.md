@@ -53,6 +53,15 @@ O comando `pnpm dev` sobe:
 - API em `http://localhost:3001`
 - dashboard em `http://localhost:3002`
 
+## Testes smoke do core
+
+Para validar rapidamente o fluxo principal da API ponta a ponta, rode:
+
+- `pnpm --filter @acme/api build`
+- `pnpm --filter @acme/api test:smoke-e2e`
+
+A suíte smoke cobre onboarding do lojista, cadastro/publicação de produto, checkout, criação de intent de pagamento, aprovação por webhook e atualização operacional do pedido.
+
 ## Infra local
 
 O `docker-compose.yml` sobe:

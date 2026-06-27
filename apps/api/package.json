@@ -19,6 +19,7 @@
     "test:auth-dashboard": "node --test dist/auth/auth-dashboard-shell.test.js",
     "test:auth-validation": "node --test dist/auth/auth-validation.test.js",
     "test:security": "node --test dist/platform/security/security-api.test.js",
+    "test:smoke-e2e": "node --test dist/smoke/core-flows-smoke.test.js",
     "test:checkout-api": "node --test dist/checkout/checkout-api.test.js",
     "test:orders-management": "node --test dist/orders/orders-management-api.test.js",
     "test:orders-public": "node --test dist/orders/orders-public-api.test.js",

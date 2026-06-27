@@ -600,10 +600,10 @@ Legenda de prioridade:
 - [x] Dependências: autenticação e API pública.
 
 ### Task 14.3 (P0): Criar testes end-to-end dos fluxos principais
-- [ ] Automatizar fluxos de onboarding, cadastro de produto, compra, pagamento e atualização de pedido.
-- [ ] Critérios de aceite: suíte smoke cobre o core do MVP de ponta a ponta.
-- [ ] Notas técnicas: usar ambiente determinístico com mocks quando necessário.
-- [ ] Dependências: módulos core concluídos.
+- [x] Automatizar fluxos de onboarding, cadastro de produto, compra, pagamento e atualização de pedido.
+- [x] Critérios de aceite: suíte smoke cobre o core do MVP de ponta a ponta.
+- [x] Notas técnicas: usar ambiente determinístico com mocks quando necessário.
+- [x] Dependências: módulos core concluídos.
 
 ### Task 14.4 (P1): Criar documentação mínima de arquitetura e operação
 - [ ] Documentar setup local, env vars, módulos, fluxo multi-tenant, domínio custom e pagamentos.
