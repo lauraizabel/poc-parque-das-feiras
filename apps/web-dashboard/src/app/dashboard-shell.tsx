@@ -9,6 +9,7 @@ import {
 } from "../lib/auth-session";
 import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
 import { DomainConsole } from "./domain-console";
+import { MembersConsole } from "./members-console";
 import { OrdersConsole } from "./orders-console";
 
 type ApiState = {
@@ -39,7 +40,7 @@ type DashboardUser = {
   memberships: DashboardMembership[];
 };
 
-type SectionKey = "overview" | "orders" | "domains";
+type SectionKey = "overview" | "orders" | "domains" | "members";
 
 function normalizeMessage(payload: unknown, fallback: string) {
   if (typeof payload === "object" && payload !== null && "message" in payload) {
@@ -247,6 +248,11 @@ export function DashboardShell() {
       key: "domains",
       label: "Dominios",
       description: "Dominio proprio e DNS"
+    },
+    {
+      key: "members",
+      label: "Equipe",
+      description: "Membros e convites da loja"
     }
   ];
 
@@ -482,6 +488,15 @@ export function DashboardShell() {
 
           {selectedMembership && activeSection === "domains" ? (
             <DomainConsole
+              storeId={selectedMembership.storeId}
+              storeLabel={selectedMembership.store.name}
+              token={token}
+            />
+          ) : null}
+
+          {selectedMembership && activeSection === "members" ? (
+            <MembersConsole
+              canManage={selectedMembership.role === "STORE_OWNER"}
               storeId={selectedMembership.storeId}
               storeLabel={selectedMembership.store.name}
               token={token}

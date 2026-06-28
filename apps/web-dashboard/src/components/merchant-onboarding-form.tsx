@@ -13,18 +13,8 @@ type FormState = {
 };
 
 type AvailabilityState =
-  | {
-      kind: "idle";
-      message?: undefined;
-      normalizedSlug?: undefined;
-      defaultSubdomain?: undefined;
-    }
-  | {
-      kind: "loading";
-      message: string;
-      normalizedSlug?: string;
-      defaultSubdomain?: string;
-    }
+  | { kind: "idle"; message?: undefined; normalizedSlug?: undefined; defaultSubdomain?: undefined }
+  | { kind: "loading"; message: string; normalizedSlug?: string; defaultSubdomain?: string }
   | {
       kind: "success" | "warning" | "error";
       message: string;
@@ -141,11 +131,9 @@ export function MerchantOnboardingForm({
   const lastRequestedSlug = useRef("");
 
   useEffect(() => {
-    if (hasCustomSlug) {
-      return;
+    if (!hasCustomSlug) {
+      setStoreSlug(normalizeSlugPreview(storeName));
     }
-
-    setStoreSlug(normalizeSlugPreview(storeName));
   }, [hasCustomSlug, storeName]);
 
   useEffect(() => {

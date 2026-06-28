@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { StoreMemberRole } from "@prisma/client";
 import { StoresRepository } from "./stores.repository";
-import { CreateStoreInput } from "./stores.schemas";
+import {
+  CreateStoreInput,
+  InviteStoreMemberInput,
+  UpdateStoreMemberRoleInput
+} from "./stores.schemas";
 
 const RESERVED_SLUGS = new Set([
   "admin",
@@ -137,6 +141,166 @@ export class StoresService {
       currencyCode: input.currencyCode?.toUpperCase() ?? "BRL",
       locale: input.locale ?? "pt-BR"
     });
+  }
+
+  async listMembers(storeId: string) {
+    const [members, invites] = await Promise.all([
+      this.storesRepository.listMembers(storeId),
+      this.storesRepository.listPendingInvites(storeId)
+    ]);
+
+    return {
+      members: members.map((member: (typeof members)[number]) => ({
+        id: member.id,
+        userId: member.userId,
+        email: member.user.email,
+        fullName: member.user.fullName,
+        role: member.role,
+        status: "ACTIVE",
+        createdAt: member.createdAt
+      })),
+      invites: invites.map((invite: (typeof invites)[number]) => ({
+        id: invite.id,
+        email: invite.invitedEmail,
+        role: invite.role,
+        status: "PENDING",
+        invitedBy: {
+          id: invite.invitedByUser.id,
+          email: invite.invitedByUser.email,
+          fullName: invite.invitedByUser.fullName
+        },
+        createdAt: invite.createdAt
+      }))
+    };
+  }
+
+  async inviteMember(input: InviteStoreMemberInput & { storeId: string; invitedByUserId: string }) {
+    const email = input.email.toLowerCase();
+    const existingInvite = await this.storesRepository.findPendingInviteByEmail(input.storeId, email);
+
+    if (existingInvite) {
+      throw new ConflictException("Já existe um convite pendente para este e-mail.");
+    }
+
+    const existingUser = await this.storesRepository.findUserByEmail(email);
+
+    if (existingUser) {
+      const existingMembership = await this.storesRepository.findStoreMembership(
+        existingUser.id,
+        input.storeId
+      );
+
+      if (existingMembership) {
+        throw new ConflictException("Este usuário já participa da loja.");
+      }
+
+      const membership = await this.storesRepository.addMember({
+        storeId: input.storeId,
+        userId: existingUser.id,
+        role: input.role
+      });
+
+      return {
+        status: "ACTIVE" as const,
+        member: {
+          id: membership.id,
+          userId: membership.userId,
+          email: existingUser.email,
+          fullName: existingUser.fullName,
+          role: membership.role,
+          createdAt: membership.createdAt
+        }
+      };
+    }
+
+    const invite = await this.storesRepository.createPendingInvite({
+      storeId: input.storeId,
+      invitedEmail: email,
+      role: input.role,
+      invitedByUserId: input.invitedByUserId
+    });
+
+    return {
+      status: "PENDING" as const,
+      invite: {
+        id: invite.id,
+        email: invite.invitedEmail,
+        role: invite.role,
+        createdAt: invite.createdAt
+      }
+    };
+  }
+
+  async updateMemberRole(
+    input: UpdateStoreMemberRoleInput & {
+      storeId: string;
+      memberId: string;
+      actorUserId: string;
+    }
+  ) {
+    const member = await this.storesRepository.findMemberById(input.memberId);
+
+    if (!member || member.storeId !== input.storeId) {
+      throw new NotFoundException("Membro da loja não encontrado.");
+    }
+
+    if (member.role === StoreMemberRole.STORE_OWNER) {
+      throw new ForbiddenException("Não é permitido alterar o papel do owner da loja.");
+    }
+
+    if (member.userId === input.actorUserId) {
+      throw new ForbiddenException("Você não pode alterar o seu próprio papel.");
+    }
+
+    const updatedMember = await this.storesRepository.updateMemberRole(input.memberId, input.role);
+
+    return {
+      member: {
+        id: updatedMember.id,
+        userId: updatedMember.userId,
+        email: updatedMember.user.email,
+        fullName: updatedMember.user.fullName,
+        role: updatedMember.role,
+        status: "ACTIVE" as const,
+        createdAt: updatedMember.createdAt
+      }
+    };
+  }
+
+  async removeMember(input: { storeId: string; memberId: string; actorUserId: string }) {
+    const member = await this.storesRepository.findMemberById(input.memberId);
+
+    if (!member || member.storeId !== input.storeId) {
+      throw new NotFoundException("Membro da loja não encontrado.");
+    }
+
+    if (member.role === StoreMemberRole.STORE_OWNER) {
+      throw new ForbiddenException("Não é permitido remover o owner da loja.");
+    }
+
+    if (member.userId === input.actorUserId) {
+      throw new ForbiddenException("Você não pode remover a si mesma da loja.");
+    }
+
+    await this.storesRepository.removeMember(input.memberId);
+
+    return {
+      removed: true
+    };
+  }
+
+  async removePendingInvite(input: { storeId: string; inviteId: string }) {
+    const invite = await this.storesRepository.findPendingInviteById(input.inviteId);
+
+    if (!invite || invite.storeId !== input.storeId) {
+      throw new NotFoundException("Convite pendente não encontrado.");
+    }
+
+    await this.storesRepository.removePendingInvite(input.inviteId);
+
+    return {
+      removed: true
+    };
   }
 
   private normalizeSlug(value: string) {

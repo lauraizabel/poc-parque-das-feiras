@@ -170,10 +170,10 @@ Legenda de prioridade:
 - [x] Dependências: fluxo backend de criação de loja.
 
 ### Task 3.5 (P1): Implementar gestão básica de membros da loja
-- [ ] Criar CRUD simples para convidar, listar, alterar papel e remover membros da loja.
-- [ ] Critérios de aceite: owner consegue administrar membros respeitando hierarquia mínima.
-- [ ] Notas técnicas: convite pode ser simples por e-mail com status pendente no MVP.
-- [ ] Dependências: roles e StoreMember.
+- [x] Criar CRUD simples para convidar, listar, alterar papel e remover membros da loja.
+- [x] Critérios de aceite: owner consegue administrar membros respeitando hierarquia mínima.
+- [x] Notas técnicas: convite pode ser simples por e-mail com status pendente no MVP.
+- [x] Dependências: roles e StoreMember.
 
 ### Task 3.6 (P2): Implementar testes e seeds de onboarding
 - [ ] Criar seeds e cenários de teste para owner, manager e support com loja vinculada.

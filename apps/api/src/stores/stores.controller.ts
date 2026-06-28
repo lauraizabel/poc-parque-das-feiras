@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { PlatformRole, StoreMemberRole } from "@prisma/client";
 import { AuthorizationGuard } from "../auth/authorization.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -11,9 +11,11 @@ import {
 } from "../auth/auth.types";
 import {
   createStoreSchema,
+  inviteStoreMemberSchema,
   parseStoreBody,
   parseStoreQuery,
-  storeSlugAvailabilitySchema
+  storeSlugAvailabilitySchema,
+  updateStoreMemberRoleSchema
 } from "./stores.schemas";
 import { StoresService } from "./stores.service";
 
@@ -81,6 +83,75 @@ export class StoresController {
     return this.storesService.createStore({
       ...parseStoreBody(createStoreSchema, body),
       ownerId: request.user.sub
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER)
+  @Get(":storeId/members")
+  listMembers(@Param("storeId") storeId: string) {
+    return this.storesService.listMembers(storeId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER)
+  @Post(":storeId/members/invite")
+  inviteMember(
+    @Req() request: AuthenticatedRequest,
+    @Param("storeId") storeId: string,
+    @Body() body: unknown
+  ) {
+    return this.storesService.inviteMember({
+      ...parseStoreBody(inviteStoreMemberSchema, body),
+      storeId,
+      invitedByUserId: request.user.sub
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER)
+  @Patch(":storeId/members/:memberId")
+  updateMemberRole(
+    @Req() request: AuthenticatedRequest,
+    @Param("storeId") storeId: string,
+    @Param("memberId") memberId: string,
+    @Body() body: unknown
+  ) {
+    return this.storesService.updateMemberRole({
+      ...parseStoreBody(updateStoreMemberRoleSchema, body),
+      storeId,
+      memberId,
+      actorUserId: request.user.sub
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER)
+  @Delete(":storeId/members/:memberId")
+  removeMember(
+    @Req() request: AuthenticatedRequest,
+    @Param("storeId") storeId: string,
+    @Param("memberId") memberId: string
+  ) {
+    return this.storesService.removeMember({
+      storeId,
+      memberId,
+      actorUserId: request.user.sub
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER)
+  @Delete(":storeId/member-invites/:inviteId")
+  removePendingInvite(@Param("storeId") storeId: string, @Param("inviteId") inviteId: string) {
+    return this.storesService.removePendingInvite({
+      storeId,
+      inviteId
     });
   }
 

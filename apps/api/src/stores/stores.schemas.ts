@@ -1,4 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
+import { StoreMemberRole } from "@prisma/client";
 import { z, ZodError } from "zod";
 
 export const createStoreSchema = z.object({
@@ -14,8 +15,24 @@ export const storeSlugAvailabilitySchema = z.object({
   slug: z.string().trim().min(1).max(60)
 });
 
+const manageableRoleSchema = z.enum([
+  StoreMemberRole.STORE_MANAGER,
+  StoreMemberRole.STORE_SUPPORT
+]);
+
+export const inviteStoreMemberSchema = z.object({
+  email: z.string().trim().email(),
+  role: manageableRoleSchema
+}).strict();
+
+export const updateStoreMemberRoleSchema = z.object({
+  role: manageableRoleSchema
+}).strict();
+
 export type CreateStoreInput = z.infer<typeof createStoreSchema>;
 export type StoreSlugAvailabilityInput = z.infer<typeof storeSlugAvailabilitySchema>;
+export type InviteStoreMemberInput = z.infer<typeof inviteStoreMemberSchema>;
+export type UpdateStoreMemberRoleInput = z.infer<typeof updateStoreMemberRoleSchema>;
 
 export function parseStoreBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
   try {

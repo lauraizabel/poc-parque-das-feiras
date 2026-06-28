@@ -23,16 +23,37 @@ export class StoresRepository {
     currencyCode?: string;
     locale?: string;
   }) {
-    return prisma.store.create({
-      data: {
-        name: input.name,
-        slug: input.slug,
-        defaultSubdomain: input.defaultSubdomain,
-        ownerId: input.ownerId,
-        supportEmail: input.supportEmail,
-        currencyCode: input.currencyCode,
-        locale: input.locale
-      }
+    return prisma.$transaction(async (tx) => {
+      const store = await tx.store.create({
+        data: {
+          name: input.name,
+          slug: input.slug,
+          defaultSubdomain: input.defaultSubdomain,
+          ownerId: input.ownerId,
+          supportEmail: input.supportEmail,
+          currencyCode: input.currencyCode,
+          locale: input.locale
+        }
+      });
+
+      await tx.storeMember.upsert({
+        where: {
+          userId_storeId: {
+            userId: input.ownerId,
+            storeId: store.id
+          }
+        },
+        update: {
+          role: StoreMemberRole.STORE_OWNER
+        },
+        create: {
+          userId: input.ownerId,
+          storeId: store.id,
+          role: StoreMemberRole.STORE_OWNER
+        }
+      });
+
+      return store;
     });
   }
 
@@ -45,6 +66,14 @@ export class StoresRepository {
   findStoreBySubdomain(defaultSubdomain: string) {
     return prisma.store.findUnique({
       where: { defaultSubdomain }
+    });
+  }
+
+  findUserByEmail(email: string) {
+    return prisma.user.findUnique({
+      where: {
+        email: email.toLowerCase()
+      }
     });
   }
 
@@ -66,6 +95,102 @@ export class StoresRepository {
   }) {
     return prisma.storeMember.create({
       data: input
+    });
+  }
+
+  findStoreMembership(userId: string, storeId: string) {
+    return prisma.storeMember.findUnique({
+      where: {
+        userId_storeId: {
+          userId,
+          storeId
+        }
+      }
+    });
+  }
+
+  listMembers(storeId: string) {
+    return prisma.storeMember.findMany({
+      where: { storeId },
+      include: {
+        user: true
+      },
+      orderBy: [{ createdAt: "asc" }]
+    });
+  }
+
+  findMemberById(memberId: string) {
+    return prisma.storeMember.findUnique({
+      where: { id: memberId },
+      include: {
+        user: true
+      }
+    });
+  }
+
+  updateMemberRole(memberId: string, role: StoreMemberRole) {
+    return prisma.storeMember.update({
+      where: { id: memberId },
+      data: { role },
+      include: {
+        user: true
+      }
+    });
+  }
+
+  removeMember(memberId: string) {
+    return prisma.storeMember.delete({
+      where: { id: memberId }
+    });
+  }
+
+  listPendingInvites(storeId: string) {
+    return prisma.storeMemberInvite.findMany({
+      where: { storeId },
+      include: {
+        invitedByUser: true
+      },
+      orderBy: [{ createdAt: "asc" }]
+    });
+  }
+
+  findPendingInviteByEmail(storeId: string, invitedEmail: string) {
+    return prisma.storeMemberInvite.findUnique({
+      where: {
+        storeId_invitedEmail: {
+          storeId,
+          invitedEmail
+        }
+      }
+    });
+  }
+
+  createPendingInvite(input: {
+    storeId: string;
+    invitedEmail: string;
+    role: StoreMemberRole;
+    invitedByUserId: string;
+  }) {
+    return prisma.storeMemberInvite.create({
+      data: input,
+      include: {
+        invitedByUser: true
+      }
+    });
+  }
+
+  findPendingInviteById(inviteId: string) {
+    return prisma.storeMemberInvite.findUnique({
+      where: { id: inviteId },
+      include: {
+        invitedByUser: true
+      }
+    });
+  }
+
+  removePendingInvite(inviteId: string) {
+    return prisma.storeMemberInvite.delete({
+      where: { id: inviteId }
     });
   }
 }

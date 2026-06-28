@@ -343,6 +343,38 @@ a {
   gap: 12px;
 }
 
+.members-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.member-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.member-card.pending {
+  background: rgba(231, 250, 245, 0.55);
+}
+
+.member-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.compact-select {
+  min-width: 180px;
+}
+
 .orders-card {
   display: grid;
   gap: 18px;
@@ -438,6 +470,11 @@ a {
   }
 
   .domain-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .member-card {
     flex-direction: column;
     align-items: flex-start;
   }

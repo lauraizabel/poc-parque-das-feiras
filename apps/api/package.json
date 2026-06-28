@@ -20,6 +20,7 @@
     "test:auth-dashboard": "node --test dist/auth/auth-dashboard-shell.test.js",
     "test:auth-token-flows": "node --test dist/auth/auth-token-flows.test.js",
     "test:auth-validation": "node --test dist/auth/auth-validation.test.js",
+    "test:stores-members": "node --test dist/stores/store-members-api.test.js",
     "test:security": "node --test dist/platform/security/security-api.test.js",
     "test:smoke-e2e": "node --test dist/smoke/core-flows-smoke.test.js",
     "test:checkout-api": "node --test dist/checkout/checkout-api.test.js",

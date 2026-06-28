@@ -163,6 +163,7 @@ model User {
   platformRole     PlatformRole  @default(CUSTOMER)
   ownedStores      Store[]       @relation("StoreOwner")
   storeMembers     StoreMember[]
+  sentStoreInvites StoreMemberInvite[]
   carts            Cart[]
   authFlowTokens   AuthFlowToken[]
   authFlowAudits   AuthFlowAudit[]
@@ -216,6 +217,7 @@ model Store {
   status            StoreStatus       @default(TRIALING)
   owner             User              @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   storeMembers      StoreMember[]
+  memberInvites     StoreMemberInvite[]
   domains           StoreDomain[]
   paymentAccounts   PaymentAccount[]
   customers         Customer[]
@@ -250,6 +252,21 @@ model StoreMember {
 
   @@unique([userId, storeId])
   @@index([storeId])
+}
+
+model StoreMemberInvite {
+  id           String          @id @default(cuid())
+  storeId       String
+  invitedEmail  String
+  role          StoreMemberRole @default(STORE_SUPPORT)
+  invitedByUserId String
+  store         Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  invitedByUser User            @relation(fields: [invitedByUserId], references: [id], onDelete: Cascade)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([storeId, invitedEmail])
+  @@index([invitedByUserId])
 }
 
 model StoreDomain {
