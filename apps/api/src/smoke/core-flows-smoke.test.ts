@@ -449,10 +449,31 @@ describe("core flows smoke e2e", () => {
     assert.equal(webhookResponse.body.received, true);
     assert.equal(webhookResponse.body.duplicate, false);
 
+    const receivedWebhookEvent = await prisma.paymentWebhookEvent.findUnique({
+      where: {
+        id: webhookResponse.body.event.id
+      }
+    });
+
+    assert.ok(receivedWebhookEvent);
+    assert.equal(receivedWebhookEvent?.externalEventId, `evt_smoke_${suffix}`);
+    assert.equal(receivedWebhookEvent?.paymentId, paymentIntentResponse.body.payment.id);
+    assert.equal(receivedWebhookEvent?.orderId, checkoutResponse.body.order.id);
+    assert.equal(receivedWebhookEvent?.storeId, storeId);
+    assert.equal(receivedWebhookEvent?.status, "RECEIVED");
+
     const processingResult = await paymentsService.processPaymentWebhookJob(
       webhookResponse.body.event.id
     );
     assert.equal(processingResult.processed, true);
+
+    const processedWebhookEvent = await prisma.paymentWebhookEvent.findUnique({
+      where: {
+        id: webhookResponse.body.event.id
+      }
+    });
+
+    assert.equal(processedWebhookEvent?.status, "PROCESSED");
 
     const approvedOrder = await prisma.order.findUnique({
       where: { id: checkoutResponse.body.order.id },

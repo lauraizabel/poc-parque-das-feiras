@@ -678,11 +678,11 @@ Legenda de prioridade:
 - [x] Cliente recebe retorno inicial do checkout.
 
 ### Fluxo: Confirmação de pagamento
-- [ ] Gateway envia webhook.
-- [ ] Sistema valida e persiste evento.
-- [ ] Job processa webhook.
-- [ ] Pagamento é atualizado.
-- [ ] Pedido transita para status coerente.
+- [x] Gateway envia webhook.
+- [x] Sistema valida e persiste evento.
+- [x] Job processa webhook.
+- [x] Pagamento é atualizado.
+- [x] Pedido transita para status coerente.
 - [ ] Loja e cliente recebem notificação básica, quando aplicável.
 
 ### Fluxo: Operação do pedido
