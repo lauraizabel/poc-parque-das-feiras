@@ -222,10 +222,10 @@ Legenda de prioridade:
 - [x] Dependências: StoreDomain model.
 
 ### Task 5.3 (P1): Exibir instruções DNS para ativação do domínio
-- [ ] Gerar instruções claras de CNAME para o lojista configurar seu domínio.
-- [ ] Critérios de aceite: dashboard mostra valor esperado de destino e status atual do apontamento.
-- [ ] Notas técnicas: incluir cópia fácil e mensagens para erros comuns de DNS.
-- [ ] Dependências: cadastro de domínio próprio.
+- [x] Gerar instruções claras de CNAME para o lojista configurar seu domínio.
+- [x] Critérios de aceite: dashboard mostra valor esperado de destino e status atual do apontamento.
+- [x] Notas técnicas: incluir cópia fácil e mensagens para erros comuns de DNS.
+- [x] Dependências: cadastro de domínio próprio.
 
 ### Task 5.4 (P0): Implementar rotina de verificação de DNS
 - [x] Criar job assíncrono que verifica se o CNAME está apontando corretamente.

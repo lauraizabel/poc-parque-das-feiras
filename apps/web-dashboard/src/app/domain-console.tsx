@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { env } from "../lib/env";
 
 type DomainRecord = {
@@ -26,11 +26,57 @@ type DomainConsoleProps = {
   storeLabel: string;
 };
 
+function getStatusLabel(status?: string) {
+  switch (status) {
+    case "PENDING":
+      return "Cadastro recebido";
+    case "AWAITING_DNS":
+      return "Aguardando DNS correto";
+    case "VERIFYING":
+      return "Verificando DNS";
+    case "SSL_PENDING":
+      return "Emitindo SSL";
+    case "ACTIVE":
+      return "Domínio ativo";
+    case "ERROR":
+      return "Atenção necessária";
+    case "REMOVED":
+      return "Domínio removido";
+    default:
+      return status ?? "n/a";
+  }
+}
+
+function getDnsGuidance(domain: DomainRecord | null) {
+  if (!domain) {
+    return null;
+  }
+
+  if (domain.dnsErrorMessage?.includes("No CNAME record found")) {
+    return "Nenhum CNAME foi encontrado ainda. Crie um registro CNAME para `www` apontando para o destino esperado.";
+  }
+
+  if (domain.dnsErrorMessage?.includes("CNAME mismatch")) {
+    return "O domínio já tem um CNAME configurado, mas ele ainda aponta para outro destino. Ajuste o valor para o alvo esperado exibido abaixo.";
+  }
+
+  if (domain.status === "SSL_PENDING") {
+    return "O DNS já está correto. Agora basta aguardar a emissão e propagação do certificado SSL.";
+  }
+
+  if (domain.status === "ACTIVE") {
+    return "O domínio já está ativo e pronto para servir a vitrine pública da loja.";
+  }
+
+  return "Depois de salvar o CNAME no provedor DNS, aguarde a propagação e use o botão de verificação para atualizar o status.";
+}
+
 export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps) {
   const [host, setHost] = useState("www.sualoja.com");
   const [domain, setDomain] = useState<DomainRecord | null>(null);
   const [state, setState] = useState<ApiState>({ kind: "idle" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedField, setCopiedField] = useState<"host" | "target" | null>(null);
 
   async function loadCurrentDomain() {
     if (!storeId) {
@@ -78,6 +124,29 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
       });
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  useEffect(() => {
+    if (storeId) {
+      void loadCurrentDomain();
+    }
+  }, [storeId]);
+
+  async function copyValue(kind: "host" | "target", value: string | null | undefined) {
+    if (!value) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(kind);
+      window.setTimeout(() => setCopiedField((current) => (current === kind ? null : current)), 1200);
+    } catch {
+      setState({
+        kind: "error",
+        message: "Não foi possível copiar o valor automaticamente."
+      });
     }
   }
 
@@ -184,7 +253,7 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
           </div>
           <div>
             <span>Status</span>
-            <strong>{domain.status ?? "n/a"}</strong>
+            <strong>{getStatusLabel(domain.status)}</strong>
           </div>
           <div>
             <span>CNAME esperado</span>
@@ -195,6 +264,48 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
             <strong>{domain.sslLastCheckedAt ?? "n/a"}</strong>
           </div>
         </div>
+      ) : null}
+
+      {domain ? (
+        <section className="dns-guide">
+          <div className="domain-head">
+            <div>
+              <div className="eyebrow">Instruções DNS</div>
+              <h3 className="section-title dns-guide-title">Configure o CNAME no seu provedor</h3>
+            </div>
+          </div>
+
+          <div className="dns-guide-grid">
+            <div className="dns-guide-card">
+              <span>Tipo</span>
+              <strong>CNAME</strong>
+            </div>
+            <div className="dns-guide-card">
+              <span>Nome / Host</span>
+              <strong>www</strong>
+              <button
+                className="secondary-button"
+                onClick={() => void copyValue("host", "www")}
+                type="button"
+              >
+                {copiedField === "host" ? "Copiado" : "Copiar host"}
+              </button>
+            </div>
+            <div className="dns-guide-card dns-guide-card-wide">
+              <span>Destino esperado</span>
+              <strong>{domain.dnsTargetValue ?? "n/a"}</strong>
+              <button
+                className="secondary-button"
+                onClick={() => void copyValue("target", domain.dnsTargetValue)}
+                type="button"
+              >
+                {copiedField === "target" ? "Copiado" : "Copiar destino"}
+              </button>
+            </div>
+          </div>
+
+          <p className="subtitle">{getDnsGuidance(domain)}</p>
+        </section>
       ) : null}
 
       {domain ? (

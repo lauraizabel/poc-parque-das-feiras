@@ -343,6 +343,48 @@ a {
   gap: 12px;
 }
 
+.dns-guide {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.dns-guide-title {
+  font-size: 1.2rem;
+}
+
+.dns-guide-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.dns-guide-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.dns-guide-card span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.dns-guide-card strong {
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.dns-guide-card-wide {
+  grid-column: span 2;
+}
+
 .members-stack {
   display: grid;
   gap: 14px;
