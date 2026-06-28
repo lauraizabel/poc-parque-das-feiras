@@ -8,6 +8,7 @@ import {
   storeDashboardAccessToken
 } from "../lib/auth-session";
 import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
+import { CatalogConsole } from "./catalog-console";
 import { DomainConsole } from "./domain-console";
 import { MembersConsole } from "./members-console";
 import { OrdersConsole } from "./orders-console";
@@ -40,7 +41,7 @@ type DashboardUser = {
   memberships: DashboardMembership[];
 };
 
-type SectionKey = "overview" | "orders" | "domains" | "members";
+type SectionKey = "overview" | "catalog" | "orders" | "domains" | "members";
 
 function normalizeMessage(payload: unknown, fallback: string) {
   if (typeof payload === "object" && payload !== null && "message" in payload) {
@@ -238,6 +239,11 @@ export function DashboardShell() {
       key: "overview",
       label: "Resumo",
       description: "Visao geral da loja atual"
+    },
+    {
+      key: "catalog",
+      label: "Catalogo",
+      description: "Produtos, categorias e operacao"
     },
     {
       key: "orders",
@@ -476,6 +482,14 @@ export function DashboardShell() {
                 backoffice sobre a mesma fundacao.
               </p>
             </section>
+          ) : null}
+
+          {selectedMembership && activeSection === "catalog" ? (
+            <CatalogConsole
+              storeId={selectedMembership.storeId}
+              storeLabel={selectedMembership.store.name}
+              token={token}
+            />
           ) : null}
 
           {selectedMembership && activeSection === "orders" ? (

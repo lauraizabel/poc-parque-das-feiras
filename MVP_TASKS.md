@@ -296,10 +296,10 @@ Legenda de prioridade:
 - [x] Dependências: upload de imagens.
 
 ### Task 6.6 (P1): Construir telas de catálogo no painel do lojista
-- [ ] Implementar listagem, formulário e ações rápidas para produtos e categorias.
-- [ ] Critérios de aceite: lojista consegue operar catálogo sem usar API manualmente.
-- [ ] Notas técnicas: incluir filtros por status, estoque e categoria.
-- [ ] Dependências: CRUD backend de catálogo.
+- [x] Implementar listagem, formulário e ações rápidas para produtos e categorias.
+- [x] Critérios de aceite: lojista consegue operar catálogo sem usar API manualmente.
+- [x] Notas técnicas: incluir filtros por status, estoque e categoria.
+- [x] Dependências: CRUD backend de catálogo.
 
 ### Task 6.7 (P1): Implementar testes de catálogo, estoque e mídia
 - [ ] Criar testes para regras de status, estoque, categoria e uploads.
