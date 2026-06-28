@@ -30,6 +30,7 @@ describe("core flows smoke e2e", () => {
   const storeSlug = `smoke-store-${suffix}`;
   const customerEmail = `smoke-customer-${suffix}@example.com`;
   const sessionId = `smoke-session-${suffix}`;
+  const storefrontHost = `${storeSlug}.lvh.me`;
 
   let app: INestApplication;
   let paymentsService: PaymentsService;
@@ -194,13 +195,90 @@ describe("core flows smoke e2e", () => {
 
     assert.equal(shippingResponse.statusCode, 201);
 
+    const catalogContextResponse = await requestJson<{
+      store: { storeId: string; slug: string; host: string };
+    }>({
+      method: "GET",
+      path: "/catalog/public/context",
+      headers: {
+        "x-forwarded-host": storefrontHost
+      }
+    });
+
+    assert.equal(catalogContextResponse.statusCode, 200);
+    assert.equal(catalogContextResponse.body.store.storeId, storeId);
+    assert.equal(catalogContextResponse.body.store.slug, storeSlug);
+    assert.equal(catalogContextResponse.body.store.host, storefrontHost);
+
+    const homepageResponse = await requestJson<{
+      store: { slug: string };
+      categories: Array<{ id: string; slug: string }>;
+      products: Array<{ id: string; slug: string; status: string }>;
+    }>({
+      method: "GET",
+      path: "/catalog/public/home",
+      headers: {
+        "x-forwarded-host": storefrontHost
+      }
+    });
+
+    assert.equal(homepageResponse.statusCode, 200);
+    assert.equal(homepageResponse.body.store.slug, storeSlug);
+    assert.equal(homepageResponse.body.categories.length, 1);
+    assert.equal(homepageResponse.body.categories[0]?.slug, "cafe-especial");
+    assert.equal(homepageResponse.body.products.length, 1);
+    assert.equal(homepageResponse.body.products[0]?.id, productResponse.body.product.id);
+    assert.equal(homepageResponse.body.products[0]?.status, "ACTIVE");
+
+    const publicProductsResponse = await requestJson<{
+      selectedCategorySlug: string | null;
+      products: Array<{ id: string; slug: string; priceCents: number }>;
+      pagination: { totalItems: number; totalPages: number; page: number };
+    }>({
+      method: "GET",
+      path: "/catalog/public/products",
+      headers: {
+        "x-forwarded-host": storefrontHost
+      }
+    });
+
+    assert.equal(publicProductsResponse.statusCode, 200);
+    assert.equal(publicProductsResponse.body.selectedCategorySlug, null);
+    assert.equal(publicProductsResponse.body.pagination.totalItems, 1);
+    assert.equal(publicProductsResponse.body.pagination.totalPages, 1);
+    assert.equal(publicProductsResponse.body.pagination.page, 1);
+    assert.equal(publicProductsResponse.body.products[0]?.id, productResponse.body.product.id);
+    assert.equal(publicProductsResponse.body.products[0]?.slug, "moedor-premium");
+    assert.equal(publicProductsResponse.body.products[0]?.priceCents, 18990);
+
+    const publicProductResponse = await requestJson<{
+      store: { slug: string };
+      product: { id: string; slug: string; status: string };
+      availability: { canAddToCart: boolean; isInStock: boolean; status: string };
+    }>({
+      method: "GET",
+      path: "/catalog/public/products/moedor-premium",
+      headers: {
+        "x-forwarded-host": storefrontHost
+      }
+    });
+
+    assert.equal(publicProductResponse.statusCode, 200);
+    assert.equal(publicProductResponse.body.store.slug, storeSlug);
+    assert.equal(publicProductResponse.body.product.id, productResponse.body.product.id);
+    assert.equal(publicProductResponse.body.product.slug, "moedor-premium");
+    assert.equal(publicProductResponse.body.product.status, "ACTIVE");
+    assert.equal(publicProductResponse.body.availability.canAddToCart, true);
+    assert.equal(publicProductResponse.body.availability.isInStock, true);
+    assert.equal(publicProductResponse.body.availability.status, "ACTIVE");
+
     const addToCartResponse = await requestJson<{
       cart: { items: Array<{ productId: string; quantity: number }> };
     }>({
       method: "POST",
       path: "/cart/public/current/items",
       headers: {
-        "x-forwarded-host": `${storeSlug}.lvh.me`
+        "x-forwarded-host": storefrontHost
       },
       body: {
         sessionId,
@@ -212,6 +290,67 @@ describe("core flows smoke e2e", () => {
 
     assert.equal(addToCartResponse.statusCode, 201);
     assert.equal(addToCartResponse.body.cart.items.length, 1);
+    assert.equal(addToCartResponse.body.cart.items[0]?.productId, productResponse.body.product.id);
+    assert.equal(addToCartResponse.body.cart.items[0]?.quantity, 1);
+
+    const cartContextResponse = await requestJson<{
+      store: { slug: string };
+      cart: {
+        summary: { itemCount: number; subtotalCents: number };
+        items: Array<{ productId: string; quantity: number; unitPriceCents: number }>;
+      } | null;
+    }>({
+      method: "GET",
+      path: "/cart/public/context",
+      headers: {
+        "x-forwarded-host": storefrontHost
+      },
+      body: {
+        sessionId,
+        customerEmail
+      }
+    });
+
+    assert.equal(cartContextResponse.statusCode, 200);
+    assert.equal(cartContextResponse.body.store.slug, storeSlug);
+    assert.equal(cartContextResponse.body.cart?.summary.itemCount, 1);
+    assert.equal(cartContextResponse.body.cart?.summary.subtotalCents, 18990);
+    assert.equal(cartContextResponse.body.cart?.items[0]?.productId, productResponse.body.product.id);
+    assert.equal(cartContextResponse.body.cart?.items[0]?.quantity, 1);
+    assert.equal(cartContextResponse.body.cart?.items[0]?.unitPriceCents, 18990);
+
+    const shippingOptionsResponse = await requestJson<{
+      store: { slug: string };
+      cart: { subtotalCents: number };
+      shippingOptions: Array<{
+        id: string;
+        priceCents: number;
+        totalCents: number;
+        isDefault: boolean;
+      }>;
+    }>({
+      method: "POST",
+      path: "/checkout/public/current/shipping-options",
+      headers: {
+        "x-forwarded-host": storefrontHost
+      },
+      body: {
+        sessionId,
+        customerEmail
+      }
+    });
+
+    assert.equal(shippingOptionsResponse.statusCode, 201);
+    assert.equal(shippingOptionsResponse.body.store.slug, storeSlug);
+    assert.equal(shippingOptionsResponse.body.cart.subtotalCents, 18990);
+    assert.equal(shippingOptionsResponse.body.shippingOptions.length, 1);
+    assert.equal(
+      shippingOptionsResponse.body.shippingOptions[0]?.id,
+      shippingResponse.body.shippingMethod.id
+    );
+    assert.equal(shippingOptionsResponse.body.shippingOptions[0]?.priceCents, 2400);
+    assert.equal(shippingOptionsResponse.body.shippingOptions[0]?.totalCents, 21390);
+    assert.equal(shippingOptionsResponse.body.shippingOptions[0]?.isDefault, true);
 
     const checkoutResponse = await requestJson<{
       customerAccess: { token: string };
@@ -220,7 +359,7 @@ describe("core flows smoke e2e", () => {
       method: "POST",
       path: "/checkout/public/current/order",
       headers: {
-        "x-forwarded-host": `${storeSlug}.lvh.me`
+        "x-forwarded-host": storefrontHost
       },
       body: {
         sessionId,
@@ -260,7 +399,7 @@ describe("core flows smoke e2e", () => {
       method: "POST",
       path: `/payments/public/orders/${checkoutResponse.body.order.id}/intent`,
       headers: {
-        "x-forwarded-host": `${storeSlug}.lvh.me`
+        "x-forwarded-host": storefrontHost
       },
       body: {
         sessionId,

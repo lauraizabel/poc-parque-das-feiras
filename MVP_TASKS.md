@@ -661,21 +661,21 @@ Legenda de prioridade:
 - [ ] Loja permanece acessível por subdomínio durante todo o processo.
 
 ### Fluxo: Cadastro e publicação de produto
-- [ ] Lojista cria categoria.
-- [ ] Lojista cria produto em `DRAFT`.
+- [x] Lojista cria categoria.
+- [x] Lojista cria produto em `DRAFT`.
 - [x] Lojista faz upload de imagens.
 - [x] Lojista revisa preço, estoque e conteúdo.
 - [x] Lojista publica produto como `ACTIVE`.
 - [x] Produto passa a aparecer na vitrine da loja.
 
 ### Fluxo: Compra na vitrine
-- [ ] Cliente acessa a loja pelo domínio ou subdomínio.
-- [ ] Cliente navega no catálogo e abre um produto.
-- [ ] Cliente adiciona item ao carrinho.
-- [ ] Cliente revisa carrinho e segue para checkout.
-- [ ] Cliente informa dados e seleciona frete.
-- [ ] Sistema cria pedido e inicia pagamento.
-- [ ] Cliente recebe retorno inicial do checkout.
+- [x] Cliente acessa a loja pelo domínio ou subdomínio.
+- [x] Cliente navega no catálogo e abre um produto.
+- [x] Cliente adiciona item ao carrinho.
+- [x] Cliente revisa carrinho e segue para checkout.
+- [x] Cliente informa dados e seleciona frete.
+- [x] Sistema cria pedido e inicia pagamento.
+- [x] Cliente recebe retorno inicial do checkout.
 
 ### Fluxo: Confirmação de pagamento
 - [ ] Gateway envia webhook.
