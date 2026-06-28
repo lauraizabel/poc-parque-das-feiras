@@ -367,6 +367,42 @@ export class CatalogRepository {
     });
   }
 
+  updateProductImage(input: {
+    imageId: string;
+    productId: string;
+    altText?: string | null;
+    sortOrder?: number;
+    isPrimary?: boolean;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      if (input.isPrimary) {
+        await tx.productImage.updateMany({
+          where: {
+            productId: input.productId,
+            NOT: {
+              id: input.imageId
+            }
+          },
+          data: {
+            isPrimary: false
+          }
+        });
+      }
+
+      return tx.productImage.update({
+        where: { id: input.imageId },
+        data: {
+          altText: input.altText,
+          sortOrder: input.sortOrder,
+          isPrimary: input.isPrimary
+        },
+        include: {
+          asset: true
+        }
+      });
+    });
+  }
+
   deleteProductImage(imageId: string) {
     return prisma.$transaction(async (tx) => {
       const existingImage = await tx.productImage.findUnique({

@@ -14,6 +14,7 @@ import {
   CreateProductInput,
   PublicCatalogProductsQuery,
   UpdateCategoryInput,
+  UpdateProductImageInput,
   UpdateProductInput,
   UploadProductImageInput
 } from "./catalog.schemas";
@@ -444,6 +445,35 @@ export class CatalogService {
 
     return {
       images: await this.catalogRepository.listProductImages(productId)
+    };
+  }
+
+  async updateProductImage(
+    storeId: string,
+    productId: string,
+    imageId: string,
+    input: UpdateProductImageInput
+  ) {
+    await this.ensureStoreProduct(storeId, productId);
+
+    const image = await this.catalogRepository.findProductImageById(imageId);
+
+    if (!image || image.productId !== productId) {
+      throw new NotFoundException({
+        message: "Product image not found",
+        code: "PRODUCT_IMAGE_NOT_FOUND",
+        imageId
+      });
+    }
+
+    return {
+      image: await this.catalogRepository.updateProductImage({
+        imageId,
+        productId,
+        altText: input.altText === undefined ? undefined : input.altText?.trim() ?? null,
+        sortOrder: input.sortOrder,
+        isPrimary: input.isPrimary
+      })
     };
   }
 

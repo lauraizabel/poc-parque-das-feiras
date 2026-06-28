@@ -772,6 +772,158 @@ describe("catalog products", () => {
     assert.equal(deletedAsset, null);
   });
 
+  it("updates image ordering and primary selection so the storefront reflects the chosen cover", async () => {
+    const coverImageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "notebook-order-cover.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Capa original",
+        isPrimary: true,
+        sortOrder: 0
+      }
+    });
+
+    const detailImageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "notebook-order-detail.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Detalhe lateral",
+        isPrimary: false,
+        sortOrder: 5
+      }
+    });
+
+    const reprioritizedImageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+        sortOrder: number;
+        altText: string | null;
+      };
+    }>({
+      method: "PATCH",
+      path: `/catalog/${primaryStoreId}/products/${productId}/images/${detailImageResponse.body.image.id}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        altText: "Nova capa lateral",
+        isPrimary: true,
+        sortOrder: 0
+      }
+    });
+
+    assert.equal(reprioritizedImageResponse.statusCode, 200);
+    assert.equal(reprioritizedImageResponse.body.image.id, detailImageResponse.body.image.id);
+    assert.equal(reprioritizedImageResponse.body.image.isPrimary, true);
+    assert.equal(reprioritizedImageResponse.body.image.sortOrder, 0);
+    assert.equal(reprioritizedImageResponse.body.image.altText, "Nova capa lateral");
+
+    const demotedImageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+        sortOrder: number;
+      };
+    }>({
+      method: "PATCH",
+      path: `/catalog/${primaryStoreId}/products/${productId}/images/${coverImageResponse.body.image.id}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        isPrimary: false,
+        sortOrder: 3
+      }
+    });
+
+    assert.equal(demotedImageResponse.statusCode, 200);
+    assert.equal(demotedImageResponse.body.image.isPrimary, false);
+    assert.equal(demotedImageResponse.body.image.sortOrder, 3);
+
+    const orderedImagesResponse = await requestJson<{
+      images: Array<{
+        id: string;
+        isPrimary: boolean;
+        sortOrder: number;
+        altText: string | null;
+      }>;
+    }>({
+      path: `/catalog/${primaryStoreId}/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(orderedImagesResponse.statusCode, 200);
+    assert.deepEqual(
+      orderedImagesResponse.body.images.map((image) => ({
+        id: image.id,
+        isPrimary: image.isPrimary,
+        sortOrder: image.sortOrder
+      })),
+      [
+        {
+          id: detailImageResponse.body.image.id,
+          isPrimary: true,
+          sortOrder: 0
+        },
+        {
+          id: coverImageResponse.body.image.id,
+          isPrimary: false,
+          sortOrder: 3
+        }
+      ]
+    );
+
+    const storefrontProductResponse = await requestJson<{
+      product: {
+        images: Array<{
+          imageUrl: string;
+          altText: string | null;
+          isPrimary: boolean;
+          sortOrder: number;
+        }>;
+      };
+    }>({
+      path: `/catalog/public/products/notebook-pro`,
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(storefrontProductResponse.statusCode, 200);
+    assert.equal(storefrontProductResponse.body.product.images[0]?.altText, "Nova capa lateral");
+    assert.equal(storefrontProductResponse.body.product.images[0]?.isPrimary, true);
+    assert.equal(storefrontProductResponse.body.product.images[0]?.sortOrder, 0);
+  });
+
   it("rejects unsupported image uploads and foreign-store image writes", async () => {
     const unsupportedMimeResponse = await requestJson<{
       code: string;
@@ -811,6 +963,24 @@ describe("catalog products", () => {
 
     assert.equal(foreignStoreResponse.statusCode, 404);
     assert.equal(foreignStoreResponse.body.code, "PRODUCT_NOT_FOUND");
+
+    const foreignUpdateResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "PATCH",
+      path: `/catalog/${secondaryStoreId}/products/${productId}/images/non-existent-image`,
+      headers: {
+        authorization: `Bearer ${secondaryToken}`
+      },
+      body: {
+        storeId: secondaryStoreId,
+        isPrimary: true,
+        sortOrder: 0
+      }
+    });
+
+    assert.equal(foreignUpdateResponse.statusCode, 404);
+    assert.equal(foreignUpdateResponse.body.code, "PRODUCT_NOT_FOUND");
 
     const foreignRemovalResponse = await requestJson<{
       code: string;

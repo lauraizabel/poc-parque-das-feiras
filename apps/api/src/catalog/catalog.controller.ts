@@ -23,6 +23,7 @@ import {
   createProductSchema,
   publicCatalogProductsQuerySchema,
   parseCatalogBody,
+  updateProductImageSchema,
   uploadProductImageSchema,
   updateCategorySchema,
   updateProductSchema
@@ -160,6 +161,24 @@ export class CatalogController {
   @Get(":storeId/products/:productId/images")
   listProductImages(@Param("storeId") storeId: string, @Param("productId") productId: string) {
     return this.catalogService.listProductImages(storeId, productId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Patch(":storeId/products/:productId/images/:imageId")
+  updateProductImage(
+    @Param("storeId") storeId: string,
+    @Param("productId") productId: string,
+    @Param("imageId") imageId: string,
+    @Body() body: unknown
+  ) {
+    return this.catalogService.updateProductImage(
+      storeId,
+      productId,
+      imageId,
+      parseCatalogBody(updateProductImageSchema, body)
+    );
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

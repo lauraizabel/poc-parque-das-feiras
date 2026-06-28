@@ -64,6 +64,13 @@ export const uploadProductImageSchema = z.object({
   isPrimary: z.boolean().optional()
 }).strict();
 
+export const updateProductImageSchema = z.object({
+  storeId: sanitizedString({ min: 1, max: 100 }),
+  altText: sanitizedNullableOptionalString({ max: 240 }),
+  sortOrder: z.number().int().min(0).max(10_000).optional(),
+  isPrimary: z.boolean().optional()
+}).strict();
+
 export const publicCatalogProductsQuerySchema = z.object({
   category: sanitizedOptionalString({ min: 1, max: 80 }),
   page: z.coerce.number().int().min(1).default(1),
@@ -75,6 +82,7 @@ export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 export type UploadProductImageInput = z.infer<typeof uploadProductImageSchema>;
+export type UpdateProductImageInput = z.infer<typeof updateProductImageSchema>;
 export type PublicCatalogProductsQuery = z.infer<typeof publicCatalogProductsQuerySchema>;
 
 export function parseCatalogBody<T>(schema: z.ZodSchema<T>, input: unknown): T {

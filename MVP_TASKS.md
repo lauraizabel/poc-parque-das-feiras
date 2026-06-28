@@ -290,10 +290,10 @@ Legenda de prioridade:
 - [x] Dependências: storage configurado e ProductImage.
 
 ### Task 6.5 (P1): Implementar ordenação e imagem principal do produto
-- [ ] Permitir definir imagem capa e ordem de exibição.
-- [ ] Critérios de aceite: vitrine exibe imagem principal corretamente.
-- [ ] Notas técnicas: usar campo de ordenação persistido e restrição de uma capa por produto.
-- [ ] Dependências: upload de imagens.
+- [x] Permitir definir imagem capa e ordem de exibição.
+- [x] Critérios de aceite: vitrine exibe imagem principal corretamente.
+- [x] Notas técnicas: usar campo de ordenação persistido e restrição de uma capa por produto.
+- [x] Dependências: upload de imagens.
 
 ### Task 6.6 (P1): Construir telas de catálogo no painel do lojista
 - [ ] Implementar listagem, formulário e ações rápidas para produtos e categorias.
