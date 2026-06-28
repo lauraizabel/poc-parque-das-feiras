@@ -10,3 +10,5 @@ node_modules
 .env.*.local
 apps/api/dist
 packages/database/generated
+packages/*/src/*.js
+packages/*/src/*.js.map
