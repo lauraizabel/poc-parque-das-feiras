@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: test
+  STOREFRONT_URL: http://localhost:3000
+  DASHBOARD_URL: http://localhost:3002
+  API_URL: http://localhost:3001
+  NEXT_PUBLIC_STOREFRONT_URL: http://localhost:3000
+  NEXT_PUBLIC_DASHBOARD_URL: http://localhost:3002
+  NEXT_PUBLIC_API_URL: http://localhost:3001
+  MARKETPLACE_ROOT_DOMAIN: lvh.me
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/saas_monorepo?schema=public
+  REDIS_URL: redis://localhost:6379
+  JWT_SECRET: ci-secret
+  JWT_ACCESS_TTL: 15m
+  JWT_REFRESH_TTL: 7d
+  AUTH_RATE_LIMIT_MAX: "20"
+  AUTH_RATE_LIMIT_WINDOW_MS: "60000"
+  WEBHOOK_RATE_LIMIT_MAX: "60"
+  WEBHOOK_RATE_LIMIT_WINDOW_MS: "60000"
+  STORAGE_PROVIDER: MINIO
+  S3_REGION: us-east-1
+  S3_BUCKET: saas-local
+  S3_ACCESS_KEY_ID: minio
+  S3_SECRET_ACCESS_KEY: minio123
+  S3_ENDPOINT: http://localhost:9000
+  R2_PUBLIC_URL: http://localhost:9000/saas-local
+  PAYMENTS_ENABLED: "false"
+  PAYMENT_PROVIDER: STRIPE
+  EMAIL_ENABLED: "false"
+  EMAIL_PROVIDER: RESEND
+  DOMAINS_ENABLED: "false"
+  DOMAIN_PROVIDER: CLOUDFLARE
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:typecheck
+
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_monorepo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saas_monorepo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ github.ref_name }}-
+            turbo-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:migrations
+      - run: pnpm ci:test
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saas_monorepo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saas_monorepo"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:migrations

@@ -100,10 +100,10 @@ Legenda de prioridade:
 - [x] Dependências: apps criados.
 
 ### Task 1.7 (P1): Configurar pipeline inicial de CI
-- [ ] Criar pipeline para lint, typecheck, testes unitários básicos e validação de migrations.
-- [ ] Critérios de aceite: pull requests executam pipeline automatizado com status claro.
-- [ ] Notas técnicas: preparar cache de dependências e execução paralela por app.
-- [ ] Dependências: monorepo e scripts base.
+- [x] Criar pipeline para lint, typecheck, testes unitários básicos e validação de migrations.
+- [x] Critérios de aceite: pull requests executam pipeline automatizado com status claro.
+- [x] Notas técnicas: preparar cache de dependências e execução paralela por app.
+- [x] Dependências: monorepo e scripts base.
 
 ## Epic 2: Identidade, autenticação e autorização
 
