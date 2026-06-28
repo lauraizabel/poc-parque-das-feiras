@@ -12,6 +12,7 @@ import { CatalogConsole } from "./catalog-console";
 import { DomainConsole } from "./domain-console";
 import { MembersConsole } from "./members-console";
 import { OrdersConsole } from "./orders-console";
+import { StorefrontThemeConsole } from "./storefront-theme-console";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -41,7 +42,7 @@ type DashboardUser = {
   memberships: DashboardMembership[];
 };
 
-type SectionKey = "overview" | "catalog" | "orders" | "domains" | "members";
+type SectionKey = "overview" | "catalog" | "storefront" | "orders" | "domains" | "members";
 
 function normalizeMessage(payload: unknown, fallback: string) {
   if (typeof payload === "object" && payload !== null && "message" in payload) {
@@ -244,6 +245,11 @@ export function DashboardShell() {
       key: "catalog",
       label: "Catalogo",
       description: "Produtos, categorias e operacao"
+    },
+    {
+      key: "storefront",
+      label: "Vitrine",
+      description: "Tema, banner e textos"
     },
     {
       key: "orders",
@@ -486,6 +492,14 @@ export function DashboardShell() {
 
           {selectedMembership && activeSection === "catalog" ? (
             <CatalogConsole
+              storeId={selectedMembership.storeId}
+              storeLabel={selectedMembership.store.name}
+              token={token}
+            />
+          ) : null}
+
+          {selectedMembership && activeSection === "storefront" ? (
+            <StorefrontThemeConsole
               storeId={selectedMembership.storeId}
               storeLabel={selectedMembership.store.name}
               token={token}

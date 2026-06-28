@@ -1,5 +1,6 @@
 import { env } from "../lib/env";
 import { getStorefrontContext, getStorefrontHomepage } from "../lib/storefront-context";
+import { buildStorefrontThemeStyle } from "../lib/storefront-theme";
 
 const pillars = [
   {
@@ -35,10 +36,14 @@ export default async function HomePage() {
     : "Marketplace";
 
   return (
-    <main className="shell">
+    <main className="shell theme-shell" style={buildStorefrontThemeStyle(homepage?.store)}>
       <header className="nav">
         <div>
           <div className="eyebrow">Storefront</div>
+          {homepage?.store.theme?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={storeTitle} className="store-logo" src={homepage.store.theme.logoUrl} />
+          ) : null}
           <strong>{storeTitle}</strong>
           <div className="host-badge">{storefront.matchedHost}</div>
         </div>
@@ -51,6 +56,9 @@ export default async function HomePage() {
       </header>
 
       <section className="hero">
+        {homepage?.store.theme?.announcementText ? (
+          <div className="announcement-bar">{homepage.store.theme.announcementText}</div>
+        ) : null}
         <span className="pill">
           {isResolvedStore
             ? storefront.source === "custom-domain"
@@ -62,16 +70,27 @@ export default async function HomePage() {
         </span>
         <h1 className="title">
           {isResolvedStore
-            ? `${storeTitle} agora responde com homepage publica orientada por host.`
+            ? homepage?.store.theme?.heroTitle || `${storeTitle} agora responde com homepage publica orientada por host.`
             : "A mesma storefront agora responde lojas diferentes conforme o host."}
         </h1>
         <p className="subtitle">
           {isResolvedStore
-            ? `A requisicao foi resolvida para a loja ${storefront.storeSlug}, e a home publica ja mostra identidade, categorias e produtos ativos sem trocar de app.`
+            ? homepage?.store.theme?.heroSubtitle ||
+              `A requisicao foi resolvida para a loja ${storefront.storeSlug}, e a home publica ja mostra identidade, categorias e produtos ativos sem trocar de app.`
             : storefront.kind === "unknown"
               ? "Esse host ainda nao resolveu uma loja publica. Enquanto isso, o shell mostra um estado neutro e seguro para a vitrine."
               : "Esse host representa a raiz da storefront. O shell agora centraliza a leitura do tenant e prepara o caminho para paginas publicas especificas de cada loja."}
         </p>
+        {homepage?.store.theme?.bannerUrl ? (
+          <div className="hero-banner card">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              alt={`Banner da loja ${storeTitle}`}
+              className="hero-banner-image"
+              src={homepage.store.theme.bannerUrl}
+            />
+          </div>
+        ) : null}
       </section>
 
       {isResolvedStore && homepage ? (

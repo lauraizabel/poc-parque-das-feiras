@@ -4,6 +4,7 @@ import { StoresRepository } from "./stores.repository";
 import {
   CreateStoreInput,
   InviteStoreMemberInput,
+  UpdateStoreThemeInput,
   UpdateStoreMemberRoleInput
 } from "./stores.schemas";
 
@@ -300,6 +301,40 @@ export class StoresService {
 
     return {
       removed: true
+    };
+  }
+
+  async getStoreTheme(storeId: string) {
+    const theme = await this.storesRepository.findStoreTheme(storeId);
+
+    return {
+      theme: theme ?? {
+        storeId,
+        primaryColor: "#c45c2c",
+        accentColor: "#8f3610",
+        surfaceColor: "#f5f1e8",
+        logoUrl: null,
+        bannerUrl: null,
+        heroTitle: null,
+        heroSubtitle: null,
+        announcementText: null
+      }
+    };
+  }
+
+  async updateStoreTheme(storeId: string, input: UpdateStoreThemeInput) {
+    return {
+      theme: await this.storesRepository.upsertStoreTheme({
+        storeId,
+        primaryColor: input.primaryColor,
+        accentColor: input.accentColor,
+        surfaceColor: input.surfaceColor,
+        logoUrl: input.logoUrl ?? null,
+        bannerUrl: input.bannerUrl ?? null,
+        heroTitle: input.heroTitle?.trim() || null,
+        heroSubtitle: input.heroSubtitle?.trim() || null,
+        announcementText: input.announcementText?.trim() || null
+      })
     };
   }
 

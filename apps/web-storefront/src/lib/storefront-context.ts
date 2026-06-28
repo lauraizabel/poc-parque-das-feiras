@@ -28,6 +28,16 @@ export type PublicStorefrontStore = {
   locale: string;
   source: "subdomain" | "custom-domain";
   matchedHost: string;
+  theme: {
+    primaryColor: string;
+    accentColor: string;
+    surfaceColor: string;
+    logoUrl: string | null;
+    bannerUrl: string | null;
+    heroTitle: string | null;
+    heroSubtitle: string | null;
+    announcementText: string | null;
+  } | null;
 };
 
 export type PublicStorefrontCategory = {

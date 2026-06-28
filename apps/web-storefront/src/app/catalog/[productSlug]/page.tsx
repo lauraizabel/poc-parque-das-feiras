@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AddToCartButton } from "../../../components/add-to-cart-button";
 import { getStorefrontContext, getStorefrontProduct } from "../../../lib/storefront-context";
+import { buildStorefrontThemeStyle } from "../../../lib/storefront-theme";
 
 type ProductPageProps = {
   params: Promise<{
@@ -104,10 +105,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const primaryImage = product.images[0];
 
   return (
-    <main className="shell">
+    <main className="shell theme-shell" style={buildStorefrontThemeStyle(store)}>
       <header className="nav">
         <div>
           <div className="eyebrow">Produto</div>
+          {store.theme?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={store.name} className="store-logo" src={store.theme.logoUrl} />
+          ) : null}
           <strong>{store.name}</strong>
           <div className="host-badge">{store.matchedHost}</div>
         </div>

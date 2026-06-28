@@ -15,6 +15,7 @@ import {
   parseStoreBody,
   parseStoreQuery,
   storeSlugAvailabilitySchema,
+  updateStoreThemeSchema,
   updateStoreMemberRoleSchema
 } from "./stores.schemas";
 import { StoresService } from "./stores.service";
@@ -84,6 +85,25 @@ export class StoresController {
       ...parseStoreBody(createStoreSchema, body),
       ownerId: request.user.sub
     });
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Get(":storeId/theme")
+  getStoreTheme(@Param("storeId") storeId: string) {
+    return this.storesService.getStoreTheme(storeId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Patch(":storeId/theme")
+  updateStoreTheme(@Param("storeId") storeId: string, @Body() body: unknown) {
+    return this.storesService.updateStoreTheme(
+      storeId,
+      parseStoreBody(updateStoreThemeSchema, body)
+    );
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

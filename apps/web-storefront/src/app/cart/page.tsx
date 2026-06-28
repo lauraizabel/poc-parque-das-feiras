@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CartShell } from "../../components/cart-shell";
 import { getStorefrontContext, getStorefrontHomepage } from "../../lib/storefront-context";
+import { buildStorefrontThemeStyle } from "../../lib/storefront-theme";
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +45,14 @@ export default async function CartPage() {
   }
 
   return (
-    <main className="shell">
+    <main className="shell theme-shell" style={buildStorefrontThemeStyle(homepage.store)}>
       <header className="nav">
         <div>
           <div className="eyebrow">Carrinho</div>
+          {homepage.store.theme?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={homepage.store.name} className="store-logo" src={homepage.store.theme.logoUrl} />
+          ) : null}
           <strong>{homepage.store.name}</strong>
           <div className="host-badge">{homepage.store.matchedHost}</div>
         </div>

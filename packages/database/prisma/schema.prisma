@@ -218,6 +218,7 @@ model Store {
   owner             User              @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   storeMembers      StoreMember[]
   memberInvites     StoreMemberInvite[]
+  theme             StoreTheme?
   domains           StoreDomain[]
   paymentAccounts   PaymentAccount[]
   customers         Customer[]
@@ -238,6 +239,24 @@ model Store {
   updatedAt         DateTime          @updatedAt
 
   @@index([ownerId])
+}
+
+model StoreTheme {
+  id                 String   @id @default(cuid())
+  storeId            String   @unique
+  primaryColor       String   @default("#c45c2c")
+  accentColor        String   @default("#8f3610")
+  surfaceColor       String   @default("#f5f1e8")
+  logoUrl            String?
+  bannerUrl          String?
+  heroTitle          String?
+  heroSubtitle       String?
+  announcementText   String?
+  store              Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([storeId])
 }
 
 model StoreMember {

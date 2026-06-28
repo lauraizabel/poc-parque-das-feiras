@@ -316,10 +316,10 @@ Legenda de prioridade:
 - [x] Dependências: resolução por host.
 
 ### Task 7.2 (P1): Implementar tema básico e personalização visual mínima
-- [ ] Criar entidade/configuração `StoreTheme` com cores, logo, banner e textos básicos.
-- [ ] Critérios de aceite: lojista consegue aplicar personalização simples na vitrine.
-- [ ] Notas técnicas: limitar escopo do MVP a poucos tokens visuais configuráveis.
-- [ ] Dependências: Store e upload de mídia.
+- [x] Criar entidade/configuração `StoreTheme` com cores, logo, banner e textos básicos.
+- [x] Critérios de aceite: lojista consegue aplicar personalização simples na vitrine.
+- [x] Notas técnicas: limitar escopo do MVP a poucos tokens visuais configuráveis.
+- [x] Dependências: Store e upload de mídia.
 
 ### Task 7.3 (P0): Construir homepage pública da loja
 - [x] Implementar página inicial com identidade da loja, destaques e listagem básica de produtos/categorias.

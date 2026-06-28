@@ -29,10 +29,35 @@ export const updateStoreMemberRoleSchema = z.object({
   role: manageableRoleSchema
 }).strict();
 
+const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#([0-9a-fA-F]{6})$/, "Use uma cor hexadecimal no formato #RRGGBB");
+
+const optionalUrlSchema = z
+  .string()
+  .trim()
+  .url()
+  .max(500)
+  .optional()
+  .or(z.literal("").transform(() => undefined));
+
+export const updateStoreThemeSchema = z.object({
+  primaryColor: hexColorSchema,
+  accentColor: hexColorSchema,
+  surfaceColor: hexColorSchema,
+  logoUrl: optionalUrlSchema,
+  bannerUrl: optionalUrlSchema,
+  heroTitle: z.string().trim().max(120).optional(),
+  heroSubtitle: z.string().trim().max(280).optional(),
+  announcementText: z.string().trim().max(180).optional()
+}).strict();
+
 export type CreateStoreInput = z.infer<typeof createStoreSchema>;
 export type StoreSlugAvailabilityInput = z.infer<typeof storeSlugAvailabilitySchema>;
 export type InviteStoreMemberInput = z.infer<typeof inviteStoreMemberSchema>;
 export type UpdateStoreMemberRoleInput = z.infer<typeof updateStoreMemberRoleSchema>;
+export type UpdateStoreThemeInput = z.infer<typeof updateStoreThemeSchema>;
 
 export function parseStoreBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
   try {

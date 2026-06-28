@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getStorefrontCatalog, getStorefrontContext } from "../../lib/storefront-context";
+import { buildStorefrontThemeStyle } from "../../lib/storefront-theme";
 
 type CatalogPageProps = {
   searchParams?: Promise<{
@@ -110,10 +111,14 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   );
 
   return (
-    <main className="shell">
+    <main className="shell theme-shell" style={buildStorefrontThemeStyle(catalog.store)}>
       <header className="nav">
         <div>
           <div className="eyebrow">Catalogo</div>
+          {catalog.store.theme?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={catalog.store.name} className="store-logo" src={catalog.store.theme.logoUrl} />
+          ) : null}
           <strong>{catalog.store.name}</strong>
           <div className="host-badge">{catalog.store.matchedHost}</div>
         </div>

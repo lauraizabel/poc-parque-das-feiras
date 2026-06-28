@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getStorefrontContext, getStorefrontHomepage, getStorefrontPublicOrder } from "../../../lib/storefront-context";
+import { buildStorefrontThemeStyle } from "../../../lib/storefront-theme";
 
 export const dynamic = "force-dynamic";
 
@@ -101,10 +102,14 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   const order = orderPayload.order;
 
   return (
-    <main className="shell">
+    <main className="shell theme-shell" style={buildStorefrontThemeStyle(homepage.store)}>
       <header className="nav">
         <div>
           <div className="eyebrow">Acompanhar pedido</div>
+          {homepage.store.theme?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={homepage.store.name} className="store-logo" src={homepage.store.theme.logoUrl} />
+          ) : null}
           <strong>{homepage.store.name}</strong>
           <div className="host-badge">{homepage.store.matchedHost}</div>
         </div>

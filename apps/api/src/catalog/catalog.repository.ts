@@ -49,7 +49,8 @@ export class CatalogRepository {
         name: true,
         slug: true,
         currencyCode: true,
-        locale: true
+        locale: true,
+        theme: true
       }
     });
   }

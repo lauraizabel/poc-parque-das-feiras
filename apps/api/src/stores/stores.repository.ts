@@ -32,7 +32,10 @@ export class StoresRepository {
           ownerId: input.ownerId,
           supportEmail: input.supportEmail,
           currencyCode: input.currencyCode,
-          locale: input.locale
+          locale: input.locale,
+          theme: {
+            create: {}
+          }
         }
       });
 
@@ -191,6 +194,49 @@ export class StoresRepository {
   removePendingInvite(inviteId: string) {
     return prisma.storeMemberInvite.delete({
       where: { id: inviteId }
+    });
+  }
+
+  findStoreTheme(storeId: string) {
+    return prisma.storeTheme.findUnique({
+      where: { storeId }
+    });
+  }
+
+  upsertStoreTheme(input: {
+    storeId: string;
+    primaryColor: string;
+    accentColor: string;
+    surfaceColor: string;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    heroTitle?: string | null;
+    heroSubtitle?: string | null;
+    announcementText?: string | null;
+  }) {
+    return prisma.storeTheme.upsert({
+      where: { storeId: input.storeId },
+      update: {
+        primaryColor: input.primaryColor,
+        accentColor: input.accentColor,
+        surfaceColor: input.surfaceColor,
+        logoUrl: input.logoUrl ?? null,
+        bannerUrl: input.bannerUrl ?? null,
+        heroTitle: input.heroTitle ?? null,
+        heroSubtitle: input.heroSubtitle ?? null,
+        announcementText: input.announcementText ?? null
+      },
+      create: {
+        storeId: input.storeId,
+        primaryColor: input.primaryColor,
+        accentColor: input.accentColor,
+        surfaceColor: input.surfaceColor,
+        logoUrl: input.logoUrl ?? null,
+        bannerUrl: input.bannerUrl ?? null,
+        heroTitle: input.heroTitle ?? null,
+        heroSubtitle: input.heroSubtitle ?? null,
+        announcementText: input.announcementText ?? null
+      }
     });
   }
 }
