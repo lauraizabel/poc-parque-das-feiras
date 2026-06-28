@@ -278,9 +278,13 @@ describe("payments webhook processing", () => {
 
     const payment = await prisma.payment.findUnique({ where: { id: checkout.paymentId } });
     const order = await prisma.order.findUnique({ where: { id: checkout.orderId } });
+    const product = await prisma.product.findUnique({ where: { id: productId } });
 
     assert.equal(payment?.status, PaymentStatus.REFUNDED);
     assert.equal(order?.status, "REFUNDED");
+    assert.ok(order?.refundedAt);
+    assert.equal(product?.stockQuantity, 20);
+    assert.equal(product?.status, "ACTIVE");
   });
 
   it("keeps webhook reconciliation idempotent when the same job is retried", async () => {

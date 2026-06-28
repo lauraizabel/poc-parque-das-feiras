@@ -460,10 +460,10 @@ Legenda de prioridade:
 - [x] Dependências: Order e guards de loja.
 
 ### Task 10.5 (P1): Implementar baixa/ajuste de estoque ligado ao pedido
-- [ ] Definir regra simples para impacto do pedido no estoque.
-- [ ] Critérios de aceite: estoque permanece consistente após criação, cancelamento ou reembolso conforme política definida.
-- [ ] Notas técnicas: política pode ser reservar na criação ou debitar na aprovação, desde que documentada.
-- [ ] Dependências: pedidos e catálogo.
+- [x] Definir regra simples para impacto do pedido no estoque.
+- [x] Critérios de aceite: estoque permanece consistente após criação, cancelamento ou reembolso conforme política definida.
+- [x] Notas técnicas: política adotada é reservar na criação do pedido e recompor em cancelamento ou reembolso.
+- [x] Dependências: pedidos e catálogo.
 
 ### Task 10.6 (P1): Implementar testes de pedidos e frete
 - [ ] Cobrir criação, atualização de status, cancelamento, consulta do cliente e consistência de estoque.

@@ -375,6 +375,12 @@ describe("orders management api", () => {
     assert.ok(canceledOrder?.canceledAt);
     assert.equal(canceledOrder?.shipment?.status, "CANCELED");
 
+    const restockedProduct = await prisma.product.findUnique({
+      where: { id: productId }
+    });
+    assert.equal(restockedProduct?.stockQuantity, 6);
+    assert.equal(restockedProduct?.status, "ACTIVE");
+
     const cancellationAudit = await prisma.statusTransitionAudit.findFirst({
       where: {
         entityType: StatusTransitionEntityType.ORDER,

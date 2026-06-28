@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { prisma } from "@acme/database";
-import { OrderStatus, ShipmentStatus } from "@prisma/client";
+import { OrderStatus, Prisma, ProductStatus, ShipmentStatus } from "@prisma/client";
 import { DomainBoundary } from "../platform/domain-boundary";
 
 @Injectable()
@@ -236,6 +236,43 @@ export class OrdersRepository {
     });
   }
 
+  async updateOrderWithInventory(orderId: string, input: {
+    storeId: string;
+    shouldRestoreStock?: boolean;
+    paymentId?: string | null;
+    shippingMethodId?: string | null;
+    status?: OrderStatus;
+    statusUpdatedAt?: Date;
+    approvedAt?: Date | null;
+    canceledAt?: Date | null;
+    refundedAt?: Date | null;
+    shippedAt?: Date | null;
+    deliveredAt?: Date | null;
+  }) {
+    return prisma.$transaction(async (tx) => {
+      if (input.shouldRestoreStock) {
+        await this.restoreStockForOrderTransaction(tx, orderId, input.storeId);
+      }
+
+      return tx.order.update({
+        where: {
+          id: orderId
+        },
+        data: {
+          paymentId: input.paymentId,
+          shippingMethodId: input.shippingMethodId,
+          status: input.status,
+          statusUpdatedAt: input.statusUpdatedAt,
+          approvedAt: input.approvedAt,
+          canceledAt: input.canceledAt,
+          refundedAt: input.refundedAt,
+          shippedAt: input.shippedAt,
+          deliveredAt: input.deliveredAt
+        }
+      });
+    });
+  }
+
   updateShipmentByOrder(orderId: string, storeId: string, input: {
     status?: ShipmentStatus;
     carrierName?: string | null;
@@ -258,5 +295,69 @@ export class OrdersRepository {
       },
       data: input
     });
+  }
+
+  async restoreStockForOrder(orderId: string, storeId: string) {
+    return prisma.$transaction(async (tx) => {
+      await this.restoreStockForOrderTransaction(tx, orderId, storeId);
+    });
+  }
+
+  private async restoreStockForOrderTransaction(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    storeId: string
+  ) {
+    const orderItems = await tx.orderItem.findMany({
+      where: {
+        orderId,
+        storeId,
+        productId: {
+          not: null
+        }
+      },
+      select: {
+        productId: true,
+        quantity: true
+      }
+    });
+
+    for (const item of orderItems) {
+      if (!item.productId) {
+        continue;
+      }
+
+      const product = await tx.product.findFirst({
+        where: {
+          id: item.productId,
+          storeId
+        },
+        select: {
+          id: true,
+          status: true,
+          stockQuantity: true
+        }
+      });
+
+      if (!product) {
+        continue;
+      }
+
+      const nextStockQuantity = product.stockQuantity + item.quantity;
+      const nextStatus =
+        product.status === ProductStatus.OUT_OF_STOCK && nextStockQuantity > 0
+          ? ProductStatus.ACTIVE
+          : product.status;
+
+      await tx.product.update({
+        where: {
+          id: product.id
+        },
+        data: {
+          stockQuantity: nextStockQuantity,
+          status: nextStatus
+        }
+      });
+    }
   }
 }

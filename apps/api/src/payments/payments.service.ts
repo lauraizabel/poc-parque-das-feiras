@@ -599,10 +599,21 @@ export class PaymentsService {
       });
     }
 
-    const updatedOrder = await this.ordersRepository.updateOrder(order.id, {
+    const shouldRestoreStock =
+      (input.toStatus === OrderStatus.CANCELED || input.toStatus === OrderStatus.REFUNDED) &&
+      order.status !== OrderStatus.CANCELED &&
+      order.status !== OrderStatus.REFUNDED;
+
+    const now = new Date();
+    const updatedOrder = await this.ordersRepository.updateOrderWithInventory(order.id, {
+      storeId: order.storeId,
+      shouldRestoreStock,
       paymentId: input.paymentId,
       status: input.toStatus,
-      statusUpdatedAt: new Date()
+      statusUpdatedAt: now,
+      approvedAt: input.toStatus === OrderStatus.PAYMENT_APPROVED ? now : undefined,
+      canceledAt: input.toStatus === OrderStatus.CANCELED ? now : undefined,
+      refundedAt: input.toStatus === OrderStatus.REFUNDED ? now : undefined
     });
 
     await this.auditRepository.createStatusTransitionAudit({

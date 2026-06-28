@@ -230,7 +230,14 @@ export class OrdersService {
     }
 
     const now = new Date();
-    await this.ordersRepository.updateOrder(order.id, {
+    const shouldRestoreStock =
+      input.status === OrderStatus.CANCELED &&
+      order.status !== OrderStatus.CANCELED &&
+      order.status !== OrderStatus.REFUNDED;
+
+    await this.ordersRepository.updateOrderWithInventory(order.id, {
+      storeId: order.storeId,
+      shouldRestoreStock,
       status: input.status,
       statusUpdatedAt: now,
       canceledAt: input.status === OrderStatus.CANCELED ? now : undefined,
