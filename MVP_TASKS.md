@@ -486,10 +486,10 @@ Legenda de prioridade:
 - [x] Dependências: pedidos, catálogo e domínios.
 
 ### Task 11.3 (P1): Implementar páginas de configurações da loja
-- [ ] Criar telas para editar dados da loja, tema básico, domínio, frete e notificações essenciais.
-- [ ] Critérios de aceite: lojista consegue concluir toda configuração crítica pelo painel.
-- [ ] Notas técnicas: agrupar por seções para reduzir complexidade.
-- [ ] Dependências: módulos correspondentes.
+- [x] Criar telas para editar dados da loja, tema básico, domínio, frete e notificações essenciais.
+- [x] Critérios de aceite: lojista consegue concluir toda configuração crítica pelo painel.
+- [x] Notas técnicas: agrupar por seções para reduzir complexidade.
+- [x] Dependências: módulos correspondentes.
 
 ### Task 11.4 (P1): Implementar tratamento consistente de loading, erro e vazio no painel
 - [ ] Criar componentes e padrões de UX para estados assíncronos.

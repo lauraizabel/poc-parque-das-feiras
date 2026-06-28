@@ -23,6 +23,38 @@ export class NotificationsService {
     };
   }
 
+  async getStoreNotificationSettings(storeId: string) {
+    const recipients = await this.notificationsRepository.getStoreNotificationRecipients(storeId);
+
+    return {
+      notifications: {
+        storeId,
+        ownerEmail: recipients?.ownerEmail ?? null,
+        supportEmail: recipients?.supportEmail ?? null,
+        recipientEmails: recipients
+          ? Array.from(
+              new Set(
+                [recipients.ownerEmail, recipients.supportEmail]
+                  .filter((email): email is string => Boolean(email))
+                  .map((email) => email.trim().toLowerCase())
+              )
+            )
+          : [],
+        queue: getEmailNotificationQueueMonitoring(),
+        paymentTemplates: [
+          "payment-approved-customer",
+          "payment-approved-store",
+          "payment-failed-customer",
+          "payment-failed-store",
+          "payment-expired-customer",
+          "payment-expired-store",
+          "payment-refunded-customer",
+          "payment-refunded-store"
+        ]
+      }
+    };
+  }
+
   async enqueueEmailNotification(input: EmailNotificationJob) {
     const job = this.normalizeEmailJob(input);
     const queue = createEmailNotificationQueue();

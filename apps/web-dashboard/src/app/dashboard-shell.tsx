@@ -13,6 +13,7 @@ import { DomainConsole } from "./domain-console";
 import { MembersConsole } from "./members-console";
 import { OverviewConsole } from "./overview-console";
 import { OrdersConsole } from "./orders-console";
+import { SettingsConsole } from "./settings-console";
 import { StorefrontThemeConsole } from "./storefront-theme-console";
 
 type ApiState = {
@@ -43,7 +44,14 @@ type DashboardUser = {
   memberships: DashboardMembership[];
 };
 
-type SectionKey = "overview" | "catalog" | "storefront" | "orders" | "domains" | "members";
+type SectionKey =
+  | "overview"
+  | "settings"
+  | "catalog"
+  | "storefront"
+  | "orders"
+  | "domains"
+  | "members";
 
 function normalizeMessage(payload: unknown, fallback: string) {
   if (typeof payload === "object" && payload !== null && "message" in payload) {
@@ -241,6 +249,11 @@ export function DashboardShell() {
       key: "overview",
       label: "Resumo",
       description: "Visao geral da loja atual"
+    },
+    {
+      key: "settings",
+      label: "Configuracoes",
+      description: "Perfil, frete, dominio e notificacoes"
     },
     {
       key: "catalog",
@@ -486,6 +499,15 @@ export function DashboardShell() {
               storeId={selectedMembership?.storeId ?? ""}
               storeLabel={selectedMembership?.store.name ?? "Sem loja"}
               storeRole={selectedMembership?.role ?? ""}
+              token={token}
+            />
+          ) : null}
+
+          {selectedMembership && activeSection === "settings" ? (
+            <SettingsConsole
+              storeId={selectedMembership.storeId}
+              storeLabel={selectedMembership.store.name}
+              storeRole={selectedMembership.role}
               token={token}
             />
           ) : null}

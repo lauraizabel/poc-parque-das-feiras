@@ -72,6 +72,15 @@ export class StoresRepository {
     });
   }
 
+  findStoreById(storeId: string) {
+    return prisma.store.findUnique({
+      where: { id: storeId },
+      include: {
+        owner: true
+      }
+    });
+  }
+
   findUserByEmail(email: string) {
     return prisma.user.findUnique({
       where: {
@@ -236,6 +245,26 @@ export class StoresRepository {
         heroTitle: input.heroTitle ?? null,
         heroSubtitle: input.heroSubtitle ?? null,
         announcementText: input.announcementText ?? null
+      }
+    });
+  }
+
+  updateStore(
+    storeId: string,
+    input: {
+      name?: string;
+      supportEmail?: string | null;
+      currencyCode?: string;
+      locale?: string;
+    }
+  ) {
+    return prisma.store.update({
+      where: {
+        id: storeId
+      },
+      data: input,
+      include: {
+        owner: true
       }
     });
   }

@@ -1,5 +1,5 @@
 import { Reflector } from "@nestjs/core";
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { AuthorizationGuard } from "./authorization.guard";
@@ -10,7 +10,7 @@ import { JwtAuthGuard } from "./jwt-auth.guard";
 import { PasswordService } from "./password.service";
 
 @Module({
-  imports: [JwtModule.register({}), NotificationsModule],
+  imports: [JwtModule.register({}), forwardRef(() => NotificationsModule)],
   controllers: [AuthController],
   providers: [
     Reflector,

@@ -53,11 +53,19 @@ export const updateStoreThemeSchema = z.object({
   announcementText: z.string().trim().max(180).optional()
 }).strict();
 
+export const updateStoreSettingsSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  supportEmail: z.union([z.string().trim().email(), z.literal("")]).optional(),
+  currencyCode: z.string().trim().length(3),
+  locale: z.string().trim().min(2).max(10)
+}).strict();
+
 export type CreateStoreInput = z.infer<typeof createStoreSchema>;
 export type StoreSlugAvailabilityInput = z.infer<typeof storeSlugAvailabilitySchema>;
 export type InviteStoreMemberInput = z.infer<typeof inviteStoreMemberSchema>;
 export type UpdateStoreMemberRoleInput = z.infer<typeof updateStoreMemberRoleSchema>;
 export type UpdateStoreThemeInput = z.infer<typeof updateStoreThemeSchema>;
+export type UpdateStoreSettingsInput = z.infer<typeof updateStoreSettingsSchema>;
 
 export function parseStoreBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
   try {

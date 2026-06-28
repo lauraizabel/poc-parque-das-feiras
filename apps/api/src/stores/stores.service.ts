@@ -4,6 +4,7 @@ import { StoresRepository } from "./stores.repository";
 import {
   CreateStoreInput,
   InviteStoreMemberInput,
+  UpdateStoreSettingsInput,
   UpdateStoreThemeInput,
   UpdateStoreMemberRoleInput
 } from "./stores.schemas";
@@ -318,6 +319,63 @@ export class StoresService {
         heroTitle: null,
         heroSubtitle: null,
         announcementText: null
+      }
+    };
+  }
+
+  async getStoreSettings(storeId: string) {
+    const store = await this.storesRepository.findStoreById(storeId);
+
+    if (!store) {
+      throw new NotFoundException("Loja não encontrada.");
+    }
+
+    return {
+      store: {
+        id: store.id,
+        name: store.name,
+        slug: store.slug,
+        defaultSubdomain: store.defaultSubdomain,
+        supportEmail: store.supportEmail,
+        currencyCode: store.currencyCode,
+        locale: store.locale,
+        owner: {
+          id: store.owner.id,
+          email: store.owner.email,
+          fullName: store.owner.fullName
+        }
+      }
+    };
+  }
+
+  async updateStoreSettings(storeId: string, input: UpdateStoreSettingsInput) {
+    const store = await this.storesRepository.findStoreById(storeId);
+
+    if (!store) {
+      throw new NotFoundException("Loja não encontrada.");
+    }
+
+    const updatedStore = await this.storesRepository.updateStore(storeId, {
+      name: input.name.trim(),
+      supportEmail: input.supportEmail?.trim().toLowerCase() || null,
+      currencyCode: input.currencyCode.trim().toUpperCase(),
+      locale: input.locale.trim()
+    });
+
+    return {
+      store: {
+        id: updatedStore.id,
+        name: updatedStore.name,
+        slug: updatedStore.slug,
+        defaultSubdomain: updatedStore.defaultSubdomain,
+        supportEmail: updatedStore.supportEmail,
+        currencyCode: updatedStore.currencyCode,
+        locale: updatedStore.locale,
+        owner: {
+          id: updatedStore.owner.id,
+          email: updatedStore.owner.email,
+          fullName: updatedStore.owner.fullName
+        }
       }
     };
   }
