@@ -252,10 +252,10 @@ Legenda de prioridade:
 - [x] Dependências: StoreDomain ativo.
 
 ### Task 5.8 (P1): Criar telas do painel para acompanhamento de ativação do domínio
-- [ ] Implementar páginas/estados de UI com timeline simples de ativação, DNS e SSL.
-- [ ] Critérios de aceite: lojista entende claramente o que falta para ativar o domínio.
-- [ ] Notas técnicas: usar polling simples no MVP ou refresh manual orientado.
-- [ ] Dependências: APIs de domínio e jobs de status.
+- [x] Implementar páginas/estados de UI com timeline simples de ativação, DNS e SSL.
+- [x] Critérios de aceite: lojista entende claramente o que falta para ativar o domínio.
+- [x] Notas técnicas: usar polling simples no MVP ou refresh manual orientado.
+- [x] Dependências: APIs de domínio e jobs de status.
 
 ### Task 5.9 (P1): Criar testes de integração do ciclo de domínio próprio
 - [ ] Cobrir cadastro, conflito, DNS incorreto, ativação bem-sucedida e fallback para subdomínio.

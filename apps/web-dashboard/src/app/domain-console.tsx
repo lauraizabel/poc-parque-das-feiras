@@ -26,6 +26,13 @@ type DomainConsoleProps = {
   storeLabel: string;
 };
 
+type ActivationStep = {
+  key: "registered" | "dns" | "ssl" | "active";
+  title: string;
+  description: string;
+  state: "done" | "current" | "pending" | "error";
+};
+
 function getStatusLabel(status?: string) {
   switch (status) {
     case "PENDING":
@@ -71,12 +78,64 @@ function getDnsGuidance(domain: DomainRecord | null) {
   return "Depois de salvar o CNAME no provedor DNS, aguarde a propagação e use o botão de verificação para atualizar o status.";
 }
 
+function getActivationSteps(domain: DomainRecord | null): ActivationStep[] {
+  const status = domain?.status;
+
+  return [
+    {
+      key: "registered",
+      title: "Cadastro do host",
+      description: domain ? `Host ${domain.host} salvo na plataforma.` : "Domínio ainda não cadastrado.",
+      state: domain ? "done" : "pending"
+    },
+    {
+      key: "dns",
+      title: "Apontamento DNS",
+      description: domain?.dnsTargetValue
+        ? `Crie o CNAME de www para ${domain.dnsTargetValue}.`
+        : "Aguardando definição do destino DNS.",
+      state:
+        status === "ERROR" && domain?.dnsErrorMessage
+          ? "error"
+          : status === "SSL_PENDING" || status === "ACTIVE"
+            ? "done"
+            : status === "VERIFYING" || status === "AWAITING_DNS"
+              ? "current"
+              : domain
+                ? "pending"
+                : "pending"
+    },
+    {
+      key: "ssl",
+      title: "Emissão de SSL",
+      description: "Após o DNS correto, a plataforma solicita e acompanha o certificado.",
+      state:
+        status === "ERROR" && domain?.sslErrorMessage
+          ? "error"
+          : status === "ACTIVE"
+            ? "done"
+            : status === "SSL_PENDING"
+              ? "current"
+              : domain
+                ? "pending"
+                : "pending"
+    },
+    {
+      key: "active",
+      title: "Domínio ativo",
+      description: "Quando ativo, a vitrine responde pelo domínio customizado com SSL válido.",
+      state: status === "ACTIVE" ? "done" : status === "ERROR" ? "pending" : "pending"
+    }
+  ];
+}
+
 export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps) {
   const [host, setHost] = useState("www.sualoja.com");
   const [domain, setDomain] = useState<DomainRecord | null>(null);
   const [state, setState] = useState<ApiState>({ kind: "idle" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedField, setCopiedField] = useState<"host" | "target" | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   async function loadCurrentDomain() {
     if (!storeId) {
@@ -132,6 +191,24 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
       void loadCurrentDomain();
     }
   }, [storeId]);
+
+  useEffect(() => {
+    if (!autoRefresh || !domain) {
+      return;
+    }
+
+    if (domain.status === "ACTIVE" || domain.status === "REMOVED") {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void loadCurrentDomain();
+    }, 15000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [autoRefresh, domain, storeId]);
 
   async function copyValue(kind: "host" | "target", value: string | null | undefined) {
     if (!value) {
@@ -194,6 +271,8 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
       setIsSubmitting(false);
     }
   }
+
+  const activationSteps = getActivationSteps(domain);
 
   return (
     <section className="card domain-card">
@@ -264,6 +343,37 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
             <strong>{domain.sslLastCheckedAt ?? "n/a"}</strong>
           </div>
         </div>
+      ) : null}
+
+      {domain ? (
+        <section className="activation-timeline">
+          <div className="domain-head">
+            <div>
+              <div className="eyebrow">Ativação</div>
+              <h3 className="section-title dns-guide-title">Timeline do domínio</h3>
+            </div>
+            <label className="timeline-toggle">
+              <input
+                checked={autoRefresh}
+                onChange={(event) => setAutoRefresh(event.target.checked)}
+                type="checkbox"
+              />
+              <span>Atualizar a cada 15s</span>
+            </label>
+          </div>
+
+          <div className="timeline-list">
+            {activationSteps.map((step) => (
+              <article className={`timeline-step ${step.state}`} key={step.key}>
+                <div className="timeline-marker" />
+                <div>
+                  <strong>{step.title}</strong>
+                  <p className="order-meta">{step.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       ) : null}
 
       {domain ? (
