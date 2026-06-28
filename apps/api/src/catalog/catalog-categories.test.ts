@@ -239,6 +239,46 @@ describe("catalog categories", () => {
     assert.equal(response.body.category.description, "Campanhas sazonais");
   });
 
+  it("rejects duplicate and reserved category slugs for the same store", async () => {
+    const duplicateSlugResponse = await requestJson<{
+      code: string;
+      slug: string;
+    }>({
+      method: "POST",
+      path: "/catalog/categories",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        name: "Ofertas Espelho",
+        slug: "ofertas-atualizadas"
+      }
+    });
+
+    assert.equal(duplicateSlugResponse.statusCode, 409);
+    assert.equal(duplicateSlugResponse.body.code, "CATEGORY_SLUG_ALREADY_IN_USE");
+    assert.equal(duplicateSlugResponse.body.slug, "ofertas-atualizadas");
+
+    const reservedSlugResponse = await requestJson<{
+      message: string;
+    }>({
+      method: "POST",
+      path: "/catalog/categories",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        name: "Busca Interna",
+        slug: "search"
+      }
+    });
+
+    assert.equal(reservedSlugResponse.statusCode, 400);
+    assert.match(reservedSlugResponse.body.message, /reserved/i);
+  });
+
   it("deactivates a category for the correct store only", async () => {
     const response = await requestJson<{
       category: {

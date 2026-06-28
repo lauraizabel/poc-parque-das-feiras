@@ -945,6 +945,28 @@ describe("catalog products", () => {
     assert.equal(unsupportedMimeResponse.statusCode, 400);
     assert.equal(unsupportedMimeResponse.body.code, "PRODUCT_IMAGE_MIME_UNSUPPORTED");
 
+    const oversizedContentBase64 = Buffer.alloc(5 * 1024 * 1024 + 1, 7).toString("base64");
+    const oversizedImageResponse = await requestJson<{
+      code: string;
+      sizeBytes: number;
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "huge-image.png",
+        mimeType: "image/png",
+        contentBase64: oversizedContentBase64
+      }
+    });
+
+    assert.equal(oversizedImageResponse.statusCode, 400);
+    assert.equal(oversizedImageResponse.body.code, "PRODUCT_IMAGE_TOO_LARGE");
+    assert.ok((oversizedImageResponse.body.sizeBytes ?? 0) > 5 * 1024 * 1024);
+
     const foreignStoreResponse = await requestJson<{
       code: string;
     }>({

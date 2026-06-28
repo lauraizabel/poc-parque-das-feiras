@@ -302,10 +302,10 @@ Legenda de prioridade:
 - [x] Dependências: CRUD backend de catálogo.
 
 ### Task 6.7 (P1): Implementar testes de catálogo, estoque e mídia
-- [ ] Criar testes para regras de status, estoque, categoria e uploads.
-- [ ] Critérios de aceite: cenários críticos do catálogo ficam cobertos.
-- [ ] Notas técnicas: incluir casos de acesso indevido entre lojas e arquivos inválidos.
-- [ ] Dependências: catálogo e upload.
+- [x] Criar testes para regras de status, estoque, categoria e uploads.
+- [x] Critérios de aceite: cenários críticos do catálogo ficam cobertos.
+- [x] Notas técnicas: incluir casos de acesso indevido entre lojas e arquivos inválidos.
+- [x] Dependências: catálogo e upload.
 
 ## Epic 7: Vitrine pública da loja
 
