@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards
+} from "@nestjs/common";
 import { StoreMemberRole } from "@prisma/client";
 import { AuthorizationGuard } from "../auth/authorization.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -141,6 +152,26 @@ export class CatalogController {
       productId,
       parseCatalogBody(uploadProductImageSchema, body)
     );
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Get(":storeId/products/:productId/images")
+  listProductImages(@Param("storeId") storeId: string, @Param("productId") productId: string) {
+    return this.catalogService.listProductImages(storeId, productId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Delete(":storeId/products/:productId/images/:imageId")
+  removeProductImage(
+    @Param("storeId") storeId: string,
+    @Param("productId") productId: string,
+    @Param("imageId") imageId: string
+  ) {
+    return this.catalogService.removeProductImage(storeId, productId, imageId);
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

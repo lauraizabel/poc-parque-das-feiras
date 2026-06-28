@@ -439,6 +439,35 @@ export class CatalogService {
     };
   }
 
+  async listProductImages(storeId: string, productId: string) {
+    await this.ensureStoreProduct(storeId, productId);
+
+    return {
+      images: await this.catalogRepository.listProductImages(productId)
+    };
+  }
+
+  async removeProductImage(storeId: string, productId: string, imageId: string) {
+    await this.ensureStoreProduct(storeId, productId);
+
+    const image = await this.catalogRepository.findProductImageById(imageId);
+
+    if (!image || image.productId !== productId) {
+      throw new NotFoundException({
+        message: "Product image not found",
+        code: "PRODUCT_IMAGE_NOT_FOUND",
+        imageId
+      });
+    }
+
+    const removedImage = await this.catalogRepository.deleteProductImage(imageId);
+
+    return {
+      removed: true,
+      image: removedImage
+    };
+  }
+
   private normalizeSlug(value: string, entity: "Category" | "Product") {
     const normalized = value
       .trim()

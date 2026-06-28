@@ -284,10 +284,10 @@ Legenda de prioridade:
 - [x] Dependências: entidades de catálogo.
 
 ### Task 6.4 (P1): Implementar upload de imagens para produtos
-- [ ] Criar fluxo de upload para S3/R2 com associação a `ProductImage`.
-- [ ] Critérios de aceite: lojista consegue enviar, listar e remover imagens do produto.
-- [ ] Notas técnicas: validar tipo/tamanho, gerar chave segura e URL pública/assinada conforme estratégia.
-- [ ] Dependências: storage configurado e ProductImage.
+- [x] Criar fluxo de upload para S3/R2 com associação a `ProductImage`.
+- [x] Critérios de aceite: lojista consegue enviar, listar e remover imagens do produto.
+- [x] Notas técnicas: validar tipo/tamanho, gerar chave segura e URL pública/assinada conforme estratégia.
+- [x] Dependências: storage configurado e ProductImage.
 
 ### Task 6.5 (P1): Implementar ordenação e imagem principal do produto
 - [ ] Permitir definir imagem capa e ordem de exibição.

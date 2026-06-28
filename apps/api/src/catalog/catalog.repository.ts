@@ -292,6 +292,29 @@ export class CatalogRepository {
     });
   }
 
+  findProductImageById(imageId: string) {
+    return prisma.productImage.findUnique({
+      where: { id: imageId },
+      include: {
+        asset: true
+      }
+    });
+  }
+
+  listProductImages(productId: string) {
+    return prisma.productImage.findMany({
+      where: { productId },
+      include: {
+        asset: true
+      },
+      orderBy: [
+        { isPrimary: "desc" },
+        { sortOrder: "asc" },
+        { createdAt: "asc" }
+      ]
+    });
+  }
+
   createProductImage(input: {
     productId: string;
     storeId: string;
@@ -341,6 +364,52 @@ export class CatalogRepository {
           asset: true
         }
       });
+    });
+  }
+
+  deleteProductImage(imageId: string) {
+    return prisma.$transaction(async (tx) => {
+      const existingImage = await tx.productImage.findUnique({
+        where: { id: imageId },
+        include: {
+          asset: true
+        }
+      });
+
+      if (!existingImage) {
+        return null;
+      }
+
+      await tx.productImage.delete({
+        where: { id: imageId }
+      });
+
+      if (existingImage.assetId) {
+        await tx.asset.delete({
+          where: { id: existingImage.assetId }
+        });
+      }
+
+      if (existingImage.isPrimary) {
+        const fallbackPrimary = await tx.productImage.findFirst({
+          where: { productId: existingImage.productId },
+          orderBy: [
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ]
+        });
+
+        if (fallbackPrimary) {
+          await tx.productImage.update({
+            where: { id: fallbackPrimary.id },
+            data: {
+              isPrimary: true
+            }
+          });
+        }
+      }
+
+      return existingImage;
     });
   }
 }

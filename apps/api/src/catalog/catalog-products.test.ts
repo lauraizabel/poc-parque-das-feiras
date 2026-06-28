@@ -653,6 +653,125 @@ describe("catalog products", () => {
     assert.equal(blockedPurchaseResponse.body.availability.status, "OUT_OF_STOCK");
   });
 
+  it("lists product images and removes the primary image while promoting the next one", async () => {
+    const firstImageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+        imageUrl: string;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "notebook-gallery-cover.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Capa do notebook",
+        isPrimary: true,
+        sortOrder: 0
+      }
+    });
+
+    const secondImageResponse = await requestJson<{
+      image: {
+        id: string;
+        isPrimary: boolean;
+        altText: string | null;
+      };
+    }>({
+      method: "POST",
+      path: `/catalog/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        fileName: "notebook-gallery-side.png",
+        mimeType: "image/png",
+        contentBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBgAGvJ9kAAAAASUVORK5CYII=",
+        altText: "Lateral do notebook",
+        isPrimary: false,
+        sortOrder: 1
+      }
+    });
+
+    const imageListResponse = await requestJson<{
+      images: Array<{
+        id: string;
+        isPrimary: boolean;
+        altText: string | null;
+        asset: { id: string; mimeType: string } | null;
+      }>;
+    }>({
+      path: `/catalog/${primaryStoreId}/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(imageListResponse.statusCode, 200);
+    assert.equal(imageListResponse.body.images.length, 2);
+    assert.equal(imageListResponse.body.images[0]?.id, firstImageResponse.body.image.id);
+    assert.equal(imageListResponse.body.images[0]?.isPrimary, true);
+    assert.equal(imageListResponse.body.images[1]?.id, secondImageResponse.body.image.id);
+    assert.equal(imageListResponse.body.images[1]?.asset?.mimeType, "image/png");
+
+    const removalResponse = await requestJson<{
+      removed: boolean;
+      image: {
+        id: string;
+        isPrimary: boolean;
+        asset: { id: string } | null;
+      } | null;
+    }>({
+      method: "DELETE",
+      path: `/catalog/${primaryStoreId}/products/${productId}/images/${firstImageResponse.body.image.id}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(removalResponse.statusCode, 200);
+    assert.equal(removalResponse.body.removed, true);
+    assert.equal(removalResponse.body.image?.id, firstImageResponse.body.image.id);
+    assert.equal(removalResponse.body.image?.isPrimary, true);
+
+    const imageListAfterRemoval = await requestJson<{
+      images: Array<{
+        id: string;
+        isPrimary: boolean;
+        altText: string | null;
+      }>;
+    }>({
+      path: `/catalog/${primaryStoreId}/products/${productId}/images`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(imageListAfterRemoval.statusCode, 200);
+    assert.equal(imageListAfterRemoval.body.images.length, 1);
+    assert.equal(imageListAfterRemoval.body.images[0]?.id, secondImageResponse.body.image.id);
+    assert.equal(imageListAfterRemoval.body.images[0]?.isPrimary, true);
+    assert.equal(imageListAfterRemoval.body.images[0]?.altText, "Lateral do notebook");
+
+    const deletedImage = await prisma.productImage.findUnique({
+      where: { id: firstImageResponse.body.image.id }
+    });
+
+    const deletedAsset = await prisma.asset.findUnique({
+      where: { id: removalResponse.body.image?.asset?.id ?? "" }
+    });
+
+    assert.equal(deletedImage, null);
+    assert.equal(deletedAsset, null);
+  });
+
   it("rejects unsupported image uploads and foreign-store image writes", async () => {
     const unsupportedMimeResponse = await requestJson<{
       code: string;
@@ -692,6 +811,19 @@ describe("catalog products", () => {
 
     assert.equal(foreignStoreResponse.statusCode, 404);
     assert.equal(foreignStoreResponse.body.code, "PRODUCT_NOT_FOUND");
+
+    const foreignRemovalResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "DELETE",
+      path: `/catalog/${secondaryStoreId}/products/${productId}/images/non-existent-image`,
+      headers: {
+        authorization: `Bearer ${secondaryToken}`
+      }
+    });
+
+    assert.equal(foreignRemovalResponse.statusCode, 404);
+    assert.equal(foreignRemovalResponse.body.code, "PRODUCT_NOT_FOUND");
   });
 
   it("rejects invalid compareAt price and foreign category access", async () => {
