@@ -492,10 +492,10 @@ Legenda de prioridade:
 - [x] Dependências: módulos correspondentes.
 
 ### Task 11.4 (P1): Implementar tratamento consistente de loading, erro e vazio no painel
-- [ ] Criar componentes e padrões de UX para estados assíncronos.
-- [ ] Critérios de aceite: operações principais têm feedback visual claro em sucesso e falha.
-- [ ] Notas técnicas: padronizar toasts, mensagens inline e códigos de erro amigáveis.
-- [ ] Dependências: shell do dashboard.
+- [x] Criar componentes e padrões de UX para estados assíncronos.
+- [x] Critérios de aceite: operações principais têm feedback visual claro em sucesso e falha.
+- [x] Notas técnicas: padronizar toasts, mensagens inline e códigos de erro amigáveis.
+- [x] Dependências: shell do dashboard.
 
 ### Task 11.5 (P1): Implementar testes de navegação crítica do painel
 - [ ] Cobrir login, troca de loja, catálogo, pedidos e domínio custom como smoke tests.

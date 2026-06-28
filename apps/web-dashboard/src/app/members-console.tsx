@@ -2,6 +2,11 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { env } from "../lib/env";
+import {
+  DashboardEmptyState,
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 
 type MemberRecord = {
   id: string;
@@ -322,10 +327,10 @@ export function MembersConsole({
         </div>
       </form>
 
-      {state.kind !== "idle" ? (
-        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-          {state.message}
-        </p>
+      <DashboardFeedback state={state} />
+
+      {isLoading && members.length === 0 && invites.length === 0 ? (
+        <DashboardLoadingState label="Carregando equipe da loja" />
       ) : null}
 
       <div className="members-stack">
@@ -394,8 +399,11 @@ export function MembersConsole({
           </article>
         ))}
 
-        {members.length === 0 && invites.length === 0 ? (
-          <p className="subtitle">Nenhum membro extra convidado para esta loja ainda.</p>
+        {!isLoading && members.length === 0 && invites.length === 0 ? (
+          <DashboardEmptyState
+            description="Convide managers e suporte quando a operação da loja começar a crescer."
+            title="Nenhum membro extra convidado"
+          />
         ) : null}
       </div>
     </section>

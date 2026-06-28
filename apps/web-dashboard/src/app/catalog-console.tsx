@@ -1,6 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  DashboardEmptyState,
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 import { env } from "../lib/env";
 
 type ApiState = {
@@ -583,11 +588,7 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
           </div>
         </form>
 
-        {categoryState.kind !== "idle" ? (
-          <p className={categoryState.kind === "success" ? "feedback ok" : "feedback error"}>
-            {categoryState.message}
-          </p>
-        ) : null}
+        <DashboardFeedback state={categoryState} />
 
         <div className="catalog-list">
           {categories.map((category) => (
@@ -628,8 +629,14 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
               </div>
             </article>
           ))}
-          {categories.length === 0 ? (
-            <p className="subtitle">Nenhuma categoria cadastrada para esta loja ainda.</p>
+          {isLoadingCategories && categories.length === 0 ? (
+            <DashboardLoadingState label="Carregando categorias da loja" />
+          ) : null}
+          {!isLoadingCategories && categories.length === 0 ? (
+            <DashboardEmptyState
+              description="Crie categorias para organizar a navegação da vitrine e a operação do catálogo."
+              title="Nenhuma categoria cadastrada"
+            />
           ) : null}
         </div>
       </section>
@@ -786,11 +793,7 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
           </div>
         </form>
 
-        {productState.kind !== "idle" ? (
-          <p className={productState.kind === "success" ? "feedback ok" : "feedback error"}>
-            {productState.message}
-          </p>
-        ) : null}
+        <DashboardFeedback state={productState} />
 
         <div className="catalog-filters">
           <label className="field">
@@ -911,8 +914,14 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
               </div>
             </article>
           ))}
-          {filteredProducts.length === 0 ? (
-            <p className="subtitle">Nenhum produto encontrado para os filtros atuais.</p>
+          {isLoadingProducts && products.length === 0 ? (
+            <DashboardLoadingState label="Carregando produtos da loja" />
+          ) : null}
+          {!isLoadingProducts && filteredProducts.length === 0 ? (
+            <DashboardEmptyState
+              description="Ajuste os filtros ou cadastre o primeiro produto para começar a operar o catálogo."
+              title="Nenhum produto encontrado"
+            />
           ) : null}
         </div>
       </section>

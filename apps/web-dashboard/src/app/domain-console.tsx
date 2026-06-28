@@ -1,6 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import {
+  DashboardEmptyState,
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 import { env } from "../lib/env";
 
 type DomainRecord = {
@@ -318,10 +323,17 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
         </div>
       </form>
 
-      {state.kind !== "idle" ? (
-        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-          {state.message}
-        </p>
+      <DashboardFeedback state={state} />
+
+      {isSubmitting && !domain ? (
+        <DashboardLoadingState label="Carregando status do domínio" />
+      ) : null}
+
+      {!isSubmitting && !domain ? (
+        <DashboardEmptyState
+          description="Cadastre um host próprio quando quiser operar a vitrine fora do subdomínio padrão do marketplace."
+          title="Nenhum domínio próprio cadastrado"
+        />
       ) : null}
 
       {domain ? (

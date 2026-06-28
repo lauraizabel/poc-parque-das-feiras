@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { env } from "../lib/env";
+import {
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -289,10 +293,10 @@ export function OverviewConsole({
         </div>
       </section>
 
-      {state.kind !== "idle" ? (
-        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-          {state.message}
-        </p>
+      <DashboardFeedback state={state} />
+
+      {isLoading && orders.length === 0 && products.length === 0 ? (
+        <DashboardLoadingState label="Montando resumo operacional da loja" />
       ) : null}
 
       <section className="overview-detail-grid">

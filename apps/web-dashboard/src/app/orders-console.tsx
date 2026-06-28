@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { env } from "../lib/env";
+import {
+  DashboardEmptyState,
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -316,10 +321,17 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
         </button>
       </div>
 
-      {state.kind !== "idle" ? (
-        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-          {state.message}
-        </p>
+      <DashboardFeedback state={state} />
+
+      {isLoading && orders.length === 0 ? (
+        <DashboardLoadingState label="Carregando pedidos da loja" />
+      ) : null}
+
+      {!isLoading && orders.length === 0 ? (
+        <DashboardEmptyState
+          description="Ajuste o filtro ou aguarde os primeiros pedidos para iniciar a operação por aqui."
+          title="Nenhum pedido encontrado"
+        />
       ) : null}
 
       <div className="orders-list">

@@ -2,6 +2,11 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { env } from "../lib/env";
+import {
+  DashboardEmptyState,
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -372,10 +377,10 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
         </div>
       </form>
 
-      {state.kind !== "idle" ? (
-        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-          {state.message}
-        </p>
+      <DashboardFeedback state={state} />
+
+      {isLoading && shippingMethods.length === 0 ? (
+        <DashboardLoadingState label="Carregando métodos de frete" />
       ) : null}
 
       <div className="shipping-list">
@@ -420,6 +425,13 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
           </article>
         ))}
       </div>
+
+      {!isLoading && shippingMethods.length === 0 ? (
+        <DashboardEmptyState
+          description="Cadastre pelo menos um método ativo para liberar uma configuração de entrega no checkout."
+          title="Nenhum frete cadastrado"
+        />
+      ) : null}
     </section>
   );
 }

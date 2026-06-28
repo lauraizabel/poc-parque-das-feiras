@@ -1,6 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import {
+  DashboardEmptyState,
+  DashboardFeedback,
+  DashboardLoadingState
+} from "../components/dashboard-state";
 import { env } from "../lib/env";
 import { DomainConsole } from "./domain-console";
 import { ShippingConsole } from "./shipping-console";
@@ -82,6 +87,7 @@ export function SettingsConsole({
   const [profileState, setProfileState] = useState<ApiState>({ kind: "idle" });
   const [notificationState, setNotificationState] = useState<ApiState>({ kind: "idle" });
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const canManageCriticalSettings =
@@ -152,6 +158,7 @@ export function SettingsConsole({
       return;
     }
 
+    setIsLoadingNotifications(true);
     setNotificationState({ kind: "idle" });
 
     try {
@@ -185,6 +192,8 @@ export function SettingsConsole({
         kind: "error",
         message: "Falha de rede ao carregar as notificações."
       });
+    } finally {
+      setIsLoadingNotifications(false);
     }
   }
 
@@ -342,11 +351,7 @@ export function SettingsConsole({
           </div>
         </form>
 
-        {profileState.kind !== "idle" ? (
-          <p className={profileState.kind === "success" ? "feedback ok" : "feedback error"}>
-            {profileState.message}
-          </p>
-        ) : null}
+        <DashboardFeedback state={profileState} />
       </section>
 
       <section className="card settings-card">
@@ -372,24 +377,37 @@ export function SettingsConsole({
           </div>
         </div>
 
-        <div className="settings-recipient-list">
-          {(notifications?.recipientEmails ?? []).map((recipient) => (
-            <span className="settings-recipient-chip" key={recipient}>
-              {recipient}
-            </span>
-          ))}
-        </div>
+        {isLoadingProfile && !store ? (
+          <DashboardLoadingState label="Carregando configurações da loja" />
+        ) : null}
+
+        {isLoadingNotifications && !notifications ? (
+          <DashboardLoadingState label="Carregando notificações da loja" />
+        ) : null}
+
+        {!isLoadingNotifications && notifications?.recipientEmails.length ? (
+          <div className="settings-recipient-list">
+            {notifications.recipientEmails.map((recipient) => (
+              <span className="settings-recipient-chip" key={recipient}>
+                {recipient}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {!isLoadingNotifications && notifications && notifications.recipientEmails.length === 0 ? (
+          <DashboardEmptyState
+            description="Defina um e-mail de suporte na loja para ampliar os destinatários operacionais além do owner."
+            title="Nenhum destinatário extra configurado"
+          />
+        ) : null}
 
         <p className="overview-note">
           Os templates essenciais de pagamento já estão prontos. Para trocar o destino operacional,
           ajuste o e-mail de suporte acima.
         </p>
 
-        {notificationState.kind !== "idle" ? (
-          <p className={notificationState.kind === "success" ? "feedback ok" : "feedback error"}>
-            {notificationState.message}
-          </p>
-        ) : null}
+        <DashboardFeedback state={notificationState} />
       </section>
 
       <ShippingConsole storeId={storeId} storeLabel={storeLabel} token={token} />
