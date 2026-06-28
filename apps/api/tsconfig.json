@@ -5,7 +5,10 @@
     "moduleResolution": "Node",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "rootDir": "./src",
     "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {},
     "incremental": true,
     "sourceMap": true,
     "noEmit": false
