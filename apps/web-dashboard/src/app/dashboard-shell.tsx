@@ -11,6 +11,7 @@ import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
 import { CatalogConsole } from "./catalog-console";
 import { DomainConsole } from "./domain-console";
 import { MembersConsole } from "./members-console";
+import { OverviewConsole } from "./overview-console";
 import { OrdersConsole } from "./orders-console";
 import { StorefrontThemeConsole } from "./storefront-theme-console";
 
@@ -479,15 +480,14 @@ export function DashboardShell() {
           ) : null}
 
           {activeSection === "overview" ? (
-            <section className="card">
-              <div className="eyebrow">Resumo</div>
-              <h2 className="section-title">Base do shell multi-store pronta</h2>
-              <p className="subtitle">
-                O contexto de loja agora sai das memberships do usuario autenticado, em vez de
-                `storeId` manual. Isso prepara troca de loja, protecao de rotas e modulos do
-                backoffice sobre a mesma fundacao.
-              </p>
-            </section>
+            <OverviewConsole
+              currencyCode={selectedMembership?.store.currencyCode ?? "BRL"}
+              defaultSubdomain={selectedMembership?.store.defaultSubdomain ?? "loja"}
+              storeId={selectedMembership?.storeId ?? ""}
+              storeLabel={selectedMembership?.store.name ?? "Sem loja"}
+              storeRole={selectedMembership?.role ?? ""}
+              token={token}
+            />
           ) : null}
 
           {selectedMembership && activeSection === "catalog" ? (

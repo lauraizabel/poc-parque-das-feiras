@@ -480,10 +480,10 @@ Legenda de prioridade:
 - [x] Dependências: autenticação e StoreMember.
 
 ### Task 11.2 (P1): Implementar dashboard inicial da loja
-- [ ] Construir visão geral com métricas simples: pedidos, faturamento básico, produtos e status de domínio.
-- [ ] Critérios de aceite: owner/manager visualizam resumo operacional inicial.
-- [ ] Notas técnicas: usar queries simples; não buscar BI avançado no MVP.
-- [ ] Dependências: pedidos, catálogo e domínios.
+- [x] Construir visão geral com métricas simples: pedidos, faturamento básico, produtos e status de domínio.
+- [x] Critérios de aceite: owner/manager visualizam resumo operacional inicial.
+- [x] Notas técnicas: usar queries simples; não buscar BI avançado no MVP.
+- [x] Dependências: pedidos, catálogo e domínios.
 
 ### Task 11.3 (P1): Implementar páginas de configurações da loja
 - [ ] Criar telas para editar dados da loja, tema básico, domínio, frete e notificações essenciais.
