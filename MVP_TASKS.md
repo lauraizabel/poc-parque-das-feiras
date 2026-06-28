@@ -372,10 +372,10 @@ Legenda de prioridade:
 - [x] Dependências: persistência de carrinho.
 
 ### Task 8.5 (P1): Implementar testes de regras do carrinho
-- [ ] Cobrir mistura de lojas, estoque insuficiente, produto inativo e atualização concorrente simples.
-- [ ] Critérios de aceite: carrinho respeita isolamento e integridade básica.
-- [ ] Notas técnicas: incluir mensagens de erro consistentes para frontend.
-- [ ] Dependências: API de carrinho.
+- [x] Cobrir mistura de lojas, estoque insuficiente, produto inativo e atualização concorrente simples.
+- [x] Critérios de aceite: carrinho respeita isolamento e integridade básica.
+- [x] Notas técnicas: incluir mensagens de erro consistentes para frontend.
+- [x] Dependências: API de carrinho.
 
 ## Epic 9: Checkout, pagamento e webhooks
 

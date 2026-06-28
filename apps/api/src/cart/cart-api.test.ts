@@ -295,6 +295,7 @@ describe("cart api", () => {
 
   it("rejects products from another store, inactive products and insufficient stock", async () => {
     const foreignResponse = await requestJson<{
+      message: string;
       code: string;
     }>({
       method: "POST",
@@ -311,8 +312,10 @@ describe("cart api", () => {
 
     assert.equal(foreignResponse.statusCode, 404);
     assert.equal(foreignResponse.body.code, "PRODUCT_NOT_FOUND");
+    assert.match(foreignResponse.body.message, /Product not found/i);
 
     const inactiveResponse = await requestJson<{
+      message: string;
       code: string;
       status: string;
     }>({
@@ -331,8 +334,10 @@ describe("cart api", () => {
     assert.equal(inactiveResponse.statusCode, 400);
     assert.equal(inactiveResponse.body.code, "PRODUCT_NOT_AVAILABLE");
     assert.equal(inactiveResponse.body.status, "INACTIVE");
+    assert.match(inactiveResponse.body.message, /not available/i);
 
     const stockResponse = await requestJson<{
+      message: string;
       code: string;
       quantity: number;
       stockQuantity: number;
@@ -352,6 +357,93 @@ describe("cart api", () => {
     assert.equal(stockResponse.statusCode, 400);
     assert.equal(stockResponse.body.code, "INSUFFICIENT_STOCK");
     assert.equal(stockResponse.body.quantity, 99);
+    assert.match(stockResponse.body.message, /Insufficient stock/i);
+  });
+
+  it("rejects a stale quantity update when stock changes between cart operations", async () => {
+    const createResponse = await requestJson<{
+      cart: {
+        items: Array<{ id: string; quantity: number }>;
+      };
+    }>({
+      method: "POST",
+      path: "/cart/public/current/items",
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      },
+      body: {
+        sessionId: `${sessionId}-concurrency`,
+        productId: activeProductId,
+        quantity: 2
+      }
+    });
+
+    assert.equal(createResponse.statusCode, 201);
+    assert.equal(createResponse.body.cart.items[0]?.quantity, 2);
+
+    const cartItemId = createResponse.body.cart.items[0]!.id;
+
+    await prisma.product.update({
+      where: {
+        id: activeProductId
+      },
+      data: {
+        stockQuantity: 1
+      }
+    });
+
+    const staleUpdateResponse = await requestJson<{
+      message: string;
+      code: string;
+      quantity: number;
+      stockQuantity: number;
+    }>({
+      method: "PATCH",
+      path: `/cart/public/current/items/${cartItemId}`,
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      },
+      body: {
+        sessionId: `${sessionId}-concurrency`,
+        quantity: 2
+      }
+    });
+
+    assert.equal(staleUpdateResponse.statusCode, 400);
+    assert.equal(staleUpdateResponse.body.code, "INSUFFICIENT_STOCK");
+    assert.equal(staleUpdateResponse.body.quantity, 2);
+    assert.equal(staleUpdateResponse.body.stockQuantity, 1);
+    assert.match(staleUpdateResponse.body.message, /Insufficient stock/i);
+
+    const preservedCartResponse = await requestJson<{
+      cart: {
+        items: Array<{ id: string; quantity: number }>;
+        summary: { itemCount: number };
+      } | null;
+    }>({
+      method: "GET",
+      path: "/cart/public/context",
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      },
+      body: {
+        sessionId: `${sessionId}-concurrency`
+      }
+    });
+
+    assert.equal(preservedCartResponse.statusCode, 200);
+    assert.equal(preservedCartResponse.body.cart?.items[0]?.id, cartItemId);
+    assert.equal(preservedCartResponse.body.cart?.items[0]?.quantity, 2);
+    assert.equal(preservedCartResponse.body.cart?.summary.itemCount, 2);
+
+    await prisma.product.update({
+      where: {
+        id: activeProductId
+      },
+      data: {
+        stockQuantity: 5
+      }
+    });
   });
 
   async function requestJson<T>(options: RequestOptions): Promise<JsonResponse<T>> {
