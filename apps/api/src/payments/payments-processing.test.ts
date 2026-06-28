@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import * as http from "node:http";
 import { AddressInfo } from "node:net";
-import { after, before, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it } from "node:test";
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { PaymentStatus } from "@prisma/client";
 import { prisma } from "@acme/database";
 import { AppModule } from "../app.module";
+import { EmailNotificationJob } from "../notifications/notifications.queue";
+import { NotificationsService } from "../notifications/notifications.service";
 import { PaymentsService } from "./payments.service";
 
 type JsonResponse<T> = {
@@ -32,11 +34,13 @@ describe("payments webhook processing", () => {
 
   let app: INestApplication;
   let paymentsService: PaymentsService;
+  let notificationsService: NotificationsService;
   let baseUrl = "";
   let userId = "";
   let storeId = "";
   let token = "";
   let productId = "";
+  const queuedNotifications: EmailNotificationJob[] = [];
 
   before(async () => {
     process.env.STRIPE_WEBHOOK_SECRET = webhookSecret;
@@ -53,6 +57,21 @@ describe("payments webhook processing", () => {
 
     await app.listen(0);
     paymentsService = app.get(PaymentsService);
+    notificationsService = app.get(NotificationsService);
+    notificationsService.enqueueEmailNotification = (async (input: EmailNotificationJob) => {
+      queuedNotifications.push(input);
+
+      return {
+        queued: true,
+        queue: notificationsService.getQueueMonitoring().queue,
+        jobId: `test-email-${queuedNotifications.length}`,
+        notification: {
+          to: input.to,
+          subject: input.subject,
+          templateKey: input.templateKey
+        }
+      };
+    }) as NotificationsService["enqueueEmailNotification"];
 
     const server = app.getHttpServer() as http.Server;
     const address = server.address() as AddressInfo;
@@ -98,6 +117,10 @@ describe("payments webhook processing", () => {
     productId = productResponse.body.product.id;
   });
 
+  beforeEach(() => {
+    queuedNotifications.length = 0;
+  });
+
   after(async () => {
     process.env.STRIPE_WEBHOOK_SECRET = previousSecret;
 
@@ -131,6 +154,15 @@ describe("payments webhook processing", () => {
     assert.ok(payment?.paidAt);
     assert.equal(order?.status, "PAYMENT_APPROVED");
     assert.equal(event?.status, "PROCESSED");
+    assert.equal(queuedNotifications.length, 2);
+    assert.deepEqual(
+      queuedNotifications.map((notification) => notification.to).sort(),
+      [checkout.customerEmail, merchantEmail].sort()
+    );
+    assert.deepEqual(
+      queuedNotifications.map((notification) => notification.templateKey).sort(),
+      ["payment-approved-customer", "payment-approved-store"].sort()
+    );
   });
 
   it("keeps checkout-created orders reproducible before webhook reconciliation", async () => {
@@ -185,6 +217,15 @@ describe("payments webhook processing", () => {
     assert.equal(payment?.status, PaymentStatus.FAILED);
     assert.equal(payment?.failureCode, "card_declined");
     assert.equal(order?.status, "PAYMENT_FAILED");
+    assert.equal(queuedNotifications.length, 2);
+    assert.deepEqual(
+      queuedNotifications.map((notification) => notification.to).sort(),
+      [checkout.customerEmail, merchantEmail].sort()
+    );
+    assert.deepEqual(
+      queuedNotifications.map((notification) => notification.templateKey).sort(),
+      ["payment-failed-customer", "payment-failed-store"].sort()
+    );
   });
 
   it("processes expired payments asynchronously", async () => {
@@ -285,7 +326,8 @@ describe("payments webhook processing", () => {
 
     return {
       orderId: orderOnly.orderId,
-      paymentId: paymentStart.paymentId
+      paymentId: paymentStart.paymentId,
+      customerEmail: orderOnly.customerEmail
     };
   }
 

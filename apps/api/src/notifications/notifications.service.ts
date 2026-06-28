@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { PaymentStatus } from "@prisma/client";
 import { NotificationsRepository } from "./notifications.repository";
 import {
   createEmailNotificationQueue,
@@ -69,6 +70,71 @@ export class NotificationsService {
     };
   }
 
+  async notifyPaymentStatusChange(input: {
+    storeId: string;
+    orderId: string;
+    customerEmail: string;
+    customerFullName?: string | null;
+    totalCents: number;
+    currencyCode: string;
+    paymentStatus: PaymentStatus;
+  }) {
+    const recipients = await this.notificationsRepository.getStoreNotificationRecipients(
+      input.storeId
+    );
+
+    if (!recipients) {
+      return {
+        queued: false,
+        notifications: []
+      };
+    }
+
+    const template = this.resolvePaymentNotificationTemplate(input.paymentStatus);
+
+    if (!template) {
+      return {
+        queued: false,
+        notifications: []
+      };
+    }
+
+    const jobs: EmailNotificationJob[] = [
+      {
+        to: input.customerEmail,
+        subject: template.customerSubject,
+        templateKey: template.customerTemplateKey,
+        variables: {
+          customerFullName: input.customerFullName ?? null,
+          orderId: input.orderId,
+          paymentStatus: input.paymentStatus,
+          totalLabel: this.formatMoney(input.totalCents, input.currencyCode),
+          storeName: recipients.storeName,
+          storeSlug: recipients.storeSlug
+        },
+        metadata: {
+          storeId: input.storeId,
+          orderId: input.orderId,
+          audience: "customer",
+          paymentStatus: input.paymentStatus
+        }
+      },
+      ...this.buildMerchantPaymentNotificationJobs(recipients, {
+        orderId: input.orderId,
+        customerEmail: input.customerEmail,
+        paymentStatus: input.paymentStatus,
+        totalLabel: this.formatMoney(input.totalCents, input.currencyCode)
+      }, template)
+    ];
+
+    return {
+      queued: true,
+      notifications: await Promise.all(
+        jobs.map((job) => this.enqueueEmailNotification(job))
+      )
+    };
+  }
+
   private normalizeEmailJob(input: EmailNotificationJob) {
     const to = input.to.trim().toLowerCase();
     const subject = input.subject.trim();
@@ -103,5 +169,95 @@ export class NotificationsService {
       variables: input.variables ?? {},
       metadata: input.metadata ?? {}
     };
+  }
+
+  private buildMerchantPaymentNotificationJobs(
+    recipients: {
+      storeId: string;
+      storeName: string;
+      storeSlug: string;
+      ownerEmail: string;
+      supportEmail: string | null;
+    },
+    context: {
+      orderId: string;
+      customerEmail: string;
+      paymentStatus: PaymentStatus;
+      totalLabel: string;
+    },
+    template: {
+      storeSubject: string;
+      storeTemplateKey: string;
+    }
+  ) {
+    const merchantRecipients = Array.from(
+      new Set(
+        [recipients.supportEmail, recipients.ownerEmail]
+          .map((email) => email?.trim().toLowerCase() ?? null)
+          .filter((email): email is string => Boolean(email))
+      )
+    );
+
+    return merchantRecipients.map<EmailNotificationJob>((to) => ({
+      to,
+      subject: template.storeSubject,
+      templateKey: template.storeTemplateKey,
+      variables: {
+        orderId: context.orderId,
+        customerEmail: context.customerEmail,
+        paymentStatus: context.paymentStatus,
+        totalLabel: context.totalLabel,
+        storeName: recipients.storeName,
+        storeSlug: recipients.storeSlug
+      },
+      metadata: {
+        storeId: recipients.storeId,
+        orderId: context.orderId,
+        audience: "merchant",
+        paymentStatus: context.paymentStatus
+      }
+    }));
+  }
+
+  private resolvePaymentNotificationTemplate(paymentStatus: PaymentStatus) {
+    switch (paymentStatus) {
+      case PaymentStatus.APPROVED:
+        return {
+          customerSubject: "Pagamento aprovado do seu pedido",
+          customerTemplateKey: "payment-approved-customer",
+          storeSubject: "Pagamento aprovado na sua loja",
+          storeTemplateKey: "payment-approved-store"
+        };
+      case PaymentStatus.FAILED:
+        return {
+          customerSubject: "Falha no pagamento do seu pedido",
+          customerTemplateKey: "payment-failed-customer",
+          storeSubject: "Pagamento falhou na sua loja",
+          storeTemplateKey: "payment-failed-store"
+        };
+      case PaymentStatus.EXPIRED:
+        return {
+          customerSubject: "Pagamento expirado do seu pedido",
+          customerTemplateKey: "payment-expired-customer",
+          storeSubject: "Pagamento expirado na sua loja",
+          storeTemplateKey: "payment-expired-store"
+        };
+      case PaymentStatus.REFUNDED:
+        return {
+          customerSubject: "Reembolso confirmado do seu pedido",
+          customerTemplateKey: "payment-refunded-customer",
+          storeSubject: "Reembolso confirmado na sua loja",
+          storeTemplateKey: "payment-refunded-store"
+        };
+      default:
+        return null;
+    }
+  }
+
+  private formatMoney(totalCents: number, currencyCode: string) {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: currencyCode
+    }).format(totalCents / 100);
   }
 }

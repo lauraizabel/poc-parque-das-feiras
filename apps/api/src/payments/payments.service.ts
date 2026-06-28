@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException
 } from "@nestjs/common";
 import { createHmac, timingSafeEqual } from "node:crypto";
@@ -20,6 +21,7 @@ import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
 import { canTransitionOrderStatus } from "../orders/order-status.rules";
 import { OrdersRepository } from "../orders/orders.repository";
+import { NotificationsService } from "../notifications/notifications.service";
 import { PaymentsRepository } from "./payments.repository";
 import { createPaymentWebhookQueue } from "./payments.queue";
 import { StripeConnectPaymentGatewayAdapter } from "./stripe-connect.adapter";
@@ -27,13 +29,16 @@ import { CreateOrderPaymentIntentInput } from "./payments.schemas";
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private readonly configService: ConfigService,
     private readonly auditRepository: AuditRepository,
     private readonly paymentsRepository: PaymentsRepository,
     private readonly ordersRepository: OrdersRepository,
     private readonly cartRepository: CartRepository,
-    private readonly stripeConnectAdapter: StripeConnectPaymentGatewayAdapter
+    private readonly stripeConnectAdapter: StripeConnectPaymentGatewayAdapter,
+    private readonly notificationsService: NotificationsService
   ) {}
 
   getBoundary() {
@@ -387,6 +392,11 @@ export class PaymentsService {
         failureMessage: null
       });
 
+      await this.dispatchPaymentNotificationsIfApplicable({
+        orderId: webhookEvent.orderId,
+        paymentStatus: nextState.paymentStatus
+      });
+
       return {
         processed: true,
         skipped: false,
@@ -407,6 +417,46 @@ export class PaymentsService {
 
   private isOrderPayable(status: string) {
     return status === "CREATED" || status === "WAITING_PAYMENT" || status === "PAYMENT_FAILED";
+  }
+
+  private async dispatchPaymentNotificationsIfApplicable(input: {
+    orderId: string;
+    paymentStatus: PaymentStatus;
+  }) {
+    if (
+      input.paymentStatus !== PaymentStatus.APPROVED &&
+      input.paymentStatus !== PaymentStatus.FAILED &&
+      input.paymentStatus !== PaymentStatus.EXPIRED &&
+      input.paymentStatus !== PaymentStatus.REFUNDED
+    ) {
+      return;
+    }
+
+    try {
+      const order = await this.ordersRepository.getOrderById(input.orderId);
+
+      if (!order) {
+        return;
+      }
+
+      await this.notificationsService.notifyPaymentStatusChange({
+        storeId: order.storeId,
+        orderId: order.id,
+        customerEmail: order.customerEmail,
+        customerFullName: order.customerFullName,
+        totalCents: order.totalCents,
+        currencyCode: order.currencyCode,
+        paymentStatus: input.paymentStatus
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown payment notification dispatch error";
+
+      this.logger.error(
+        `Failed to enqueue payment notification for order ${input.orderId} (${input.paymentStatus})`,
+        message
+      );
+    }
   }
 
   async transitionPaymentStatus(input: {

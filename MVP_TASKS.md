@@ -683,7 +683,7 @@ Legenda de prioridade:
 - [x] Job processa webhook.
 - [x] Pagamento é atualizado.
 - [x] Pedido transita para status coerente.
-- [ ] Loja e cliente recebem notificação básica, quando aplicável.
+- [x] Loja e cliente recebem notificação básica, quando aplicável.
 
 ### Fluxo: Operação do pedido
 - [ ] Lojista visualiza pedido no painel.
