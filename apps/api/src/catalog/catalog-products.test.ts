@@ -337,6 +337,112 @@ describe("catalog products", () => {
     assert.equal(reviewedDraft?.images[0]?.isPrimary, true);
   });
 
+  it("publishes a reviewed draft as ACTIVE and exposes it on the storefront", async () => {
+    const draftResponse = await requestJson<{
+      product: {
+        id: string;
+        status: string;
+        slug: string;
+      };
+    }>({
+      method: "POST",
+      path: "/catalog/products",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        categoryId,
+        name: "Monitor UltraWide",
+        slug: "monitor-ultrawide",
+        description: "Monitor para edição e produtividade",
+        priceCents: 329900,
+        stockQuantity: 6,
+        status: "DRAFT"
+      }
+    });
+
+    assert.equal(draftResponse.statusCode, 201);
+    assert.equal(draftResponse.body.product.status, "DRAFT");
+
+    const reviewedProductId = draftResponse.body.product.id;
+
+    const reviewResponse = await requestJson<{
+      product: {
+        status: string;
+        priceCents: number;
+        stockQuantity: number;
+        description: string | null;
+      };
+    }>({
+      method: "PATCH",
+      path: `/catalog/products/${reviewedProductId}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        description: "Monitor para edição, design e produtividade",
+        priceCents: 339900,
+        compareAtCents: 369900,
+        stockQuantity: 9
+      }
+    });
+
+    assert.equal(reviewResponse.statusCode, 200);
+    assert.equal(reviewResponse.body.product.status, "DRAFT");
+    assert.equal(reviewResponse.body.product.priceCents, 339900);
+    assert.equal(reviewResponse.body.product.stockQuantity, 9);
+
+    const publishResponse = await requestJson<{
+      product: { id: string; slug: string; status: string };
+    }>({
+      method: "POST",
+      path: `/catalog/${primaryStoreId}/products/${reviewedProductId}/publish`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(publishResponse.statusCode, 201);
+    assert.equal(publishResponse.body.product.id, reviewedProductId);
+    assert.equal(publishResponse.body.product.slug, "monitor-ultrawide");
+    assert.equal(publishResponse.body.product.status, "ACTIVE");
+
+    const publicDetailResponse = await requestJson<{
+      product: { id: string; slug: string; status: string };
+      availability: { canAddToCart: boolean; isInStock: boolean };
+    }>({
+      path: "/catalog/public/products/monitor-ultrawide",
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(publicDetailResponse.statusCode, 200);
+    assert.equal(publicDetailResponse.body.product.id, reviewedProductId);
+    assert.equal(publicDetailResponse.body.product.slug, "monitor-ultrawide");
+    assert.equal(publicDetailResponse.body.product.status, "ACTIVE");
+    assert.equal(publicDetailResponse.body.availability.canAddToCart, true);
+    assert.equal(publicDetailResponse.body.availability.isInStock, true);
+
+    const publicListResponse = await requestJson<{
+      products: Array<{ id: string; slug: string }>;
+    }>({
+      path: "/catalog/public/products?category=eletronicos&page=1&pageSize=24",
+      headers: {
+        host: `${primaryStoreSlug}.lvh.me`
+      }
+    });
+
+    assert.equal(publicListResponse.statusCode, 200);
+    assert.ok(
+      publicListResponse.body.products.some(
+        (product) => product.id === reviewedProductId && product.slug === "monitor-ultrawide"
+      )
+    );
+  });
+
   it("exposes only active in-stock products on the public storefront endpoints", async () => {
     const publishResponse = await requestJson<{
       product: { status: string };

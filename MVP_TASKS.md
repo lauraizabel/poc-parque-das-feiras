@@ -665,8 +665,8 @@ Legenda de prioridade:
 - [ ] Lojista cria produto em `DRAFT`.
 - [x] Lojista faz upload de imagens.
 - [x] Lojista revisa preço, estoque e conteúdo.
-- [ ] Lojista publica produto como `ACTIVE`.
-- [ ] Produto passa a aparecer na vitrine da loja.
+- [x] Lojista publica produto como `ACTIVE`.
+- [x] Produto passa a aparecer na vitrine da loja.
 
 ### Fluxo: Compra na vitrine
 - [ ] Cliente acessa a loja pelo domínio ou subdomínio.
