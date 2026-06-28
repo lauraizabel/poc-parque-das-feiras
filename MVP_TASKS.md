@@ -686,11 +686,11 @@ Legenda de prioridade:
 - [x] Loja e cliente recebem notificação básica, quando aplicável.
 
 ### Fluxo: Operação do pedido
-- [ ] Lojista visualiza pedido no painel.
-- [ ] Lojista muda pedido para `PROCESSING`.
-- [ ] Lojista registra envio e muda para `SHIPPED`.
-- [ ] Cliente acompanha status.
-- [ ] Pedido pode evoluir para `DELIVERED`, `CANCELED` ou `REFUNDED`.
+- [x] Lojista visualiza pedido no painel.
+- [x] Lojista muda pedido para `PROCESSING`.
+- [x] Lojista registra envio e muda para `SHIPPED`.
+- [x] Cliente acompanha status.
+- [x] Pedido pode evoluir para `DELIVERED`, `CANCELED` ou `REFUNDED`.
 
 ## 7. Sugestão de Ordem de Implementação
 

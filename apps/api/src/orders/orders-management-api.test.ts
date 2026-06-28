@@ -139,71 +139,8 @@ describe("orders management api", () => {
     });
     shippingMethodId = shippingMethodResponse.body.shippingMethod.id;
 
-    await requestJson({
-      method: "POST",
-      path: "/cart/public/current/items",
-      headers: {
-        "x-forwarded-host": `${storeSlug}.lvh.me`
-      },
-      body: {
-        sessionId,
-        customerEmail: `orders-mgmt-customer-${suffix}@example.com`,
-        productId,
-        quantity: 1
-      }
-    });
-
-    const orderResponse = await requestJson<{
-      order: { id: string };
-    }>({
-      method: "POST",
-      path: "/checkout/public/current/order",
-      headers: {
-        "x-forwarded-host": `${storeSlug}.lvh.me`
-      },
-      body: {
-        sessionId,
-        customerEmail: `orders-mgmt-customer-${suffix}@example.com`,
-        customerFullName: "Cliente Operacao",
-        customerPhoneNumber: "+55 81 99999-2222",
-        shippingMethodId,
-        shippingRecipientName: "Cliente Operacao",
-        shippingPhoneNumber: "+55 81 99999-2222",
-        shippingPostalCode: "50000-000",
-        shippingState: "PE",
-        shippingCity: "Recife",
-        shippingDistrict: "Boa Vista",
-        shippingStreet: "Rua da Guia",
-        shippingNumber: "77"
-      }
-    });
-    orderId = orderResponse.body.order.id;
-
-    const order = await prisma.order.findUniqueOrThrow({
-      where: { id: orderId }
-    });
-
-    const payment = await prisma.payment.create({
-      data: {
-        storeId,
-        cartId: order.cartId!,
-        provider: PaymentProvider.STRIPE_CONNECT,
-        status: PaymentStatus.APPROVED,
-        currencyCode: "BRL",
-        amountCents: order.totalCents,
-        paidAt: new Date("2026-06-27T12:00:00.000Z")
-      }
-    });
-
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        paymentId: payment.id,
-        status: OrderStatus.PAYMENT_APPROVED,
-        approvedAt: new Date("2026-06-27T12:00:00.000Z"),
-        statusUpdatedAt: new Date("2026-06-27T12:00:00.000Z")
-      }
-    });
+    const orderContext = await createApprovedOrder("base", "Cliente Operacao");
+    orderId = orderContext.orderId;
   });
 
   after(async () => {
@@ -391,6 +328,140 @@ describe("orders management api", () => {
     });
     assert.equal(deniedAudit?.toStatus, "CANCELED");
   });
+
+  it("allows canceling an approved order before shipment and mirrors the shipment state", async () => {
+    const cancellationContext = await createApprovedOrder("canceled", "Cliente Cancelamento");
+
+    const response = await requestJson<{
+      order: {
+        status: string;
+        canceledAt: string | null;
+        allowedActions: string[];
+        shipment: {
+          status: string;
+          carrierName: string | null;
+          trackingCode: string | null;
+        } | null;
+      };
+    }>({
+      method: "PATCH",
+      path: `/orders/${storeId}/${cancellationContext.orderId}/status`,
+      headers: {
+        authorization: `Bearer ${token}`
+      },
+      body: {
+        storeId,
+        status: "CANCELED",
+        reason: "Cliente desistiu antes da expedicao",
+        notes: "Cancelamento confirmado no suporte"
+      }
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.body.order.status, "CANCELED");
+    assert.ok(response.body.order.canceledAt);
+    assert.equal(response.body.order.shipment?.status, "CANCELED");
+    assert.equal(response.body.order.shipment?.carrierName, null);
+    assert.equal(response.body.order.shipment?.trackingCode, null);
+    assert.deepEqual(response.body.order.allowedActions, []);
+
+    const canceledOrder = await prisma.order.findUnique({
+      where: { id: cancellationContext.orderId },
+      include: {
+        shipment: true
+      }
+    });
+    assert.equal(canceledOrder?.status, OrderStatus.CANCELED);
+    assert.ok(canceledOrder?.canceledAt);
+    assert.equal(canceledOrder?.shipment?.status, "CANCELED");
+
+    const cancellationAudit = await prisma.statusTransitionAudit.findFirst({
+      where: {
+        entityType: StatusTransitionEntityType.ORDER,
+        entityId: cancellationContext.orderId,
+        allowed: true,
+        toStatus: "CANCELED",
+        source: "dashboard.orders"
+      }
+    });
+    assert.equal(cancellationAudit?.fromStatus, "PAYMENT_APPROVED");
+  });
+
+  async function createApprovedOrder(label: string, customerName: string) {
+    const checkoutSessionId = `${sessionId}-${label}`;
+    const checkoutCustomerEmail = `orders-mgmt-customer-${label}-${suffix}@example.com`;
+
+    await requestJson({
+      method: "POST",
+      path: "/cart/public/current/items",
+      headers: {
+        "x-forwarded-host": `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: checkoutSessionId,
+        customerEmail: checkoutCustomerEmail,
+        productId,
+        quantity: 1
+      }
+    });
+
+    const orderResponse = await requestJson<{
+      order: { id: string };
+    }>({
+      method: "POST",
+      path: "/checkout/public/current/order",
+      headers: {
+        "x-forwarded-host": `${storeSlug}.lvh.me`
+      },
+      body: {
+        sessionId: checkoutSessionId,
+        customerEmail: checkoutCustomerEmail,
+        customerFullName: customerName,
+        customerPhoneNumber: "+55 81 99999-2222",
+        shippingMethodId,
+        shippingRecipientName: customerName,
+        shippingPhoneNumber: "+55 81 99999-2222",
+        shippingPostalCode: "50000-000",
+        shippingState: "PE",
+        shippingCity: "Recife",
+        shippingDistrict: "Boa Vista",
+        shippingStreet: "Rua da Guia",
+        shippingNumber: "77"
+      }
+    });
+
+    const createdOrderId = orderResponse.body.order.id;
+    const order = await prisma.order.findUniqueOrThrow({
+      where: { id: createdOrderId }
+    });
+
+    const payment = await prisma.payment.create({
+      data: {
+        storeId,
+        cartId: order.cartId!,
+        provider: PaymentProvider.STRIPE_CONNECT,
+        status: PaymentStatus.APPROVED,
+        currencyCode: "BRL",
+        amountCents: order.totalCents,
+        paidAt: new Date("2026-06-27T12:00:00.000Z")
+      }
+    });
+
+    await prisma.order.update({
+      where: { id: createdOrderId },
+      data: {
+        paymentId: payment.id,
+        status: OrderStatus.PAYMENT_APPROVED,
+        approvedAt: new Date("2026-06-27T12:00:00.000Z"),
+        statusUpdatedAt: new Date("2026-06-27T12:00:00.000Z")
+      }
+    });
+
+    return {
+      orderId: createdOrderId,
+      customerEmail: checkoutCustomerEmail
+    };
+  }
 
   async function requestJson<T>(options: RequestOptions): Promise<JsonResponse<T>> {
     const response = await fetch(`${baseUrl}${options.path}`, {
