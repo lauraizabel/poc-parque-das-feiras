@@ -1,7 +1,12 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { env } from "../lib/env";
+import {
+  clearDashboardAccessToken,
+  readDashboardAccessToken,
+  storeDashboardAccessToken
+} from "../lib/auth-session";
 import { DomainConsole } from "./domain-console";
 import { OrdersConsole } from "./orders-console";
 
@@ -83,6 +88,40 @@ export function DashboardShell() {
     return payload;
   }
 
+  useEffect(() => {
+    const storedToken = readDashboardAccessToken();
+
+    if (!storedToken) {
+      return;
+    }
+
+    setToken(storedToken);
+    setIsLoading(true);
+    bootstrapDashboard(storedToken)
+      .then((me) => {
+        setState({
+          kind: "success",
+          message:
+            me.memberships.length > 0
+              ? "Sessão restaurada com sucesso."
+              : "Login restaurado, mas sem lojas vinculadas."
+        });
+      })
+      .catch((error) => {
+        clearDashboardAccessToken();
+        setToken("");
+        setUser(null);
+        setState({
+          kind: "error",
+          message:
+            error instanceof Error ? error.message : "Não foi possível restaurar a sessão."
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
@@ -113,6 +152,7 @@ export function DashboardShell() {
       }
 
       setToken(payload.tokens.accessToken);
+      storeDashboardAccessToken(payload.tokens.accessToken);
       const me = await bootstrapDashboard(payload.tokens.accessToken);
       setState({
         kind: "success",
@@ -160,6 +200,33 @@ export function DashboardShell() {
             : "Falha ao atualizar o contexto do dashboard."
       });
     } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    if (!token) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await fetch(`${env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
+    } finally {
+      clearDashboardAccessToken();
+      setToken("");
+      setUser(null);
+      setSelectedStoreId("");
+      setState({
+        kind: "success",
+        message: "Sessão encerrada com sucesso."
+      });
       setIsLoading(false);
     }
   }
@@ -237,6 +304,12 @@ export function DashboardShell() {
               <button className="primary-button" disabled={isLoading} type="submit">
                 {isLoading ? "Entrando..." : "Entrar no dashboard"}
               </button>
+              <a className="secondary-button auth-anchor-button" href="/register">
+                Criar conta
+              </a>
+              <a className="secondary-button auth-anchor-button" href="/forgot-password">
+                Esqueci minha senha
+              </a>
             </div>
           </form>
 
@@ -263,6 +336,9 @@ export function DashboardShell() {
           <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
           <button className="link-button" onClick={refreshContext} type="button">
             Atualizar contexto
+          </button>
+          <button className="link-button" onClick={handleLogout} type="button">
+            Sair
           </button>
         </nav>
       </header>

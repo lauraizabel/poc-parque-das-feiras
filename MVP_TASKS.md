@@ -132,10 +132,10 @@ Legenda de prioridade:
 - [x] Dependências: membership e autenticação.
 
 ### Task 2.5 (P1): Construir telas base de autenticação no dashboard
-- [ ] Implementar páginas de login, cadastro, esqueci senha e redefinição de senha.
-- [ ] Critérios de aceite: fluxos funcionam com validação de formulário e mensagens de erro.
-- [ ] Notas técnicas: usar Tailwind + shadcn/ui com componentes compartilhados de formulário.
-- [ ] Dependências: endpoints de autenticação.
+- [x] Implementar páginas de login, cadastro, esqueci senha e redefinição de senha.
+- [x] Critérios de aceite: fluxos funcionam com validação de formulário e mensagens de erro.
+- [x] Notas técnicas: usar Tailwind + shadcn/ui com componentes compartilhados de formulário.
+- [x] Dependências: endpoints de autenticação.
 
 ### Task 2.6 (P1): Implementar testes básicos de autenticação e autorização
 - [ ] Criar testes unitários e de integração para login, hash, guards e controle de acesso.

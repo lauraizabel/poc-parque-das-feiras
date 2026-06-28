@@ -191,6 +191,32 @@ a {
   gap: 18px;
 }
 
+.auth-shell {
+  padding-bottom: 80px;
+}
+
+.auth-hero .title {
+  max-width: 14ch;
+}
+
+.auth-page-card {
+  max-width: 760px;
+}
+
+.auth-link-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.auth-anchor-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .domain-head {
   display: flex;
   align-items: center;
@@ -222,6 +248,11 @@ a {
 .field span {
   font-size: 0.92rem;
   color: var(--muted);
+}
+
+.field-error {
+  color: #8f2d26;
+  font-size: 0.85rem;
 }
 
 .field input,
