@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { PlatformRole, StoreMemberRole } from "@prisma/client";
 import { AuthorizationGuard } from "../auth/authorization.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -9,7 +9,12 @@ import {
   AuthenticatedRequest,
   PublicStorefrontRequest
 } from "../auth/auth.types";
-import { createStoreSchema, parseStoreBody } from "./stores.schemas";
+import {
+  createStoreSchema,
+  parseStoreBody,
+  parseStoreQuery,
+  storeSlugAvailabilitySchema
+} from "./stores.schemas";
 import { StoresService } from "./stores.service";
 
 @Controller("stores")
@@ -28,6 +33,13 @@ export class StoresController {
     return {
       store: request.publicStore ?? null
     };
+  }
+
+  @Get("slug-availability")
+  getSlugAvailability(@Query() query: unknown) {
+    return this.storesService.checkSlugAvailability(
+      parseStoreQuery(storeSlugAvailabilitySchema, query)
+    );
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

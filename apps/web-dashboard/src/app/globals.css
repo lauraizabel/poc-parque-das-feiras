@@ -191,6 +191,10 @@ a {
   gap: 18px;
 }
 
+.onboarding-card {
+  max-width: 860px;
+}
+
 .auth-shell {
   padding-bottom: 80px;
 }
@@ -332,6 +336,11 @@ a {
   color: var(--muted);
   font-size: 0.9rem;
   margin-bottom: 4px;
+}
+
+.slug-preview {
+  display: grid;
+  gap: 12px;
 }
 
 .orders-card {

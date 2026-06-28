@@ -48,6 +48,17 @@ export class StoresRepository {
     });
   }
 
+  findStoreBySlugOrSubdomain(slug: string, defaultSubdomain: string) {
+    return prisma.store.findFirst({
+      where: {
+        OR: [
+          { slug },
+          { defaultSubdomain }
+        ]
+      }
+    });
+  }
+
   addMember(input: {
     storeId: string;
     userId: string;

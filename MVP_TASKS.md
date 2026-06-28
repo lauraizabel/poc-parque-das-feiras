@@ -164,10 +164,10 @@ Legenda de prioridade:
 - [x] Dependências: criação de loja.
 
 ### Task 3.4 (P1): Criar telas de onboarding e configuração inicial da loja
-- [ ] Implementar UX para nome da loja, slug desejado e dados iniciais de operação.
-- [ ] Critérios de aceite: fluxo orienta o lojista até a criação da loja com feedback claro.
-- [ ] Notas técnicas: validar disponibilidade de nome interno/subdomínio em tempo real.
-- [ ] Dependências: fluxo backend de criação de loja.
+- [x] Implementar UX para nome da loja, slug desejado e dados iniciais de operação.
+- [x] Critérios de aceite: fluxo orienta o lojista até a criação da loja com feedback claro.
+- [x] Notas técnicas: validar disponibilidade de nome interno/subdomínio em tempo real.
+- [x] Dependências: fluxo backend de criação de loja.
 
 ### Task 3.5 (P1): Implementar gestão básica de membros da loja
 - [ ] Criar CRUD simples para convidar, listar, alterar papel e remover membros da loja.

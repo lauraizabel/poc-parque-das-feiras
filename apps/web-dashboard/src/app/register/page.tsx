@@ -6,8 +6,9 @@ export default function RegisterPage() {
     <AuthPageShell
       eyebrow="Cadastro"
       title="Crie sua conta antes de abrir a primeira loja."
-      subtitle="Esse fluxo cria o acesso base do usuário. Depois do login, você segue com a criação e a operação das lojas vinculadas."
+      subtitle="Esse fluxo cria o acesso base do usuário. Se preferir já sair com a primeira loja pronta, use o onboarding completo do lojista."
       links={[
+        { href: "/register-merchant", label: "Quero criar minha loja agora" },
         { href: "/login", label: "Já tenho acesso" },
         { href: "/forgot-password", label: "Preciso recuperar minha senha" }
       ]}

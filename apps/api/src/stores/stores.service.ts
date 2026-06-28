@@ -30,6 +30,57 @@ export class StoresService {
     return this.storesRepository.getBoundary();
   }
 
+  async checkSlugAvailability(input: { slug: string }) {
+    const normalizedSlug = this.normalizeSlugCandidate(input.slug);
+
+    if (normalizedSlug.length < 2) {
+      return {
+        requestedSlug: input.slug,
+        normalizedSlug,
+        defaultSubdomain: normalizedSlug,
+        available: false,
+        reason: "invalid",
+        message: "Use ao menos 2 caracteres alfanuméricos no slug."
+      };
+    }
+
+    if (RESERVED_SLUGS.has(normalizedSlug)) {
+      return {
+        requestedSlug: input.slug,
+        normalizedSlug,
+        defaultSubdomain: normalizedSlug,
+        available: false,
+        reason: "reserved",
+        message: "Esse slug está reservado para a plataforma."
+      };
+    }
+
+    const existingStore = await this.storesRepository.findStoreBySlugOrSubdomain(
+      normalizedSlug,
+      normalizedSlug
+    );
+
+    if (existingStore) {
+      return {
+        requestedSlug: input.slug,
+        normalizedSlug,
+        defaultSubdomain: normalizedSlug,
+        available: false,
+        reason: "in_use",
+        message: "Esse slug já está em uso por outra loja."
+      };
+    }
+
+    return {
+      requestedSlug: input.slug,
+      normalizedSlug,
+      defaultSubdomain: normalizedSlug,
+      available: true,
+      reason: "available",
+      message: "Slug disponível para criar a loja."
+    };
+  }
+
   async createAuthorizationFixture(input: {
     userId: string;
     role: StoreMemberRole;
@@ -89,19 +140,23 @@ export class StoresService {
   }
 
   private normalizeSlug(value: string) {
-    const normalized = value
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+    const normalized = this.normalizeSlugCandidate(value);
 
     if (normalized.length < 2) {
       throw new BadRequestException("Slug must contain at least 2 alphanumeric characters");
     }
 
     return normalized;
+  }
+
+  private normalizeSlugCandidate(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 
   private assertAllowedSlug(value: string, field: "slug" | "defaultSubdomain") {

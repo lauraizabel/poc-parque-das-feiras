@@ -7,6 +7,7 @@ import {
   readDashboardAccessToken,
   storeDashboardAccessToken
 } from "../lib/auth-session";
+import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
 import { DomainConsole } from "./domain-console";
 import { OrdersConsole } from "./orders-console";
 
@@ -304,6 +305,9 @@ export function DashboardShell() {
               <button className="primary-button" disabled={isLoading} type="submit">
                 {isLoading ? "Entrando..." : "Entrar no dashboard"}
               </button>
+              <a className="secondary-button auth-anchor-button" href="/register-merchant">
+                Abrir minha loja
+              </a>
               <a className="secondary-button auth-anchor-button" href="/register">
                 Criar conta
               </a>
@@ -318,6 +322,49 @@ export function DashboardShell() {
               {state.message}
             </p>
           ) : null}
+        </section>
+      </main>
+    );
+  }
+
+  if (user.memberships.length === 0) {
+    return (
+      <main className="shell dashboard-shell">
+        <header className="nav">
+          <div>
+            <div className="eyebrow">Dashboard</div>
+            <strong>Onboarding da primeira loja</strong>
+            <div className="host-badge">{user.email}</div>
+          </div>
+          <nav className="nav-links">
+            <a href="http://localhost:3000">Storefront</a>
+            <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
+            <button className="link-button" onClick={handleLogout} type="button">
+              Sair
+            </button>
+          </nav>
+        </header>
+
+        <section className="hero">
+          <span className="badge">Primeira operação</span>
+          <h1 className="title">Crie sua primeira loja antes de entrar na operação.</h1>
+          <p className="subtitle">
+            Sua conta já está autenticada, mas ainda não possui memberships. Defina o nome da
+            loja, valide o slug em tempo real e configure os primeiros dados operacionais para
+            liberar o painel.
+          </p>
+        </section>
+
+        <section className="card auth-card onboarding-card">
+          <div>
+            <div className="eyebrow">Nova loja</div>
+            <h2 className="section-title">Onboarding inicial do lojista</h2>
+          </div>
+          <MerchantOnboardingForm
+            mode="member"
+            onCreated={() => refreshContext()}
+            token={token}
+          />
         </section>
       </main>
     );
