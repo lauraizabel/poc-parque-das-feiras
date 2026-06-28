@@ -61,7 +61,8 @@ Na pratica, o fluxo principal do MVP hoje e:
 3. Instale dependencias com `pnpm install`.
 4. Gere o client Prisma com `pnpm db:generate`.
 5. Aplique a baseline do banco com `pnpm db:migrate`.
-6. Rode o projeto com `pnpm dev`.
+6. Rode a seed inicial com `pnpm db:seed`.
+7. Rode o projeto com `pnpm dev`.
 
 O comando `pnpm dev` sobe:
 
@@ -78,7 +79,8 @@ Ordem recomendada para um ambiente limpo:
 3. instalar dependencias com `pnpm install`
 4. gerar Prisma Client com `pnpm db:generate`
 5. aplicar migrations com `pnpm db:migrate`
-6. iniciar apps com `pnpm dev`
+6. popular dados base com `pnpm db:seed`
+7. iniciar apps com `pnpm dev`
 
 Checks uteis depois do bootstrap:
 
@@ -148,6 +150,41 @@ Comandos principais:
 - `pnpm db:migrate`: cria/aplica migrations no ambiente local
 - `pnpm db:migrate:deploy`: aplica migrations existentes
 - `pnpm db:status`: mostra o estado das migrations
+- `pnpm db:seed`: cria/atualiza dados previsíveis de dev e QA
+
+## Seed inicial
+
+O comando `pnpm db:seed` agora cria ou atualiza um conjunto idempotente de dados base:
+
+- um usuário `PLATFORM_ADMIN`
+- uma loja demo ativa
+- usuários `owner`, `manager` e `support` vinculados à loja demo
+- uma categoria, um produto ativo em destaque e um frete padrão
+
+Credenciais padrão documentadas para ambiente local/QA:
+
+- admin: `admin@acme.local` / `AdminSeed123`
+- owner: `owner@demo-store.local` / `DemoStore123`
+- manager: `manager@demo-store.local` / `DemoStore123`
+- support: `support@demo-store.local` / `DemoStore123`
+
+Dados previsíveis criados pela seed:
+
+- loja: `loja-demo`
+- subdomínio: `loja-demo.<MARKETPLACE_ROOT_DOMAIN>`
+- categoria: `cafe-especial`
+- produto: `moedor-premium`
+- frete padrão: `Entrega Padrao`
+
+Overrides suportados via ambiente:
+
+- `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`
+- `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD`
+- `SEED_MANAGER_EMAIL`, `SEED_MANAGER_PASSWORD`
+- `SEED_SUPPORT_EMAIL`, `SEED_SUPPORT_PASSWORD`
+- `SEED_STORE_NAME`, `SEED_STORE_SLUG`, `SEED_STORE_SUBDOMAIN`
+
+Para qualquer ambiente além de dev/QA, sobrescreva as senhas seedadas via env antes de rodar o comando.
 
 ## Variaveis de ambiente mais importantes
 

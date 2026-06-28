@@ -110,12 +110,13 @@ Justificativa:
 
 1. configurar `DATABASE_URL`
 2. rodar `pnpm db:migrate:deploy`
-3. rodar `pnpm db:status`
+3. rodar `pnpm db:seed` se o ambiente precisar do pacote padrão de admin e loja demo
+4. rodar `pnpm db:status`
 
 Observação:
 
-- não há processo formal de seed documentado no monorepo neste momento
-- se o ambiente inicial precisar de dados administrativos ou catálogo de suporte, tratar isso explicitamente como operação manual controlada
+- a seed padrão cria admin global, loja demo, membros operacionais e dados mínimos de catálogo/frete
+- fora de dev/QA, sobrescrever `SEED_ADMIN_PASSWORD` e `SEED_*_PASSWORD` antes da execução
 
 ### 4.3 API
 

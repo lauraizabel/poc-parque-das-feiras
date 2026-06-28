@@ -88,10 +88,10 @@ Legenda de prioridade:
 - [x] Dependências: ambiente local com PostgreSQL.
 
 ### Task 1.5 (P1): Criar seeds mínimas para papéis e admin inicial
-- [ ] Implementar seed para permissões base, usuário admin global e dados de apoio mínimos.
-- [ ] Critérios de aceite: comando de seed cria dados previsíveis para desenvolvimento e QA.
-- [ ] Notas técnicas: não hardcodear senhas inseguras sem documentação explícita do ambiente.
-- [ ] Dependências: Prisma configurado.
+- [x] Implementar seed para permissões base, usuário admin global e dados de apoio mínimos.
+- [x] Critérios de aceite: comando de seed cria dados previsíveis para desenvolvimento e QA.
+- [x] Notas técnicas: não hardcodear senhas inseguras sem documentação explícita do ambiente.
+- [x] Dependências: Prisma configurado.
 
 ### Task 1.6 (P0): Implementar configuração centralizada e validação de ambiente
 - [x] Criar camada de configuração tipada para API e frontends com validação de env vars.

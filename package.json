@@ -14,6 +14,7 @@
     "db:migrate": "pnpm --filter @acme/database db:migrate",
     "db:migrate:deploy": "pnpm --filter @acme/database db:migrate:deploy",
     "db:status": "pnpm --filter @acme/database db:status",
+    "db:seed": "pnpm --filter @acme/database db:seed",
     "compose:up": "docker compose up -d",
     "compose:down": "docker compose down"
   },
