@@ -436,6 +436,7 @@ export function DashboardShell() {
             <span>Loja atual</span>
             <select
               className="field-select"
+              data-testid="dashboard-store-select"
               onChange={(event) => setSelectedStoreId(event.target.value)}
               value={selectedMembership?.storeId ?? ""}
             >
@@ -451,6 +452,7 @@ export function DashboardShell() {
             {navItems.map((item) => (
               <button
                 className={activeSection === item.key ? "sidebar-link active" : "sidebar-link"}
+                data-testid={`dashboard-nav-${item.key}`}
                 key={item.key}
                 onClick={() => setActiveSection(item.key)}
                 type="button"
@@ -465,7 +467,9 @@ export function DashboardShell() {
         <section className="dashboard-main">
           <section className="card">
             <div className="eyebrow">Loja selecionada</div>
-            <h1 className="section-title">{selectedMembership?.store.name ?? "Sem loja"}</h1>
+            <h1 className="section-title" data-testid="dashboard-selected-store">
+              {selectedMembership?.store.name ?? "Sem loja"}
+            </h1>
             <div className="grid">
               <div className="kpi">
                 <span>Role atual</span>

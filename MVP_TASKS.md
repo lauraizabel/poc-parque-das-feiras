@@ -498,10 +498,10 @@ Legenda de prioridade:
 - [x] Dependências: shell do dashboard.
 
 ### Task 11.5 (P1): Implementar testes de navegação crítica do painel
-- [ ] Cobrir login, troca de loja, catálogo, pedidos e domínio custom como smoke tests.
-- [ ] Critérios de aceite: principais rotas do painel têm validação automatizada mínima.
-- [ ] Notas técnicas: priorizar E2E dos fluxos mais arriscados.
-- [ ] Dependências: dashboard funcional.
+- [x] Cobrir login, troca de loja, catálogo, pedidos e domínio custom como smoke tests.
+- [x] Critérios de aceite: principais rotas do painel têm validação automatizada mínima.
+- [x] Notas técnicas: priorizar E2E dos fluxos mais arriscados.
+- [x] Dependências: dashboard funcional.
 
 ## Epic 12: Admin global
 

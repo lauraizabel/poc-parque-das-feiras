@@ -101,11 +101,16 @@ export class StoresService {
       defaultSubdomain: input.slug ?? `store-${suffix}`
     });
 
-    const membership = await this.storesRepository.addMember({
-      storeId: store.id,
-      userId: input.userId,
-      role: input.role
-    });
+    const existingMembership = await this.storesRepository.findStoreMembership(input.userId, store.id);
+
+    if (!existingMembership) {
+      throw new NotFoundException("Membership fixture could not be created for the requested store.");
+    }
+
+    const membership =
+      existingMembership.role === input.role
+        ? existingMembership
+        : await this.storesRepository.updateMemberRole(existingMembership.id, input.role);
 
     return {
       store,

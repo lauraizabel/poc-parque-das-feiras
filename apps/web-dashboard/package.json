@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "tsc --project tsconfig.json --noEmit",
-    "typecheck": "tsc --project tsconfig.json --noEmit"
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test:smoke": "pnpm --dir ../.. --filter @acme/api build && playwright test"
   },
   "dependencies": {
     "@acme/config": "workspace:*",
@@ -18,6 +19,7 @@
     "zod": "^4.0.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^24.0.10",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
