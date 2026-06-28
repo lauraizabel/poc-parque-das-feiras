@@ -14,6 +14,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test:catalog": "node --test dist/catalog/catalog-categories.test.js",
     "test:catalog-products": "node --test dist/catalog/catalog-products.test.js",
+    "test:catalog-storefront": "node --test dist/catalog/catalog-storefront.test.js",
     "test:cart": "node --test dist/cart/cart-modeling.test.js",
     "test:cart-api": "node --test dist/cart/cart-api.test.js",
     "test:auth-authorization": "node --test dist/auth/auth-authorization.test.js",

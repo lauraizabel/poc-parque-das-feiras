@@ -340,10 +340,10 @@ Legenda de prioridade:
 - [x] Dependências: catálogo e imagens.
 
 ### Task 7.6 (P1): Implementar testes básicos da vitrine pública
-- [ ] Criar testes de renderização por tenant, visibilidade de produtos e regras de status.
-- [ ] Critérios de aceite: mudança de host altera corretamente a loja exibida.
-- [ ] Notas técnicas: incluir ao menos fluxo smoke público end-to-end.
-- [ ] Dependências: storefront pública.
+- [x] Criar testes de renderização por tenant, visibilidade de produtos e regras de status.
+- [x] Critérios de aceite: mudança de host altera corretamente a loja exibida.
+- [x] Notas técnicas: incluir ao menos fluxo smoke público end-to-end.
+- [x] Dependências: storefront pública.
 
 ## Epic 8: Carrinho e experiência de compra
 
