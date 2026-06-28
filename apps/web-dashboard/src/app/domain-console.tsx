@@ -331,6 +331,52 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
               setState({ kind: "idle" });
 
               try {
+                const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/domains/${storeId}`, {
+                  method: "DELETE",
+                  headers: {
+                    authorization: `Bearer ${token}`
+                  }
+                });
+                const payload = (await response.json()) as {
+                  removed?: boolean;
+                  message?: string;
+                };
+
+                if (!response.ok) {
+                  setState({
+                    kind: "error",
+                    message: payload.message ?? "Nao foi possivel remover o dominio."
+                  });
+                  return;
+                }
+
+                setDomain(null);
+                setState({
+                  kind: "success",
+                  message:
+                    "Dominio removido com sucesso. Agora voce pode cadastrar um novo host para substituir o anterior."
+                });
+              } catch {
+                setState({
+                  kind: "error",
+                  message: "Falha de rede ao remover o dominio."
+                });
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            type="button"
+          >
+            Remover dominio
+          </button>
+          <button
+            className="secondary-button"
+            disabled={isSubmitting}
+            onClick={async () => {
+              setIsSubmitting(true);
+              setState({ kind: "idle" });
+
+              try {
                 const response = await fetch(
                   `${env.NEXT_PUBLIC_API_URL}/domains/${storeId}/verify-dns`,
                   {

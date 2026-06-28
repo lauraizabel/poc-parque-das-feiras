@@ -246,10 +246,10 @@ Legenda de prioridade:
 - [x] Dependências: integração com provider de domínio/SSL.
 
 ### Task 5.7 (P1): Implementar remoção e substituição segura do domínio próprio
-- [ ] Permitir remover domínio custom ou substituí-lo respeitando a regra de apenas 1 ativo por loja.
-- [ ] Critérios de aceite: remoção marca status como `REMOVED` e impede conflito futuro.
-- [ ] Notas técnicas: auditar quem removeu e limpar sincronização externa quando aplicável.
-- [ ] Dependências: StoreDomain ativo.
+- [x] Permitir remover domínio custom ou substituí-lo respeitando a regra de apenas 1 ativo por loja.
+- [x] Critérios de aceite: remoção marca status como `REMOVED` e impede conflito futuro.
+- [x] Notas técnicas: auditar quem removeu e limpar sincronização externa quando aplicável.
+- [x] Dependências: StoreDomain ativo.
 
 ### Task 5.8 (P1): Criar telas do painel para acompanhamento de ativação do domínio
 - [ ] Implementar páginas/estados de UI com timeline simples de ativação, DNS e SSL.

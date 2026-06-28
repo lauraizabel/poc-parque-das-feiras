@@ -212,6 +212,42 @@ describe("domain registration", () => {
     assert.equal(response.body.host, "www.primarybrand.com");
   });
 
+  it("marks the custom domain as removed and allows a replacement host afterwards", async () => {
+    const removal = await requestJson<{
+      removed: boolean;
+      domain: { status: string; host: string };
+    }>({
+      method: "DELETE",
+      path: `/domains/${primaryStoreId}`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      }
+    });
+
+    assert.equal(removal.statusCode, 200);
+    assert.equal(removal.body.removed, true);
+    assert.equal(removal.body.domain.status, "REMOVED");
+    assert.equal(removal.body.domain.host, "www.primarybrand.com");
+
+    const replacement = await requestJson<{
+      domain: { host: string; status: string };
+    }>({
+      method: "POST",
+      path: "/domains",
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        host: "www.primarybrand-next.com"
+      }
+    });
+
+    assert.equal(replacement.statusCode, 201);
+    assert.equal(replacement.body.domain.host, "www.primarybrand-next.com");
+    assert.equal(replacement.body.domain.status, "AWAITING_DNS");
+  });
+
   it("rejects unexpected fields in the custom domain payload", async () => {
     const response = await requestJson<{
       message: string;

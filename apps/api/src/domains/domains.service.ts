@@ -52,7 +52,7 @@ export class DomainsService {
     const host = this.normalizeCustomDomainHost(input.host);
     const existingDomain = await this.domainsRepository.findDomainByHost(host);
 
-    if (existingDomain) {
+    if (existingDomain && existingDomain.status !== DomainStatus.REMOVED) {
       throw new ConflictException({
         message: "Domain host is already in use",
         code: "DOMAIN_HOST_ALREADY_IN_USE",
@@ -86,6 +86,28 @@ export class DomainsService {
 
     return {
       domain
+    };
+  }
+
+  async removeStoreDomain(storeId: string) {
+    const domain = await this.domainsRepository.findCustomDomainByStoreId(storeId);
+
+    if (!domain) {
+      throw new NotFoundException({
+        message: "Store custom domain not found",
+        code: "STORE_CUSTOM_DOMAIN_NOT_FOUND",
+        storeId
+      });
+    }
+
+    const removedDomain = await this.domainsRepository.markDomainRemoved(domain.id, {
+      dnsErrorMessage: "Domain removed by store operator",
+      sslErrorMessage: "SSL provisioning cleared after domain removal"
+    });
+
+    return {
+      removed: true,
+      domain: removedDomain
     };
   }
 

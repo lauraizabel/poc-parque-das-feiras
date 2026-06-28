@@ -124,4 +124,27 @@ export class DomainsRepository {
       }
     });
   }
+
+  markDomainRemoved(
+    domainId: string,
+    input: {
+      sslErrorMessage?: string | null;
+      dnsErrorMessage?: string | null;
+    } = {}
+  ) {
+    return prisma.storeDomain.update({
+      where: { id: domainId },
+      data: {
+        status: DomainStatus.REMOVED,
+        activatedAt: null,
+        sslIssuedAt: null,
+        sslLastCheckedAt: new Date(),
+        dnsLastCheckedAt: new Date(),
+        sslProvisioningId: null,
+        sslProvisioningMetadata: null,
+        sslErrorMessage: input.sslErrorMessage ?? null,
+        dnsErrorMessage: input.dnsErrorMessage ?? null
+      }
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { StoreMemberRole } from "@prisma/client";
 import { AuthorizationGuard } from "../auth/authorization.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -62,5 +62,13 @@ export class DomainsController {
   @Post(":storeId/sync-ssl")
   syncStoreDomainSsl(@Param("storeId") storeId: string) {
     return this.domainsService.syncStoreDomainSsl(storeId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @StoreAccess()
+  @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
+  @Delete(":storeId")
+  removeStoreDomain(@Param("storeId") storeId: string) {
+    return this.domainsService.removeStoreDomain(storeId);
   }
 }
