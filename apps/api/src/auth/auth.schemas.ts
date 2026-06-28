@@ -25,6 +25,28 @@ export const refreshSchema = z.object({
   refreshToken: z.string().min(1)
 }).strict();
 
+export const requestEmailVerificationSchema = z.object({
+  email: sanitizedEmail()
+}).strict();
+
+export const verifyEmailSchema = z.object({
+  token: sanitizedString({ min: 16, max: 256 })
+}).strict();
+
+export const requestPasswordResetSchema = z.object({
+  email: sanitizedEmail()
+}).strict();
+
+export const resetPasswordSchema = z.object({
+  token: sanitizedString({ min: 16, max: 256 }),
+  password: z
+    .string()
+    .min(8, passwordPolicyMessage)
+    .regex(/[a-z]/, passwordPolicyMessage)
+    .regex(/[A-Z]/, passwordPolicyMessage)
+    .regex(/[0-9]/, passwordPolicyMessage)
+}).strict();
+
 export const registerMerchantSchema = z.object({
   email: sanitizedEmail(),
   password: z
@@ -45,6 +67,10 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 export type RegisterMerchantInput = z.infer<typeof registerMerchantSchema>;
+export type RequestEmailVerificationInput = z.infer<typeof requestEmailVerificationSchema>;
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export function parseBody<T>(schema: z.ZodSchema<T>, input: unknown): T {
   try {

@@ -11,6 +11,7 @@ export type AuthenticatedUser = {
   id: string;
   email: string;
   fullName: string | null;
+  emailVerifiedAt?: Date | null;
   platformRole: PlatformRole;
 };
 

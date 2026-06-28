@@ -2,17 +2,28 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { PlatformRole } from "@prisma/client";
+import { createHash, randomBytes } from "node:crypto";
+import {
+  AuthFlowAuditAction,
+  AuthFlowTokenPurpose,
+  PlatformRole
+} from "@prisma/client";
+import { NotificationsService } from "../notifications/notifications.service";
 import { AuthRepository } from "./auth.repository";
 import {
   LoginInput,
+  RequestEmailVerificationInput,
+  RequestPasswordResetInput,
+  ResetPasswordInput,
   RefreshInput,
   RegisterInput,
-  RegisterMerchantInput
+  RegisterMerchantInput,
+  VerifyEmailInput
 } from "./auth.schemas";
 import { PasswordService } from "./password.service";
 import { AuthTokenPayload } from "./auth.types";
@@ -36,13 +47,17 @@ const RESERVED_STORE_SLUGS = new Set([
   "www"
 ]);
 
+const EMAIL_VERIFICATION_TTL_MS = 1000 * 60 * 60 * 24;
+const PASSWORD_RESET_TTL_MS = 1000 * 60 * 30;
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService
   ) {}
 
   getBoundary() {
@@ -79,7 +94,15 @@ export class AuthService {
       platformRole: PlatformRole.CUSTOMER
     });
 
-    return this.issueAuthSession(user.id, user.email, user.platformRole, user.fullName);
+    await this.issueEmailVerificationToken(user.id, user.email);
+
+    return this.issueAuthSession(
+      user.id,
+      user.email,
+      user.platformRole,
+      user.fullName,
+      user.emailVerifiedAt
+    );
   }
 
   async registerMerchant(input: RegisterMerchantInput) {
@@ -114,11 +137,14 @@ export class AuthService {
       locale: input.locale ?? "pt-BR"
     });
 
+    await this.issueEmailVerificationToken(onboarding.user.id, onboarding.user.email);
+
     const session = await this.issueAuthSession(
       onboarding.user.id,
       onboarding.user.email,
       onboarding.user.platformRole,
-      onboarding.user.fullName
+      onboarding.user.fullName,
+      onboarding.user.emailVerifiedAt
     );
 
     return {
@@ -135,7 +161,13 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password");
     }
 
-    return this.issueAuthSession(user.id, user.email, user.platformRole, user.fullName);
+    return this.issueAuthSession(
+      user.id,
+      user.email,
+      user.platformRole,
+      user.fullName,
+      user.emailVerifiedAt
+    );
   }
 
   async refresh(input: RefreshInput) {
@@ -155,7 +187,13 @@ export class AuthService {
       throw new UnauthorizedException("Refresh token is invalid");
     }
 
-    return this.issueAuthSession(user.id, user.email, user.platformRole, user.fullName);
+    return this.issueAuthSession(
+      user.id,
+      user.email,
+      user.platformRole,
+      user.fullName,
+      user.emailVerifiedAt
+    );
   }
 
   async logout(userId: string) {
@@ -194,11 +232,111 @@ export class AuthService {
     };
   }
 
+  async requestEmailVerification(input: RequestEmailVerificationInput) {
+    const user = await this.authRepository.findUserByEmail(input.email);
+
+    if (!user || user.emailVerifiedAt) {
+      return {
+        success: true
+      };
+    }
+
+    await this.issueEmailVerificationToken(user.id, user.email);
+
+    return {
+      success: true
+    };
+  }
+
+  async verifyEmail(input: VerifyEmailInput) {
+    const token = await this.resolveActiveFlowToken(
+      input.token,
+      AuthFlowTokenPurpose.EMAIL_VERIFICATION
+    );
+
+    if (token.user.emailVerifiedAt) {
+      await this.authRepository.consumeAuthFlowToken(token.id);
+
+      return {
+        success: true,
+        user: this.authRepository.toAuthenticatedUser(token.user)
+      };
+    }
+
+    const now = new Date();
+
+    await this.authRepository.updateUserCredentials({
+      userId: token.userId,
+      emailVerifiedAt: now
+    });
+    await this.authRepository.consumeAuthFlowToken(token.id);
+    await this.authRepository.createAuthFlowAudit({
+      userId: token.userId,
+      tokenId: token.id,
+      action: AuthFlowAuditAction.EMAIL_VERIFICATION_CONFIRMED,
+      purpose: AuthFlowTokenPurpose.EMAIL_VERIFICATION,
+      metadata: JSON.stringify({
+        confirmedAt: now.toISOString()
+      })
+    });
+
+    const refreshedUser = await this.authRepository.findUserById(token.userId);
+
+    return {
+      success: true,
+      user: this.authRepository.toAuthenticatedUser(refreshedUser!)
+    };
+  }
+
+  async requestPasswordReset(input: RequestPasswordResetInput) {
+    const user = await this.authRepository.findUserByEmail(input.email);
+
+    if (!user) {
+      return {
+        success: true
+      };
+    }
+
+    await this.issuePasswordResetToken(user.id, user.email);
+
+    return {
+      success: true
+    };
+  }
+
+  async resetPassword(input: ResetPasswordInput) {
+    const token = await this.resolveActiveFlowToken(
+      input.token,
+      AuthFlowTokenPurpose.PASSWORD_RESET
+    );
+
+    await this.authRepository.updateUserCredentials({
+      userId: token.userId,
+      passwordHash: this.passwordService.hashSecret(input.password),
+      refreshTokenHash: null
+    });
+    await this.authRepository.consumeAuthFlowToken(token.id);
+    await this.authRepository.createAuthFlowAudit({
+      userId: token.userId,
+      tokenId: token.id,
+      action: AuthFlowAuditAction.PASSWORD_RESET_COMPLETED,
+      purpose: AuthFlowTokenPurpose.PASSWORD_RESET,
+      metadata: JSON.stringify({
+        completedAt: new Date().toISOString()
+      })
+    });
+
+    return {
+      success: true
+    };
+  }
+
   private async issueAuthSession(
     userId: string,
     email: string,
     platformRole: PlatformRole,
-    fullName: string | null
+    fullName: string | null,
+    emailVerifiedAt: Date | null
   ) {
     const accessPayload: AuthTokenPayload = {
       sub: userId,
@@ -233,6 +371,7 @@ export class AuthService {
         id: userId,
         email,
         fullName,
+        emailVerifiedAt,
         platformRole
       },
       tokens: {
@@ -261,6 +400,111 @@ export class AuthService {
 
       throw new UnauthorizedException(`Invalid or expired ${type} token`);
     }
+  }
+
+  private async issueEmailVerificationToken(userId: string, email: string) {
+    const flow = await this.issueFlowToken(userId, AuthFlowTokenPurpose.EMAIL_VERIFICATION);
+
+    await this.notificationsService.enqueueEmailNotification({
+      to: email,
+      subject: "Confirme o seu e-mail",
+      templateKey: "auth-email-verification",
+      variables: {
+        verificationUrl: `${this.configService.getOrThrow<string>("DASHBOARD_URL")}/verify-email?token=${flow.rawToken}`,
+        token: flow.rawToken
+      },
+      metadata: {
+        userId,
+        purpose: AuthFlowTokenPurpose.EMAIL_VERIFICATION
+      }
+    });
+    await this.authRepository.touchAuthFlowTokenSentAt(flow.token.id);
+    await this.authRepository.createAuthFlowAudit({
+      userId,
+      tokenId: flow.token.id,
+      action: AuthFlowAuditAction.EMAIL_VERIFICATION_REQUESTED,
+      purpose: AuthFlowTokenPurpose.EMAIL_VERIFICATION,
+      metadata: JSON.stringify({
+        email
+      })
+    });
+  }
+
+  private async issuePasswordResetToken(userId: string, email: string) {
+    const flow = await this.issueFlowToken(userId, AuthFlowTokenPurpose.PASSWORD_RESET);
+
+    await this.notificationsService.enqueueEmailNotification({
+      to: email,
+      subject: "Redefina a sua senha",
+      templateKey: "auth-password-reset",
+      variables: {
+        resetUrl: `${this.configService.getOrThrow<string>("DASHBOARD_URL")}/reset-password?token=${flow.rawToken}`,
+        token: flow.rawToken
+      },
+      metadata: {
+        userId,
+        purpose: AuthFlowTokenPurpose.PASSWORD_RESET
+      }
+    });
+    await this.authRepository.touchAuthFlowTokenSentAt(flow.token.id);
+    await this.authRepository.createAuthFlowAudit({
+      userId,
+      tokenId: flow.token.id,
+      action: AuthFlowAuditAction.PASSWORD_RESET_REQUESTED,
+      purpose: AuthFlowTokenPurpose.PASSWORD_RESET,
+      metadata: JSON.stringify({
+        email
+      })
+    });
+  }
+
+  private async issueFlowToken(userId: string, purpose: AuthFlowTokenPurpose) {
+    await this.authRepository.invalidateActiveAuthFlowTokens(userId, purpose);
+
+    const rawToken = randomBytes(24).toString("hex");
+    const token = await this.authRepository.createAuthFlowToken({
+      userId,
+      purpose,
+      tokenHash: this.hashFlowToken(rawToken),
+      expiresAt: new Date(
+        Date.now() +
+          (purpose === AuthFlowTokenPurpose.EMAIL_VERIFICATION
+            ? EMAIL_VERIFICATION_TTL_MS
+            : PASSWORD_RESET_TTL_MS)
+      )
+    });
+
+    return {
+      rawToken,
+      token
+    };
+  }
+
+  private async resolveActiveFlowToken(rawToken: string, purpose: AuthFlowTokenPurpose) {
+    const tokenHash = this.hashFlowToken(rawToken);
+    const token = await this.authRepository.findActiveAuthFlowTokenByHash(tokenHash, purpose);
+
+    if (!token) {
+      throw new NotFoundException({
+        message: "Token not found",
+        code: "AUTH_FLOW_TOKEN_NOT_FOUND",
+        purpose
+      });
+    }
+
+    if (token.expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException({
+        message: "Token has expired",
+        code: "AUTH_FLOW_TOKEN_EXPIRED",
+        purpose
+      });
+    }
+
+    return token;
+  }
+
+  private hashFlowToken(token: string) {
+    return createHash("sha256").update(token).digest("hex");
   }
 
   private async generateDefaultSubdomain(storeSlug: string) {

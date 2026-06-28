@@ -120,10 +120,10 @@ Legenda de prioridade:
 - [x] Dependências: entidades de usuário.
 
 ### Task 2.3 (P1): Implementar confirmação de e-mail e recuperação de senha
-- [ ] Criar fluxo de token para verificação de conta e reset de senha.
-- [ ] Critérios de aceite: usuário recebe link, confirma conta e redefine senha com token válido.
-- [ ] Notas técnicas: persistir expiração, limitar reuso e registrar auditoria do fluxo.
-- [ ] Dependências: autenticação base e notificações por e-mail.
+- [x] Criar fluxo de token para verificação de conta e reset de senha.
+- [x] Critérios de aceite: usuário recebe link, confirma conta e redefine senha com token válido.
+- [x] Notas técnicas: persistir expiração, limitar reuso e registrar auditoria do fluxo.
+- [x] Dependências: autenticação base e notificações por e-mail.
 
 ### Task 2.4 (P0): Implementar guards e autorização por papel e escopo de loja
 - [x] Criar middleware/guard para validar autenticação, role global e acesso por `storeId`.

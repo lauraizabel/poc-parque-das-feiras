@@ -17,6 +17,7 @@
     "test:cart": "node --test dist/cart/cart-modeling.test.js",
     "test:cart-api": "node --test dist/cart/cart-api.test.js",
     "test:auth-dashboard": "node --test dist/auth/auth-dashboard-shell.test.js",
+    "test:auth-token-flows": "node --test dist/auth/auth-token-flows.test.js",
     "test:auth-validation": "node --test dist/auth/auth-validation.test.js",
     "test:security": "node --test dist/platform/security/security-api.test.js",
     "test:smoke-e2e": "node --test dist/smoke/core-flows-smoke.test.js",

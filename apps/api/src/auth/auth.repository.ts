@@ -1,5 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import { PlatformRole, StoreMemberRole, User } from "@prisma/client";
+import {
+  AuthFlowAuditAction,
+  AuthFlowTokenPurpose,
+  PlatformRole,
+  StoreMemberRole,
+  User
+} from "@prisma/client";
 import { prisma } from "@acme/database";
 import { DomainBoundary } from "../platform/domain-boundary";
 
@@ -37,6 +43,7 @@ export class AuthRepository {
         email: input.email.toLowerCase(),
         passwordHash: input.passwordHash,
         fullName: input.fullName,
+        emailVerifiedAt: null,
         platformRole: input.platformRole
       }
     });
@@ -59,6 +66,7 @@ export class AuthRepository {
           email: input.email.toLowerCase(),
           fullName: input.fullName,
           passwordHash: input.passwordHash,
+          emailVerifiedAt: null,
           platformRole: PlatformRole.CUSTOMER
         }
       });
@@ -91,6 +99,112 @@ export class AuthRepository {
     return prisma.user.update({
       where: { id: userId },
       data: { refreshTokenHash }
+    });
+  }
+
+  updateUserCredentials(input: {
+    userId: string;
+    passwordHash?: string;
+    refreshTokenHash?: string | null;
+    emailVerifiedAt?: Date | null;
+  }) {
+    return prisma.user.update({
+      where: {
+        id: input.userId
+      },
+      data: {
+        ...(input.passwordHash !== undefined ? { passwordHash: input.passwordHash } : {}),
+        ...(input.refreshTokenHash !== undefined
+          ? { refreshTokenHash: input.refreshTokenHash }
+          : {}),
+        ...(input.emailVerifiedAt !== undefined ? { emailVerifiedAt: input.emailVerifiedAt } : {})
+      }
+    });
+  }
+
+  invalidateActiveAuthFlowTokens(userId: string, purpose: AuthFlowTokenPurpose) {
+    return prisma.authFlowToken.updateMany({
+      where: {
+        userId,
+        purpose,
+        consumedAt: null,
+        invalidatedAt: null
+      },
+      data: {
+        invalidatedAt: new Date()
+      }
+    });
+  }
+
+  createAuthFlowToken(input: {
+    userId: string;
+    purpose: AuthFlowTokenPurpose;
+    tokenHash: string;
+    expiresAt: Date;
+  }) {
+    return prisma.authFlowToken.create({
+      data: {
+        userId: input.userId,
+        purpose: input.purpose,
+        tokenHash: input.tokenHash,
+        expiresAt: input.expiresAt
+      }
+    });
+  }
+
+  findActiveAuthFlowTokenByHash(tokenHash: string, purpose: AuthFlowTokenPurpose) {
+    return prisma.authFlowToken.findFirst({
+      where: {
+        tokenHash,
+        purpose,
+        consumedAt: null,
+        invalidatedAt: null
+      },
+      include: {
+        user: true
+      }
+    });
+  }
+
+  consumeAuthFlowToken(tokenId: string) {
+    return prisma.authFlowToken.update({
+      where: {
+        id: tokenId
+      },
+      data: {
+        consumedAt: new Date()
+      }
+    });
+  }
+
+  touchAuthFlowTokenSentAt(tokenId: string) {
+    return prisma.authFlowToken.update({
+      where: {
+        id: tokenId
+      },
+      data: {
+        lastSentAt: new Date()
+      }
+    });
+  }
+
+  createAuthFlowAudit(input: {
+    userId: string;
+    tokenId?: string | null;
+    action: AuthFlowAuditAction;
+    purpose: AuthFlowTokenPurpose;
+    success?: boolean;
+    metadata?: string | null;
+  }) {
+    return prisma.authFlowAudit.create({
+      data: {
+        userId: input.userId,
+        tokenId: input.tokenId ?? null,
+        action: input.action,
+        purpose: input.purpose,
+        success: input.success ?? true,
+        metadata: input.metadata ?? null
+      }
     });
   }
 
@@ -133,6 +247,7 @@ export class AuthRepository {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
+      emailVerifiedAt: user.emailVerifiedAt,
       platformRole: user.platformRole
     };
   }

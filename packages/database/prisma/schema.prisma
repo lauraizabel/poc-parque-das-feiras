@@ -141,18 +141,67 @@ enum CartStatus {
   ABANDONED
 }
 
+enum AuthFlowTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum AuthFlowAuditAction {
+  EMAIL_VERIFICATION_REQUESTED
+  EMAIL_VERIFICATION_CONFIRMED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+}
+
 model User {
   id               String        @id @default(cuid())
   email            String        @unique
   fullName         String?
   passwordHash     String
   refreshTokenHash String?
+  emailVerifiedAt  DateTime?
   platformRole     PlatformRole  @default(CUSTOMER)
   ownedStores      Store[]       @relation("StoreOwner")
   storeMembers     StoreMember[]
   carts            Cart[]
+  authFlowTokens   AuthFlowToken[]
+  authFlowAudits   AuthFlowAudit[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+}
+
+model AuthFlowToken {
+  id            String               @id @default(cuid())
+  userId        String
+  purpose       AuthFlowTokenPurpose
+  tokenHash     String               @unique
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  invalidatedAt DateTime?
+  lastSentAt    DateTime             @default(now())
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditEvents   AuthFlowAudit[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([userId, purpose, createdAt])
+  @@index([purpose, expiresAt])
+}
+
+model AuthFlowAudit {
+  id          String               @id @default(cuid())
+  userId      String
+  tokenId     String?
+  action      AuthFlowAuditAction
+  purpose     AuthFlowTokenPurpose
+  success     Boolean              @default(true)
+  metadata    String?
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       AuthFlowToken?       @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  createdAt   DateTime             @default(now())
+
+  @@index([userId, action, createdAt])
+  @@index([purpose, createdAt])
 }
 
 model Store {

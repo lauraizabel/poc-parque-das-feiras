@@ -3,9 +3,13 @@ import { AuthService } from "./auth.service";
 import {
   loginSchema,
   parseBody,
+  requestEmailVerificationSchema,
+  requestPasswordResetSchema,
   refreshSchema,
+  resetPasswordSchema,
   registerMerchantSchema,
-  registerSchema
+  registerSchema,
+  verifyEmailSchema
 } from "./auth.schemas";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 import { AuthenticatedRequest } from "./auth.types";
@@ -39,6 +43,34 @@ export class AuthController {
   @HttpCode(200)
   refresh(@Body() body: unknown) {
     return this.authService.refresh(parseBody(refreshSchema, body));
+  }
+
+  @Post("request-email-verification")
+  @HttpCode(202)
+  requestEmailVerification(@Body() body: unknown) {
+    return this.authService.requestEmailVerification(
+      parseBody(requestEmailVerificationSchema, body)
+    );
+  }
+
+  @Post("verify-email")
+  @HttpCode(200)
+  verifyEmail(@Body() body: unknown) {
+    return this.authService.verifyEmail(parseBody(verifyEmailSchema, body));
+  }
+
+  @Post("request-password-reset")
+  @HttpCode(202)
+  requestPasswordReset(@Body() body: unknown) {
+    return this.authService.requestPasswordReset(
+      parseBody(requestPasswordResetSchema, body)
+    );
+  }
+
+  @Post("reset-password")
+  @HttpCode(200)
+  resetPassword(@Body() body: unknown) {
+    return this.authService.resetPassword(parseBody(resetPasswordSchema, body));
   }
 
   @UseGuards(JwtAuthGuard)
