@@ -77,6 +77,32 @@ export class DomainsRepository {
     });
   }
 
+  reactivateCustomDomain(input: {
+    domainId: string;
+    host: string;
+    dnsTargetValue: string;
+  }) {
+    return prisma.storeDomain.update({
+      where: { id: input.domainId },
+      data: {
+        host: input.host,
+        status: DomainStatus.AWAITING_DNS,
+        dnsTargetValue: input.dnsTargetValue,
+        dnsConfiguredValue: null,
+        dnsLastCheckedAt: null,
+        dnsVerifiedAt: null,
+        dnsErrorMessage: null,
+        sslProvisioningId: null,
+        sslProvisioningMetadata: null,
+        sslLastCheckedAt: null,
+        sslIssuedAt: null,
+        sslErrorMessage: null,
+        activatedAt: null,
+        removedAt: null
+      }
+    });
+  }
+
   updateDomainDnsStatus(
     domainId: string,
     input: {
@@ -136,6 +162,7 @@ export class DomainsRepository {
       where: { id: domainId },
       data: {
         status: DomainStatus.REMOVED,
+        removedAt: new Date(),
         activatedAt: null,
         sslIssuedAt: null,
         sslLastCheckedAt: new Date(),

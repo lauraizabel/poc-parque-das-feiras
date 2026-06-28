@@ -60,11 +60,9 @@ export class DomainsService {
       });
     }
 
-    const existingStoreDomain = await this.domainsRepository.findCustomDomainByStoreId(
-      input.storeId
-    );
+    const existingStoreDomain = await this.domainsRepository.findCustomDomainByStoreId(input.storeId);
 
-    if (existingStoreDomain) {
+    if (existingStoreDomain && existingStoreDomain.status !== DomainStatus.REMOVED) {
       throw new ConflictException({
         message: "Store already has a custom domain",
         code: "STORE_CUSTOM_DOMAIN_ALREADY_EXISTS",
@@ -76,11 +74,18 @@ export class DomainsService {
       .getOrThrow<string>("MARKETPLACE_ROOT_DOMAIN")
       .toLowerCase()}`;
 
-    const domain = await this.domainsRepository.createCustomDomain({
-      host,
-      storeId: input.storeId,
-      dnsTargetValue
-    });
+    const domain =
+      existingStoreDomain?.status === DomainStatus.REMOVED
+        ? await this.domainsRepository.reactivateCustomDomain({
+            domainId: existingStoreDomain.id,
+            host,
+            dnsTargetValue
+          })
+        : await this.domainsRepository.createCustomDomain({
+            host,
+            storeId: input.storeId,
+            dnsTargetValue
+          });
 
     await this.enqueueDnsVerification(domain.id);
 

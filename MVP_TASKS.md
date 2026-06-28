@@ -258,10 +258,10 @@ Legenda de prioridade:
 - [x] Dependências: APIs de domínio e jobs de status.
 
 ### Task 5.9 (P1): Criar testes de integração do ciclo de domínio próprio
-- [ ] Cobrir cadastro, conflito, DNS incorreto, ativação bem-sucedida e fallback para subdomínio.
-- [ ] Critérios de aceite: fluxo principal de domínio próprio está protegido contra regressão.
-- [ ] Notas técnicas: mockar provider externo e validar máquina de estados.
-- [ ] Dependências: implementação dos fluxos de domínio.
+- [x] Cobrir cadastro, conflito, DNS incorreto, ativação bem-sucedida e fallback para subdomínio.
+- [x] Critérios de aceite: fluxo principal de domínio próprio está protegido contra regressão.
+- [x] Notas técnicas: mockar provider externo e validar máquina de estados.
+- [x] Dependências: implementação dos fluxos de domínio.
 
 ## Epic 6: Catálogo, categorias e mídia
 
