@@ -4,6 +4,7 @@ import { AddressInfo } from "node:net";
 import { after, before, describe, it } from "node:test";
 import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { PlatformRole } from "@prisma/client";
 import { prisma } from "@acme/database";
 import { AppModule } from "../app.module";
 
@@ -23,16 +24,22 @@ describe("shipping api", () => {
   const suffix = Date.now().toString(36);
   const primaryEmail = `shipping-primary-${suffix}@example.com`;
   const secondaryEmail = `shipping-secondary-${suffix}@example.com`;
+  const supportEmail = `shipping-support-${suffix}@example.com`;
+  const platformAdminEmail = `shipping-admin-${suffix}@example.com`;
   const password = "StrongPass123";
 
   let app: INestApplication;
   let baseUrl = "";
   let primaryUserId = "";
   let secondaryUserId = "";
+  let supportUserId = "";
+  let platformAdminUserId = "";
   let primaryStoreId = "";
   let secondaryStoreId = "";
   let primaryToken = "";
   let secondaryToken = "";
+  let supportToken = "";
+  let platformAdminToken = "";
   let shippingMethodId = "";
 
   before(async () => {
@@ -91,6 +98,72 @@ describe("shipping api", () => {
     secondaryUserId = secondaryRegistration.body.user.id;
     secondaryStoreId = secondaryRegistration.body.store.id;
     secondaryToken = secondaryRegistration.body.tokens.accessToken;
+
+    const supportRegistration = await requestJson<{
+      user: { id: string };
+      tokens: { accessToken: string };
+    }>({
+      method: "POST",
+      path: "/auth/register",
+      body: {
+        email: supportEmail,
+        password,
+        fullName: "Shipping Support"
+      }
+    });
+    supportUserId = supportRegistration.body.user.id;
+    supportToken = supportRegistration.body.tokens.accessToken;
+
+    const platformAdminRegistration = await requestJson<{
+      user: { id: string };
+    }>({
+      method: "POST",
+      path: "/auth/register",
+      body: {
+        email: platformAdminEmail,
+        password,
+        fullName: "Shipping Platform Admin"
+      }
+    });
+    platformAdminUserId = platformAdminRegistration.body.user.id;
+
+    await prisma.user.update({
+      where: { id: platformAdminUserId },
+      data: {
+        platformRole: PlatformRole.PLATFORM_ADMIN
+      }
+    });
+
+    const platformAdminLogin = await requestJson<{
+      tokens: { accessToken: string };
+    }>({
+      method: "POST",
+      path: "/auth/login",
+      body: {
+        email: platformAdminEmail,
+        password
+      }
+    });
+    platformAdminToken = platformAdminLogin.body.tokens.accessToken;
+
+    const inviteSupportResponse = await requestJson<{
+      status: string;
+      member: { userId: string; role: string };
+    }>({
+      method: "POST",
+      path: `/stores/${primaryStoreId}/members/invite`,
+      headers: {
+        authorization: `Bearer ${primaryToken}`
+      },
+      body: {
+        email: supportEmail,
+        role: "STORE_SUPPORT"
+      }
+    });
+    assert.equal(inviteSupportResponse.statusCode, 201);
+    assert.equal(inviteSupportResponse.body.status, "ACTIVE");
+    assert.equal(inviteSupportResponse.body.member.userId, supportUserId);
+    assert.equal(inviteSupportResponse.body.member.role, "STORE_SUPPORT");
   });
 
   after(async () => {
@@ -108,6 +181,14 @@ describe("shipping api", () => {
 
     if (secondaryUserId) {
       await prisma.user.delete({ where: { id: secondaryUserId } });
+    }
+
+    if (supportUserId) {
+      await prisma.user.delete({ where: { id: supportUserId } });
+    }
+
+    if (platformAdminUserId) {
+      await prisma.user.delete({ where: { id: platformAdminUserId } });
     }
 
     await app.close();
@@ -271,6 +352,43 @@ describe("shipping api", () => {
 
     assert.equal(forbiddenResponse.statusCode, 404);
     assert.equal(forbiddenResponse.body.code, "SHIPPING_METHOD_NOT_FOUND");
+  });
+
+  it("blocks support members and platform admins from managing store shipping methods", async () => {
+    const supportListResponse = await requestJson<{
+      code: string;
+      currentRole?: string;
+    }>({
+      path: `/shipping/${primaryStoreId}/methods`,
+      headers: {
+        authorization: `Bearer ${supportToken}`
+      }
+    });
+
+    assert.equal(supportListResponse.statusCode, 403);
+    assert.equal(supportListResponse.body.code, "AUTH_STORE_ROLE_FORBIDDEN");
+    assert.equal(supportListResponse.body.currentRole, "STORE_SUPPORT");
+
+    const platformAdminCreateResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "POST",
+      path: "/shipping/methods",
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      },
+      body: {
+        storeId: primaryStoreId,
+        name: "Bloqueado",
+        type: "FIXED_PRICE",
+        priceCents: 990,
+        estimatedDaysMin: 2,
+        estimatedDaysMax: 4
+      }
+    });
+
+    assert.equal(platformAdminCreateResponse.statusCode, 403);
+    assert.equal(platformAdminCreateResponse.body.code, "AUTH_STORE_MEMBERSHIP_REQUIRED");
   });
 
   async function requestJson<T>(options: RequestOptions): Promise<JsonResponse<T>> {

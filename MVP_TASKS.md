@@ -466,10 +466,10 @@ Legenda de prioridade:
 - [x] Dependências: pedidos e catálogo.
 
 ### Task 10.6 (P1): Implementar testes de pedidos e frete
-- [ ] Cobrir criação, atualização de status, cancelamento, consulta do cliente e consistência de estoque.
-- [ ] Critérios de aceite: fluxo principal de pós-compra permanece íntegro.
-- [ ] Notas técnicas: validar regras de permissão entre cliente, loja e admin.
-- [ ] Dependências: pedidos, frete e painel.
+- [x] Cobrir criação, atualização de status, cancelamento, consulta do cliente e consistência de estoque.
+- [x] Critérios de aceite: fluxo principal de pós-compra permanece íntegro.
+- [x] Notas técnicas: validar regras de permissão entre cliente, loja e admin.
+- [x] Dependências: pedidos, frete e painel.
 
 ## Epic 11: Painel do lojista
 

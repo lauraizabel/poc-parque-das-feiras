@@ -6,6 +6,7 @@ import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import {
   OrderStatus,
+  PlatformRole,
   PaymentProvider,
   PaymentStatus,
   StatusTransitionEntityType
@@ -29,6 +30,8 @@ describe("orders management api", () => {
   const suffix = Date.now().toString(36);
   const merchantEmail = `orders-mgmt-merchant-${suffix}@example.com`;
   const secondaryEmail = `orders-mgmt-secondary-${suffix}@example.com`;
+  const supportEmail = `orders-mgmt-support-${suffix}@example.com`;
+  const platformAdminEmail = `orders-mgmt-admin-${suffix}@example.com`;
   const password = "StrongPass123";
   const storeSlug = `orders-mgmt-store-${suffix}`;
   const sessionId = `orders-mgmt-session-${suffix}`;
@@ -37,9 +40,13 @@ describe("orders management api", () => {
   let baseUrl = "";
   let userId = "";
   let secondaryUserId = "";
+  let supportUserId = "";
+  let platformAdminUserId = "";
   let storeId = "";
   let token = "";
   let secondaryToken = "";
+  let supportToken = "";
+  let platformAdminToken = "";
   let productId = "";
   let shippingMethodId = "";
   let orderId = "";
@@ -96,6 +103,53 @@ describe("orders management api", () => {
     secondaryUserId = secondaryRegistration.body.user.id;
     secondaryToken = secondaryRegistration.body.tokens.accessToken;
 
+    const supportRegistration = await requestJson<{
+      user: { id: string };
+      tokens: { accessToken: string };
+    }>({
+      method: "POST",
+      path: "/auth/register",
+      body: {
+        email: supportEmail,
+        password,
+        fullName: "Orders Mgmt Support"
+      }
+    });
+    supportUserId = supportRegistration.body.user.id;
+    supportToken = supportRegistration.body.tokens.accessToken;
+
+    const platformAdminRegistration = await requestJson<{
+      user: { id: string };
+    }>({
+      method: "POST",
+      path: "/auth/register",
+      body: {
+        email: platformAdminEmail,
+        password,
+        fullName: "Orders Mgmt Platform Admin"
+      }
+    });
+    platformAdminUserId = platformAdminRegistration.body.user.id;
+
+    await prisma.user.update({
+      where: { id: platformAdminUserId },
+      data: {
+        platformRole: PlatformRole.PLATFORM_ADMIN
+      }
+    });
+
+    const platformAdminLogin = await requestJson<{
+      tokens: { accessToken: string };
+    }>({
+      method: "POST",
+      path: "/auth/login",
+      body: {
+        email: platformAdminEmail,
+        password
+      }
+    });
+    platformAdminToken = platformAdminLogin.body.tokens.accessToken;
+
     const productResponse = await requestJson<{
       product: { id: string };
     }>({
@@ -139,6 +193,25 @@ describe("orders management api", () => {
     });
     shippingMethodId = shippingMethodResponse.body.shippingMethod.id;
 
+    const inviteSupportResponse = await requestJson<{
+      status: string;
+      member: { userId: string; role: string };
+    }>({
+      method: "POST",
+      path: `/stores/${storeId}/members/invite`,
+      headers: {
+        authorization: `Bearer ${token}`
+      },
+      body: {
+        email: supportEmail,
+        role: "STORE_SUPPORT"
+      }
+    });
+    assert.equal(inviteSupportResponse.statusCode, 201);
+    assert.equal(inviteSupportResponse.body.status, "ACTIVE");
+    assert.equal(inviteSupportResponse.body.member.userId, supportUserId);
+    assert.equal(inviteSupportResponse.body.member.role, "STORE_SUPPORT");
+
     const orderContext = await createApprovedOrder("base", "Cliente Operacao");
     orderId = orderContext.orderId;
   });
@@ -150,6 +223,14 @@ describe("orders management api", () => {
 
     if (secondaryUserId) {
       await prisma.user.delete({ where: { id: secondaryUserId } });
+    }
+
+    if (supportUserId) {
+      await prisma.user.delete({ where: { id: supportUserId } });
+    }
+
+    if (platformAdminUserId) {
+      await prisma.user.delete({ where: { id: platformAdminUserId } });
     }
 
     if (userId) {
@@ -198,6 +279,59 @@ describe("orders management api", () => {
 
     assert.equal(response.statusCode, 403);
     assert.equal(response.body.code, "AUTH_STORE_MEMBERSHIP_REQUIRED");
+  });
+
+  it("lets support list orders but blocks support and platform admins from updating store orders", async () => {
+    const supportListResponse = await requestJson<{
+      orders: Array<{ id: string }>;
+    }>({
+      method: "GET",
+      path: `/orders/${storeId}/management`,
+      headers: {
+        authorization: `Bearer ${supportToken}`
+      }
+    });
+
+    assert.equal(supportListResponse.statusCode, 200);
+    assert.ok(supportListResponse.body.orders.some((order) => order.id === orderId));
+
+    const supportUpdateResponse = await requestJson<{
+      code: string;
+      currentRole?: string;
+    }>({
+      method: "PATCH",
+      path: `/orders/${storeId}/${orderId}/status`,
+      headers: {
+        authorization: `Bearer ${supportToken}`
+      },
+      body: {
+        storeId,
+        status: "PROCESSING",
+        reason: "Tentativa sem permissao"
+      }
+    });
+
+    assert.equal(supportUpdateResponse.statusCode, 403);
+    assert.equal(supportUpdateResponse.body.code, "AUTH_STORE_ROLE_FORBIDDEN");
+    assert.equal(supportUpdateResponse.body.currentRole, "STORE_SUPPORT");
+
+    const platformAdminResponse = await requestJson<{
+      code: string;
+    }>({
+      method: "PATCH",
+      path: `/orders/${storeId}/${orderId}/status`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      },
+      body: {
+        storeId,
+        status: "PROCESSING",
+        reason: "Admin sem membership da loja"
+      }
+    });
+
+    assert.equal(platformAdminResponse.statusCode, 403);
+    assert.equal(platformAdminResponse.body.code, "AUTH_STORE_MEMBERSHIP_REQUIRED");
   });
 
   it("updates operational statuses with shipment side effects and audit trail", async () => {
