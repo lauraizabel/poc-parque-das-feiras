@@ -176,10 +176,10 @@ Legenda de prioridade:
 - [x] Dependências: roles e StoreMember.
 
 ### Task 3.6 (P2): Implementar testes e seeds de onboarding
-- [ ] Criar seeds e cenários de teste para owner, manager e support com loja vinculada.
-- [ ] Critérios de aceite: ambiente de dev permite validar onboarding rapidamente.
-- [ ] Notas técnicas: incluir exemplos de lojas com subdomínio padrão.
-- [ ] Dependências: fluxo de criação de loja.
+- [x] Criar seeds e cenários de teste para owner, manager e support com loja vinculada.
+- [x] Critérios de aceite: ambiente de dev permite validar onboarding rapidamente.
+- [x] Notas técnicas: incluir exemplos de lojas com subdomínio padrão.
+- [x] Dependências: fluxo de criação de loja.
 
 ## Epic 4: Multi-tenant e resolução por host
 

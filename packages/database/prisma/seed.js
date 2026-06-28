@@ -67,6 +67,15 @@ const seedConfig = {
     priceCents: Number(process.env.SEED_SHIPPING_PRICE_CENTS ?? 2400),
     estimatedDaysMin: Number(process.env.SEED_SHIPPING_DAYS_MIN ?? 2),
     estimatedDaysMax: Number(process.env.SEED_SHIPPING_DAYS_MAX ?? 5)
+  },
+  showcaseStore: {
+    name: process.env.SEED_SHOWCASE_STORE_NAME ?? "Loja Vitrine",
+    slug: process.env.SEED_SHOWCASE_STORE_SLUG ?? "loja-vitrine",
+    defaultSubdomain: process.env.SEED_SHOWCASE_STORE_SUBDOMAIN ?? "loja-vitrine",
+    supportEmail:
+      process.env.SEED_SHOWCASE_STORE_SUPPORT_EMAIL ?? "support@showcase-store.local",
+    currencyCode: process.env.SEED_SHOWCASE_STORE_CURRENCY ?? "BRL",
+    locale: process.env.SEED_SHOWCASE_STORE_LOCALE ?? "pt-BR"
   }
 };
 
@@ -129,6 +138,33 @@ async function main() {
   await upsertMembership(ownerUser.id, store.id, StoreMemberRole.STORE_OWNER);
   await upsertMembership(managerUser.id, store.id, StoreMemberRole.STORE_MANAGER);
   await upsertMembership(supportUser.id, store.id, StoreMemberRole.STORE_SUPPORT);
+
+  const showcaseStore = await prisma.store.upsert({
+    where: {
+      slug: seedConfig.showcaseStore.slug
+    },
+    create: {
+      name: seedConfig.showcaseStore.name,
+      slug: seedConfig.showcaseStore.slug,
+      defaultSubdomain: seedConfig.showcaseStore.defaultSubdomain,
+      ownerId: ownerUser.id,
+      supportEmail: seedConfig.showcaseStore.supportEmail,
+      currencyCode: seedConfig.showcaseStore.currencyCode,
+      locale: seedConfig.showcaseStore.locale,
+      status: StoreStatus.ACTIVE
+    },
+    update: {
+      name: seedConfig.showcaseStore.name,
+      defaultSubdomain: seedConfig.showcaseStore.defaultSubdomain,
+      ownerId: ownerUser.id,
+      supportEmail: seedConfig.showcaseStore.supportEmail,
+      currencyCode: seedConfig.showcaseStore.currencyCode,
+      locale: seedConfig.showcaseStore.locale,
+      status: StoreStatus.ACTIVE
+    }
+  });
+
+  await upsertMembership(ownerUser.id, showcaseStore.id, StoreMemberRole.STORE_OWNER);
 
   const category = await prisma.category.upsert({
     where: {
@@ -245,6 +281,9 @@ async function main() {
   console.log(`Manager da loja demo: ${managerUser.email}`);
   console.log(`Support da loja demo: ${supportUser.email}`);
   console.log(`Loja demo: ${store.slug}.${process.env.MARKETPLACE_ROOT_DOMAIN ?? "lvh.me"}`);
+  console.log(
+    `Loja vitrine: ${showcaseStore.slug}.${process.env.MARKETPLACE_ROOT_DOMAIN ?? "lvh.me"}`
+  );
   console.log(`Categoria demo: ${category.slug}`);
   console.log(`Produto demo: ${product.slug}`);
   console.log(`Frete demo: ${shippingMethod.name}`);
