@@ -26,7 +26,7 @@ export class NotificationsService {
   async enqueueEmailNotification(input: EmailNotificationJob) {
     const job = this.normalizeEmailJob(input);
     const queue = createEmailNotificationQueue();
-    const jobId = `email:${job.templateKey}:${job.to}:${Date.now()}`;
+    const jobId = this.buildEmailJobId(job);
 
     try {
       const queuedJob = await queue.add("send-email-notification", job, {
@@ -169,6 +169,26 @@ export class NotificationsService {
       variables: input.variables ?? {},
       metadata: input.metadata ?? {}
     };
+  }
+
+  private buildEmailJobId(job: {
+    to: string;
+    templateKey: string;
+  }) {
+    const sanitizeSegment = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 48) || "na";
+
+    return [
+      "email",
+      sanitizeSegment(job.templateKey),
+      sanitizeSegment(job.to),
+      Date.now().toString(36)
+    ].join("-");
   }
 
   private buildMerchantPaymentNotificationJobs(

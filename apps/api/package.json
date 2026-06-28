@@ -16,6 +16,7 @@
     "test:catalog-products": "node --test dist/catalog/catalog-products.test.js",
     "test:cart": "node --test dist/cart/cart-modeling.test.js",
     "test:cart-api": "node --test dist/cart/cart-api.test.js",
+    "test:auth-authorization": "node --test dist/auth/auth-authorization.test.js",
     "test:auth-dashboard": "node --test dist/auth/auth-dashboard-shell.test.js",
     "test:auth-token-flows": "node --test dist/auth/auth-token-flows.test.js",
     "test:auth-validation": "node --test dist/auth/auth-validation.test.js",
@@ -35,7 +36,7 @@
     "test:shipping-modeling": "node --test dist/shipping/shipping-modeling.test.js",
     "test:tenant-resolution": "node --test dist/domains/tenant-resolution.test.js",
     "test:domains": "node --test dist/domains/tenant-resolution.test.js dist/domains/domain-registration.test.js dist/domains/domain-dns-verification.test.js dist/domains/domain-ssl-provisioning.test.js",
-    "test:ci": "node --test dist/auth/auth-validation.test.js dist/domains/tenant-resolution.test.js dist/catalog/catalog-categories.test.js dist/cart/cart-modeling.test.js dist/orders/orders-modeling.test.js dist/payments/payments-state-machine.test.js dist/notifications/notifications-queue.test.js dist/shipping/shipping-modeling.test.js"
+    "test:ci": "node --test dist/auth/auth-validation.test.js dist/auth/auth-authorization.test.js dist/domains/tenant-resolution.test.js dist/catalog/catalog-categories.test.js dist/cart/cart-modeling.test.js dist/orders/orders-modeling.test.js dist/payments/payments-state-machine.test.js dist/notifications/notifications-queue.test.js dist/shipping/shipping-modeling.test.js"
   },
   "dependencies": {
     "@acme/config": "workspace:*",

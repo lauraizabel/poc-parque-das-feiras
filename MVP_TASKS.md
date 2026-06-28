@@ -138,10 +138,10 @@ Legenda de prioridade:
 - [x] Dependências: endpoints de autenticação.
 
 ### Task 2.6 (P1): Implementar testes básicos de autenticação e autorização
-- [ ] Criar testes unitários e de integração para login, hash, guards e controle de acesso.
-- [ ] Critérios de aceite: cenários de sucesso e falha cobertos para usuários e papéis principais.
-- [ ] Notas técnicas: incluir testes para acesso indevido entre lojas.
-- [ ] Dependências: autenticação e guards.
+- [x] Criar testes unitários e de integração para login, hash, guards e controle de acesso.
+- [x] Critérios de aceite: cenários de sucesso e falha cobertos para usuários e papéis principais.
+- [x] Notas técnicas: incluir testes para acesso indevido entre lojas.
+- [x] Dependências: autenticação e guards.
 
 ## Epic 3: Onboarding do lojista e gestão de lojas
 

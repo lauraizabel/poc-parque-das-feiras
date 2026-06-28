@@ -102,7 +102,7 @@ describe("auth validation", () => {
         password,
         fullName: "  Merchant \u0007 Name ",
         storeName: "  Minha\t Loja   ",
-        storeSlug: " Minha Loja ",
+        storeSlug: ` Minha Loja ${suffix} `,
         supportEmail: `  SUPPORT-${suffix}@EXAMPLE.COM `
       }
     });
