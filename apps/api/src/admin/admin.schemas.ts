@@ -3,6 +3,7 @@ import {
   DomainStatus,
   OrderStatus,
   PlatformRole,
+  StoreMemberRole,
   StoreStatus
 } from "@prisma/client";
 import {
@@ -27,6 +28,8 @@ export const listAdminStoresQuerySchema = z.object({
 export const listAdminUsersQuerySchema = z.object({
   search: sanitizedOptionalString({ min: 1, max: 120 }),
   platformRole: z.nativeEnum(PlatformRole).optional(),
+  storeId: sanitizedOptionalString({ min: 1, max: 100 }),
+  membershipRole: z.nativeEnum(StoreMemberRole).optional(),
   limit: limitSchema
 }).strict();
 

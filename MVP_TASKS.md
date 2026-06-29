@@ -518,10 +518,10 @@ Legenda de prioridade:
 - [x] Dependências: Store e StoreDomain.
 
 ### Task 12.3 (P1): Implementar listagem e detalhe de usuários no admin
-- [ ] Criar telas/endpoints para visualizar usuários e memberships.
-- [ ] Critérios de aceite: admin identifica vínculos entre usuários e lojas.
-- [ ] Notas técnicas: evitar expor dados sensíveis desnecessários.
-- [ ] Dependências: User e StoreMember.
+- [x] Criar telas/endpoints para visualizar usuários e memberships.
+- [x] Critérios de aceite: admin identifica vínculos entre usuários e lojas.
+- [x] Notas técnicas: evitar expor dados sensíveis desnecessários.
+- [x] Dependências: User e StoreMember.
 
 ### Task 12.4 (P1): Implementar visão administrativa de pedidos e pagamentos
 - [ ] Criar consultas globais para pedidos e pagamentos com filtros básicos.

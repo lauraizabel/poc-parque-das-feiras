@@ -372,9 +372,16 @@ describe("admin api", () => {
         platformRole: string;
         ownedStoresCount: number;
         membershipsCount: number;
+        memberships: Array<{
+          storeId: string;
+          role: string;
+          store: { id: string; slug: string };
+        }>;
       }>;
     }>({
-      path: `/admin/users?search=${encodeURIComponent(merchantEmail)}`,
+      path:
+        `/admin/users?search=${encodeURIComponent(merchantEmail)}` +
+        `&storeId=${activeStoreId}&membershipRole=STORE_OWNER`,
       headers: {
         authorization: `Bearer ${platformAdminToken}`
       }
@@ -387,6 +394,73 @@ describe("admin api", () => {
     assert.equal(usersResponse.body.users[0]?.platformRole, PlatformRole.CUSTOMER);
     assert.equal(usersResponse.body.users[0]?.ownedStoresCount, 2);
     assert.equal(usersResponse.body.users[0]?.membershipsCount, 2);
+    assert.ok(
+      usersResponse.body.users[0]?.memberships.some(
+        (membership) =>
+          membership.storeId === activeStoreId &&
+          membership.role === "STORE_OWNER" &&
+          membership.store.slug === activeStoreSlug
+      )
+    );
+
+    const userDetailResponse = await requestJson<{
+      user: {
+        id: string;
+        email: string;
+        platformRole: string;
+        memberships: Array<{
+          storeId: string;
+          role: string;
+          store: { id: string; slug: string; status: string };
+        }>;
+        ownedStores: Array<{
+          id: string;
+          slug: string;
+          status: string;
+          activeDomain: { id: string; host: string; status: string } | null;
+        }>;
+      };
+    }>({
+      path: `/admin/users/${merchantUserId}`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      }
+    });
+
+    assert.equal(userDetailResponse.statusCode, 200);
+    assert.equal(userDetailResponse.body.user.id, merchantUserId);
+    assert.equal(userDetailResponse.body.user.email, merchantEmail);
+    assert.equal(userDetailResponse.body.user.platformRole, PlatformRole.CUSTOMER);
+    assert.equal(userDetailResponse.body.user.memberships.length, 2);
+    assert.ok(
+      userDetailResponse.body.user.memberships.some(
+        (membership) =>
+          membership.storeId === storeId &&
+          membership.role === "STORE_OWNER" &&
+          membership.store.slug === storeSlug
+      )
+    );
+    assert.ok(
+      userDetailResponse.body.user.memberships.some(
+        (membership) =>
+          membership.storeId === activeStoreId &&
+          membership.role === "STORE_OWNER" &&
+          membership.store.slug === activeStoreSlug &&
+          membership.store.status === StoreStatus.ACTIVE
+      )
+    );
+    assert.equal(userDetailResponse.body.user.ownedStores.length, 2);
+    assert.ok(
+      userDetailResponse.body.user.ownedStores.some(
+        (store) =>
+          store.id === activeStoreId &&
+          store.slug === activeStoreSlug &&
+          store.status === StoreStatus.ACTIVE &&
+          store.activeDomain?.id === activeDomainId &&
+          store.activeDomain.host === activeDomainHost &&
+          store.activeDomain.status === DomainStatus.ACTIVE
+      )
+    );
 
     const ordersResponse = await requestJson<{
       orders: Array<{

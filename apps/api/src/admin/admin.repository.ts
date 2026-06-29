@@ -191,6 +191,16 @@ export class AdminRepository {
     const search = input.search?.toLowerCase();
     const where: Prisma.UserWhereInput = {
       ...(input.platformRole ? { platformRole: input.platformRole } : {}),
+      ...((input.storeId || input.membershipRole)
+        ? {
+            storeMembers: {
+              some: {
+                ...(input.storeId ? { storeId: input.storeId } : {}),
+                ...(input.membershipRole ? { role: input.membershipRole } : {})
+              }
+            }
+          }
+        : {}),
       ...(search
         ? {
             OR: [
@@ -204,6 +214,15 @@ export class AdminRepository {
     return prisma.user.findMany({
       where,
       include: {
+        storeMembers: {
+          include: {
+            store: true
+          },
+          orderBy: [{ createdAt: "asc" }]
+        },
+        ownedStores: {
+          orderBy: [{ createdAt: "asc" }]
+        },
         _count: {
           select: {
             ownedStores: true,
@@ -213,6 +232,36 @@ export class AdminRepository {
       },
       orderBy: [{ createdAt: "desc" }],
       take: input.limit
+    });
+  }
+
+  findUserById(userId: string) {
+    return prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      include: {
+        storeMembers: {
+          include: {
+            store: true
+          },
+          orderBy: [{ createdAt: "asc" }]
+        },
+        ownedStores: {
+          include: {
+            domains: {
+              where: {
+                status: {
+                  not: "REMOVED"
+                }
+              },
+              orderBy: [{ createdAt: "desc" }],
+              take: 1
+            }
+          },
+          orderBy: [{ createdAt: "asc" }]
+        }
+      }
     });
   }
 

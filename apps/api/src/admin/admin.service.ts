@@ -105,8 +105,61 @@ export class AdminService {
         platformRole: user.platformRole,
         ownedStoresCount: user._count.ownedStores,
         membershipsCount: user._count.storeMembers,
+        memberships: user.storeMembers.map((membership) => ({
+          storeId: membership.storeId,
+          role: membership.role,
+          store: {
+            id: membership.store.id,
+            name: membership.store.name,
+            slug: membership.store.slug
+          }
+        })),
         createdAt: user.createdAt
       }))
+    };
+  }
+
+  async getUserDetail(userId: string) {
+    const user = await this.adminRepository.findUserById(userId);
+
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        platformRole: user.platformRole,
+        emailVerifiedAt: user.emailVerifiedAt,
+        createdAt: user.createdAt,
+        memberships: user.storeMembers.map((membership) => ({
+          storeId: membership.storeId,
+          role: membership.role,
+          createdAt: membership.createdAt,
+          store: {
+            id: membership.store.id,
+            name: membership.store.name,
+            slug: membership.store.slug,
+            status: membership.store.status
+          }
+        })),
+        ownedStores: user.ownedStores.map((store) => ({
+          id: store.id,
+          name: store.name,
+          slug: store.slug,
+          status: store.status,
+          defaultSubdomain: store.defaultSubdomain,
+          activeDomain: store.domains[0]
+            ? {
+                id: store.domains[0].id,
+                host: store.domains[0].host,
+                status: store.domains[0].status
+              }
+            : null
+        }))
+      }
     };
   }
 

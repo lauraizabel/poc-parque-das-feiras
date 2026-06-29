@@ -63,6 +63,13 @@ export class AdminController {
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)
   @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
+  @Get("users/:userId")
+  getUserDetail(@Param("userId") userId: string) {
+    return this.adminService.getUserDetail(userId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
   @Get("orders")
   listOrders(@Query() query: unknown) {
     return this.adminService.listOrders(parseAdminQuery(listAdminOrdersQuerySchema, query));
