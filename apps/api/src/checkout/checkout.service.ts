@@ -98,6 +98,14 @@ export class CheckoutService {
       cart.items.map((item) => item.productId)
     );
     const productsById = new Map(products.map((product) => [product.id, product]));
+    const variantsByProductId = new Map(
+      await Promise.all(
+        products.map(async (product) => [
+          product.id,
+          await this.catalogRepository.listProductVariantsByProductId(product.id)
+        ] as const)
+      )
+    );
 
     const stockAdjustments = cart.items.map((item) => {
       const product = productsById.get(item.productId);
@@ -119,6 +127,33 @@ export class CheckoutService {
         });
       }
 
+      const variant =
+        item.variantId
+          ? (variantsByProductId.get(item.productId) ?? []).find(
+              (candidate) => candidate.id === item.variantId
+            ) ?? null
+          : null;
+
+      if (item.variantId && !variant) {
+        throw new NotFoundException({
+          message: "Product variant not found for this storefront",
+          code: "PRODUCT_VARIANT_NOT_FOUND",
+          productId: item.productId,
+          variantId: item.variantId
+        });
+      }
+
+      if (variant && variant.stockQuantity < item.quantity) {
+        throw new BadRequestException({
+          message: "Insufficient stock for requested quantity",
+          code: "INSUFFICIENT_STOCK",
+          productId: item.productId,
+          variantId: item.variantId,
+          stockQuantity: variant.stockQuantity,
+          quantity: item.quantity
+        });
+      }
+
       if (product.stockQuantity < item.quantity) {
         throw new BadRequestException({
           message: "Insufficient stock for requested quantity",
@@ -130,9 +165,12 @@ export class CheckoutService {
       }
 
       const nextStockQuantity = product.stockQuantity - item.quantity;
+      const nextVariantStockQuantity = variant ? variant.stockQuantity - item.quantity : null;
 
       return {
         productId: item.productId,
+        variantId: item.variantId ?? null,
+        nextVariantStockQuantity,
         nextStockQuantity,
         nextStatus:
           nextStockQuantity > 0 ? ProductStatus.ACTIVE : ProductStatus.OUT_OF_STOCK
@@ -237,6 +275,9 @@ export class CheckoutService {
 
         return {
           productId: item.productId,
+          variantId: item.variantId ?? null,
+          variantName: item.variantName ?? null,
+          variantSku: item.variantSku ?? null,
           productName: item.productName,
           productSlug: item.productSlug,
           quantity: item.quantity,

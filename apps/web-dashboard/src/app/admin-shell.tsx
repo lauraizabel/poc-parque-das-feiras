@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { DashboardTopbar } from "../components/dashboard-topbar";
 import { DashboardEmptyState, DashboardFeedback, DashboardLoadingState } from "../components/dashboard-state";
 import { clearDashboardAccessToken, readDashboardAccessToken, storeDashboardAccessToken } from "../lib/auth-session";
 import { env } from "../lib/env";
@@ -488,16 +489,15 @@ export function AdminShell() {
   if (!user || !token) {
     return (
       <main className="shell dashboard-shell">
-        <header className="nav">
-          <div>
-            <div className="eyebrow">Admin Global</div>
-            <strong>{env.NEXT_PUBLIC_APP_URL}</strong>
-          </div>
-          <nav className="nav-links">
-            <a href="/">Dashboard</a>
-            <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
-          </nav>
-        </header>
+        <DashboardTopbar
+          eyebrow="Admin Global"
+          links={[
+            { kind: "anchor", href: "/", label: "Dashboard" },
+            { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" }
+          ]}
+          meta="Área restrita da plataforma"
+          title={env.NEXT_PUBLIC_APP_URL}
+        />
 
         <section className="hero">
           <span className="badge">Platform ops</span>
@@ -551,19 +551,15 @@ export function AdminShell() {
   if (user.platformRole !== "PLATFORM_ADMIN") {
     return (
       <main className="shell dashboard-shell">
-        <header className="nav">
-          <div>
-            <div className="eyebrow">Admin Global</div>
-            <strong>Acesso restrito</strong>
-            <div className="host-badge">{user.email}</div>
-          </div>
-          <nav className="nav-links">
-            <a href="/">Dashboard</a>
-            <button className="link-button" onClick={handleLogout} type="button">
-              Sair
-            </button>
-          </nav>
-        </header>
+        <DashboardTopbar
+          eyebrow="Admin Global"
+          links={[
+            { kind: "anchor", href: "/", label: "Dashboard" },
+            { kind: "button", label: "Sair", onClick: handleLogout }
+          ]}
+          meta={user.email}
+          title="Acesso restrito"
+        />
 
         <section className="card">
           <div className="eyebrow">Permissão</div>
@@ -587,23 +583,17 @@ export function AdminShell() {
 
   return (
     <main className="shell dashboard-shell">
-      <header className="nav">
-        <div>
-          <div className="eyebrow">Admin Global</div>
-          <strong>Operação da plataforma</strong>
-          <div className="host-badge">{user.fullName ?? user.email}</div>
-        </div>
-        <nav className="nav-links">
-          <a href="/">Dashboard</a>
-          <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
-          <button className="link-button" onClick={refreshContext} type="button">
-            Atualizar contexto
-          </button>
-          <button className="link-button" onClick={handleLogout} type="button">
-            Sair
-          </button>
-        </nav>
-      </header>
+      <DashboardTopbar
+        eyebrow="Admin Global"
+        links={[
+          { kind: "anchor", href: "/", label: "Dashboard" },
+          { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" },
+          { kind: "button", label: "Atualizar contexto", onClick: refreshContext },
+          { kind: "button", label: "Sair", onClick: handleLogout }
+        ]}
+        meta={user.fullName ?? user.email}
+        title="Operação da plataforma"
+      />
 
       <section className="dashboard-frame">
         <aside className="dashboard-sidebar card">

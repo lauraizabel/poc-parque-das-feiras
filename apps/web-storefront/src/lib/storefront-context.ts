@@ -46,6 +46,16 @@ export type PublicStorefrontCategory = {
   slug: string;
   description: string | null;
   sortOrder: number;
+  productCount: number;
+};
+
+export type PublicStorefrontVariant = {
+  id: string;
+  name: string;
+  sku: string | null;
+  priceCents: number | null;
+  stockQuantity: number;
+  sortOrder: number;
 };
 
 export type PublicStorefrontProduct = {
@@ -68,18 +78,25 @@ export type PublicStorefrontProduct = {
     imageUrl: string;
     altText: string | null;
   }>;
+  variants: PublicStorefrontVariant[];
 };
 
 export type StorefrontHomepageData = {
   store: PublicStorefrontStore;
   categories: PublicStorefrontCategory[];
   products: PublicStorefrontProduct[];
+  newArrivals: PublicStorefrontProduct[];
+  saleHighlights: PublicStorefrontProduct[];
 };
 
 export type StorefrontCatalogData = {
   store: PublicStorefrontStore;
   categories: PublicStorefrontCategory[];
   selectedCategorySlug: string | null;
+  selectedCollection: "new" | "sale" | null;
+  selectedSize: string | null;
+  search: string | null;
+  sort: "relevancia" | "menor" | "maior" | "recentes";
   products: PublicStorefrontProduct[];
   pagination: {
     page: number;
@@ -92,6 +109,7 @@ export type StorefrontCatalogData = {
 export type StorefrontProductData = {
   store: PublicStorefrontStore;
   product: PublicStorefrontProduct;
+  relatedProducts: PublicStorefrontProduct[];
   availability: {
     canAddToCart: boolean;
     isInStock: boolean;
@@ -216,6 +234,10 @@ export async function getStorefrontHomepage() {
 
 export async function getStorefrontCatalog(input: {
   category?: string | null;
+  collection?: "new" | "sale" | null;
+  search?: string | null;
+  size?: string | null;
+  sort?: "relevancia" | "menor" | "maior" | "recentes";
   page?: number;
   pageSize?: number;
 }) {
@@ -223,6 +245,22 @@ export async function getStorefrontCatalog(input: {
 
   if (input.category) {
     search.set("category", input.category);
+  }
+
+  if (input.collection) {
+    search.set("collection", input.collection);
+  }
+
+  if (input.search) {
+    search.set("search", input.search);
+  }
+
+  if (input.size) {
+    search.set("size", input.size);
+  }
+
+  if (input.sort) {
+    search.set("sort", input.sort);
   }
 
   if (input.page && input.page > 1) {

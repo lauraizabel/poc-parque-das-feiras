@@ -8,6 +8,7 @@ import {
   storeDashboardAccessToken
 } from "../lib/auth-session";
 import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
+import { DashboardTopbar } from "../components/dashboard-topbar";
 import { CatalogConsole } from "./catalog-console";
 import { DomainConsole } from "./domain-console";
 import { MembersConsole } from "./members-console";
@@ -285,23 +286,22 @@ export function DashboardShell() {
   if (!user || !token) {
     return (
       <main className="shell dashboard-shell">
-        <header className="nav">
-          <div>
-            <div className="eyebrow">Dashboard</div>
-            <strong>{env.NEXT_PUBLIC_APP_URL}</strong>
-          </div>
-          <nav className="nav-links">
-            <a href="http://localhost:3000">Storefront</a>
-            <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
-          </nav>
-        </header>
+        <DashboardTopbar
+          eyebrow="Dashboard"
+          links={[
+            { kind: "anchor", href: "http://localhost:3000", label: "Storefront" },
+            { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" }
+          ]}
+          meta="Acesso operacional protegido"
+          title={env.NEXT_PUBLIC_APP_URL}
+        />
 
         <section className="hero">
           <span className="badge">Merchant control</span>
-          <h1 className="title">Shell multi-store para operar suas lojas com contexto protegido.</h1>
+          <h1 className="title">Operação multi-store com mais clareza, contexto e segurança.</h1>
           <p className="subtitle">
-            O dashboard agora autentica o usuario, descobre suas memberships e abre a operacao
-            apenas para lojas permitidas.
+            O dashboard autentica o usuário, descobre memberships e abre a operação apenas para
+            lojas permitidas, agora com uma estrutura visual mais orientada à execução.
           </p>
         </section>
 
@@ -362,20 +362,16 @@ export function DashboardShell() {
   if (user.memberships.length === 0) {
     return (
       <main className="shell dashboard-shell">
-        <header className="nav">
-          <div>
-            <div className="eyebrow">Dashboard</div>
-            <strong>Onboarding da primeira loja</strong>
-            <div className="host-badge">{user.email}</div>
-          </div>
-          <nav className="nav-links">
-            <a href="http://localhost:3000">Storefront</a>
-            <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
-            <button className="link-button" onClick={handleLogout} type="button">
-              Sair
-            </button>
-          </nav>
-        </header>
+        <DashboardTopbar
+          eyebrow="Dashboard"
+          links={[
+            { kind: "anchor", href: "http://localhost:3000", label: "Storefront" },
+            { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" },
+            { kind: "button", label: "Sair", onClick: handleLogout }
+          ]}
+          meta={user.email}
+          title="Onboarding da primeira loja"
+        />
 
         <section className="hero">
           <span className="badge">Primeira operação</span>
@@ -403,34 +399,28 @@ export function DashboardShell() {
   }
 
   return (
-    <main className="shell dashboard-shell">
-      <header className="nav">
-        <div>
-          <div className="eyebrow">Dashboard</div>
-          <strong>{selectedMembership?.store.name ?? "Sem loja selecionada"}</strong>
-          <div className="host-badge">{user.email}</div>
-        </div>
-        <nav className="nav-links">
-          <a href="http://localhost:3000">Storefront</a>
-          {user.platformRole === "PLATFORM_ADMIN" ? <a href="/admin">Admin global</a> : null}
-          <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
-          <button className="link-button" onClick={refreshContext} type="button">
-            Atualizar contexto
-          </button>
-          <button className="link-button" onClick={handleLogout} type="button">
-            Sair
-          </button>
-        </nav>
-      </header>
+    <main className="shell dashboard-shell dashboard-shell-authenticated">
+      <DashboardTopbar
+        eyebrow="Dashboard"
+        links={[
+          { kind: "anchor", href: "http://localhost:3000", label: "Storefront" },
+          ...(user.platformRole === "PLATFORM_ADMIN"
+            ? [{ kind: "anchor" as const, href: "/admin", label: "Admin global" }]
+            : []),
+          { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" },
+          { kind: "button", label: "Atualizar contexto", onClick: refreshContext },
+          { kind: "button", label: "Sair", onClick: handleLogout }
+        ]}
+        meta={user.email}
+        title={selectedMembership?.store.name ?? "Sem loja selecionada"}
+      />
 
       <section className="dashboard-frame">
         <aside className="dashboard-sidebar card">
-          <div>
+          <div className="sidebar-section">
             <div className="eyebrow">Conta</div>
-            <h2 className="section-title">Painel do lojista</h2>
-            <p className="subtitle">
-              {user.fullName ?? user.email} acessa apenas as lojas vinculadas nas memberships.
-            </p>
+            <h2 className="sidebar-title">Operação da loja</h2>
+            <p className="sidebar-copy">{user.fullName ?? user.email}</p>
           </div>
 
           <label className="field">
@@ -466,12 +456,23 @@ export function DashboardShell() {
         </aside>
 
         <section className="dashboard-main">
-          <section className="card">
-            <div className="eyebrow">Loja selecionada</div>
-            <h1 className="section-title" data-testid="dashboard-selected-store">
-              {selectedMembership?.store.name ?? "Sem loja"}
-            </h1>
-            <div className="grid">
+          <section className="card dashboard-context-card">
+            <div className="dashboard-context-head">
+              <div>
+                <div className="eyebrow">Loja selecionada</div>
+                <h1 className="dashboard-store-title" data-testid="dashboard-selected-store">
+                  {selectedMembership?.store.name ?? "Sem loja"}
+                </h1>
+                <p className="dashboard-context-copy">
+                  Produtos, pedidos, domínios e configurações abaixo seguem a loja atualmente selecionada.
+                </p>
+              </div>
+              <a className="secondary-button auth-anchor-button" href="http://localhost:3000">
+                Ver vitrine
+              </a>
+            </div>
+
+            <div className="grid dashboard-context-grid dashboard-context-grid-compact">
               <div className="kpi">
                 <span>Role atual</span>
                 <strong>{selectedMembership?.role ?? "n/a"}</strong>
@@ -481,7 +482,7 @@ export function DashboardShell() {
                 <strong>{selectedMembership?.store.slug ?? "n/a"}</strong>
               </div>
               <div className="kpi">
-                <span>Subdominio</span>
+                <span>Subdomínio</span>
                 <strong>{selectedMembership?.store.defaultSubdomain ?? "n/a"}</strong>
               </div>
               <div className="kpi">

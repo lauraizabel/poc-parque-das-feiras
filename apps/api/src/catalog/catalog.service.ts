@@ -37,19 +37,32 @@ export class CatalogService {
 
   async getPublicHomepage(publicStore: PublicStorefrontContext) {
     const store = await this.getResolvedPublicStore(publicStore);
-    const [categories, featuredProducts] = await Promise.all([
+    const [categories, featuredProducts, newArrivals, saleHighlights] = await Promise.all([
       this.catalogRepository.listPublicCategoriesByStore(publicStore.storeId),
       this.catalogRepository.listPublicProductsByStore({
         storeId: publicStore.storeId,
         take: 6,
         featuredFirst: true
+      }),
+      this.catalogRepository.listPublicProductsByStore({
+        storeId: publicStore.storeId,
+        take: 6,
+        sort: "recentes"
+      }),
+      this.catalogRepository.listPublicProductsByStore({
+        storeId: publicStore.storeId,
+        take: 6,
+        collection: "sale",
+        sort: "recentes"
       })
     ]);
 
     return {
       store,
-      categories,
-      products: featuredProducts
+      categories: categories.map((category) => this.serializePublicCategory(category)),
+      products: featuredProducts,
+      newArrivals,
+      saleHighlights
     };
   }
 
@@ -66,8 +79,12 @@ export class CatalogService {
     if (requestedCategorySlug && !selectedCategory) {
       return {
         store,
-        categories,
+        categories: categories.map((category) => this.serializePublicCategory(category)),
         selectedCategorySlug: requestedCategorySlug,
+        selectedCollection: query.collection ?? null,
+        selectedSize: query.size ?? null,
+        search: query.search ?? null,
+        sort: query.sort,
         products: [],
         pagination: {
           page: 1,
@@ -78,23 +95,34 @@ export class CatalogService {
       };
     }
 
-    const totalItems = await this.catalogRepository.countPublicProductsByStore(
-      publicStore.storeId,
-      selectedCategory?.id
-    );
+    const totalItems = await this.catalogRepository.countPublicProductsByStore({
+      storeId: publicStore.storeId,
+      categoryId: selectedCategory?.id,
+      collection: query.collection,
+      search: query.search,
+      size: query.size
+    });
     const totalPages = totalItems > 0 ? Math.ceil(totalItems / query.pageSize) : 0;
     const page = totalPages > 0 ? Math.min(query.page, totalPages) : 1;
     const products = await this.catalogRepository.listPublicProductsByStore({
       storeId: publicStore.storeId,
       categoryId: selectedCategory?.id,
+      collection: query.collection,
+      search: query.search,
+      size: query.size,
+      sort: query.sort,
       skip: (page - 1) * query.pageSize,
       take: query.pageSize
     });
 
     return {
       store,
-      categories,
+      categories: categories.map((category) => this.serializePublicCategory(category)),
       selectedCategorySlug: selectedCategory?.slug ?? null,
+      selectedCollection: query.collection ?? null,
+      selectedSize: query.size ?? null,
+      search: query.search ?? null,
+      sort: query.sort,
       products,
       pagination: {
         page,
@@ -124,9 +152,17 @@ export class CatalogService {
       });
     }
 
+    const relatedProducts = await this.catalogRepository.listRelatedPublicProducts({
+      storeId: publicStore.storeId,
+      productId: product.id,
+      categoryId: product.categoryId,
+      take: 4
+    });
+
     return {
       store,
       product,
+      relatedProducts,
       availability: {
         canAddToCart: product.status === ProductStatus.ACTIVE && product.stockQuantity > 0,
         isInStock: product.stockQuantity > 0,
@@ -678,6 +714,26 @@ export class CatalogService {
       ...store,
       source: publicStore.source,
       matchedHost: publicStore.matchedHost
+    };
+  }
+
+  private serializePublicCategory(category: {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    sortOrder: number;
+    _count?: {
+      products: number;
+    };
+  }) {
+    return {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      sortOrder: category.sortOrder,
+      productCount: category._count?.products ?? 0
     };
   }
 }

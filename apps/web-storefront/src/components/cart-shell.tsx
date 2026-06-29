@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { ensureCartSession, getCartSession } from "../lib/cart-session";
+import { emitCartUpdated, ensureCartSession, getCartSession } from "../lib/cart-session";
 import {
   clearCart,
   ClientCart,
@@ -45,7 +45,7 @@ export function CartShell({ store }: CartShellProps) {
       })
       .catch(() => {
         if (isMounted) {
-          setError("Nao foi possivel carregar o carrinho desta loja.");
+          setError("Nao foi possivel carregar a sacola desta loja.");
         }
       })
       .finally(() => {
@@ -60,67 +60,45 @@ export function CartShell({ store }: CartShellProps) {
   }, [store.id]);
 
   if (isLoading) {
-    return <section className="card empty-state"><p>Carregando carrinho...</p></section>;
+    return <section className="empty-block"><p>Carregando sacola...</p></section>;
   }
 
   if (!cart || cart.items.length === 0) {
     return (
-      <section className="card empty-state">
-        <h2>Carrinho vazio</h2>
-        <p>Adicione produtos na vitrine para revisar os itens antes do checkout.</p>
-        <a className="button-link" href="/catalog">
-          Voltar ao catalogo
+      <section className="empty-block">
+        <h1>Sua sacola esta vazia</h1>
+        <p>Que tal voltar para o catalogo e descobrir novas pecas da colecao?</p>
+        <a className="button-primary button-link-inline" href="/catalog">
+          Explorar a loja
         </a>
       </section>
     );
   }
 
-  return (
-    <section className="checkout-layout">
-      <div className="checkout-main">
-        <article className="card">
-          <div className="section-head">
-            <div>
-              <div className="eyebrow">Carrinho</div>
-              <h1 className="section-title">Revise seus itens</h1>
-            </div>
-            <button
-              className={`button-link button-button ${isPending ? "button-link-disabled" : ""}`}
-              disabled={isPending}
-              onClick={() => {
-                startTransition(async () => {
-                  try {
-                    const sessionId = ensureCartSession(store.id);
-                    if (!sessionId) {
-                      return;
-                    }
-                    const response = await clearCart({ sessionId });
-                    setCart(response.cart);
-                    setError(null);
-                  } catch {
-                    setError("Nao foi possivel limpar o carrinho.");
-                  }
-                });
-              }}
-              type="button"
-            >
-              Limpar carrinho
-            </button>
-          </div>
+  const shippingEstimateCents = cart.summary.subtotalCents >= 19900 ? 0 : 1990;
+  const totalCents = cart.summary.subtotalCents + shippingEstimateCents;
 
-          <div className="cart-list">
-            {cart.items.map((item) => (
-              <article className="cart-item" key={item.id}>
-                <div>
-                  <h2>{item.productName}</h2>
-                  <p>{item.productSlug}</p>
-                </div>
-                <div className="cart-item-controls">
-                  <label className="field-label" htmlFor={`qty-${item.id}`}>
-                    Quantidade
-                  </label>
+  return (
+    <section className="commerce-layout">
+      <div className="commerce-main">
+        <div className="section-copy">
+          <h1>Sua sacola</h1>
+          <p>{cart.summary.itemCount} itens em uma revisao clara antes do checkout.</p>
+        </div>
+
+        <div className="cart-lines">
+          {cart.items.map((item) => (
+            <article className="cart-line" key={item.id}>
+              <div className="cart-line-media">{item.productName.slice(0, 1)}</div>
+              <div className="cart-line-copy">
+                <div className="cart-line-meta">Produto</div>
+                <h2>{item.productName}</h2>
+                <p>
+                  {item.variantName ? `Tamanho ${item.variantName}` : "Sem variante selecionada"}
+                </p>
+                <div className="cart-line-actions">
+                  <label htmlFor={`qty-${item.id}`}>Qtd.</label>
                   <input
-                    className="field-input field-input-small"
                     defaultValue={item.quantity}
                     id={`qty-${item.id}`}
                     min={1}
@@ -135,81 +113,116 @@ export function CartShell({ store }: CartShellProps) {
                       startTransition(async () => {
                         try {
                           const sessionId = ensureCartSession(store.id);
+
                           if (!sessionId) {
                             return;
                           }
+
                           const response = await updateCartItem(item.id, {
                             sessionId,
                             quantity: nextQuantity
                           });
+
                           setCart(response.cart);
+                          emitCartUpdated(store.id);
                           setError(null);
                         } catch (caughtError) {
-                          const nextMessage =
+                          setError(
                             typeof caughtError === "object" &&
-                            caughtError !== null &&
-                            "message" in caughtError &&
-                            typeof (caughtError as { message?: unknown }).message === "string"
+                              caughtError !== null &&
+                              "message" in caughtError &&
+                              typeof (caughtError as { message?: unknown }).message === "string"
                               ? (caughtError as { message: string }).message
-                              : "Nao foi possivel atualizar o item.";
-                          setError(nextMessage);
+                              : "Nao foi possivel atualizar o item."
+                          );
                         }
                       });
                     }}
                     type="number"
                   />
-                </div>
-                <div className="cart-item-price">
-                  <strong>
-                    {formatMoney(item.unitPriceCents * item.quantity, item.currencyCode, store.locale)}
-                  </strong>
-                  <span>
-                    {formatMoney(item.unitPriceCents, item.currencyCode, store.locale)} por unidade
-                  </span>
-                </div>
-                <button
-                  className="text-action"
-                  onClick={() => {
-                    startTransition(async () => {
-                      try {
-                        const sessionId = ensureCartSession(store.id);
-                        if (!sessionId) {
-                          return;
+                  <button
+                    className="text-link-button"
+                    onClick={() => {
+                      startTransition(async () => {
+                        try {
+                          const sessionId = ensureCartSession(store.id);
+
+                          if (!sessionId) {
+                            return;
+                          }
+
+                          const response = await removeCartItem(item.id, { sessionId });
+                          setCart(response.cart);
+                          emitCartUpdated(store.id);
+                          setError(null);
+                        } catch {
+                          setError("Nao foi possivel remover o item.");
                         }
-                        const response = await removeCartItem(item.id, { sessionId });
-                        setCart(response.cart);
-                        setError(null);
-                      } catch {
-                        setError("Nao foi possivel remover o item.");
-                      }
-                    });
-                  }}
-                  type="button"
-                >
-                  Remover
-                </button>
-              </article>
-            ))}
-          </div>
-        </article>
+                      });
+                    }}
+                    type="button"
+                  >
+                    Remover
+                  </button>
+                </div>
+              </div>
+              <div className="cart-line-price">
+                {formatMoney(item.unitPriceCents * item.quantity, item.currencyCode, store.locale)}
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
 
-      <aside className="checkout-side">
-        <article className="card summary-card">
-          <div className="eyebrow">Resumo</div>
-          <h2>Total parcial</h2>
-          <strong className="summary-total">
-            {formatMoney(cart.summary.subtotalCents, cart.currencyCode, store.locale)}
-          </strong>
-          <p className="helper-copy">
-            {cart.summary.itemCount} item{cart.summary.itemCount === 1 ? "" : "s"} no carrinho da
-            loja atual.
-          </p>
-          <a className="button-link" href="/checkout">
-            Ir para checkout
+      <aside className="commerce-side">
+        <div className="summary-card">
+          <h2>Resumo</h2>
+          <div className="summary-row">
+            <span>Subtotal</span>
+            <strong>{formatMoney(cart.summary.subtotalCents, cart.currencyCode, store.locale)}</strong>
+          </div>
+          <div className="summary-row">
+            <span>Frete</span>
+            <strong>
+              {shippingEstimateCents === 0
+                ? "Gratis"
+                : formatMoney(shippingEstimateCents, cart.currencyCode, store.locale)}
+            </strong>
+          </div>
+          <div className="summary-row summary-row-total">
+            <span>Total</span>
+            <strong>{formatMoney(totalCents, cart.currencyCode, store.locale)}</strong>
+          </div>
+          <a className="button-primary button-link-inline" href="/checkout">
+            Finalizar compra
           </a>
-          {error ? <p className="error-copy">{error}</p> : null}
-        </article>
+          <button
+            className={`button-secondary button-button ${isPending ? "button-disabled" : ""}`}
+            disabled={isPending}
+            onClick={() => {
+              startTransition(async () => {
+                try {
+                  const sessionId = ensureCartSession(store.id);
+
+                  if (!sessionId) {
+                    return;
+                  }
+
+                  const response = await clearCart({ sessionId });
+                  setCart(response.cart);
+                  emitCartUpdated(store.id);
+                  setError(null);
+                } catch {
+                  setError("Nao foi possivel limpar a sacola.");
+                }
+              });
+            }}
+            type="button"
+          >
+            Limpar sacola
+          </button>
+          {error ? <p className="inline-feedback error">{error}</p> : null}
+        </div>
       </aside>
     </section>
   );

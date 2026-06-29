@@ -79,6 +79,9 @@ export class CheckoutRepository {
     notes?: string | null;
     items: Array<{
       productId: string;
+      variantId?: string | null;
+      variantName?: string | null;
+      variantSku?: string | null;
       productName: string;
       productSlug: string;
       quantity: number;
@@ -92,6 +95,8 @@ export class CheckoutRepository {
     }>;
     stockAdjustments: Array<{
       productId: string;
+      variantId?: string | null;
+      nextVariantStockQuantity?: number | null;
       nextStockQuantity: number;
       nextStatus: ProductStatus;
     }>;
@@ -140,6 +145,9 @@ export class CheckoutRepository {
           orderId: order.id,
           storeId: input.storeId,
           productId: item.productId,
+          variantId: item.variantId ?? null,
+          variantName: item.variantName ?? null,
+          variantSku: item.variantSku ?? null,
           productName: item.productName,
           productSlug: item.productSlug,
           quantity: item.quantity,
@@ -168,6 +176,17 @@ export class CheckoutRepository {
       });
 
       for (const adjustment of input.stockAdjustments) {
+        if (adjustment.variantId) {
+          await tx.productVariant.update({
+            where: {
+              id: adjustment.variantId
+            },
+            data: {
+              stockQuantity: adjustment.nextVariantStockQuantity ?? 0
+            }
+          });
+        }
+
         await tx.product.update({
           where: {
             id: adjustment.productId

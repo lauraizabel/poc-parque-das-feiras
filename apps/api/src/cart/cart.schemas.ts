@@ -15,6 +15,7 @@ export const resolveCartSchema = cartIdentitySchema;
 
 export const addCartItemSchema = cartIdentitySchema.extend({
   productId: z.string().trim().min(1),
+  variantId: z.string().trim().min(1).optional(),
   quantity: z.number().int().min(1).max(100)
 });
 

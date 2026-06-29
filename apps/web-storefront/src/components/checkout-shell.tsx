@@ -5,13 +5,12 @@ import { ensureCartSession, getCartSession } from "../lib/cart-session";
 import {
   calculateShippingOptions,
   ClientCart,
-  CustomerOrderAccess,
   ClientOrder,
   ClientStore,
   createOrLoadCart,
   createOrderFromCart,
   createPaymentIntent,
-  PaymentIntentResult,
+  CustomerOrderAccess,
   ShippingOption
 } from "../lib/storefront-api";
 
@@ -44,11 +43,7 @@ function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR
 export function CheckoutShell({ store }: CheckoutShellProps) {
   const [cart, setCart] = useState<ClientCart | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{
-    customerAccess: CustomerOrderAccess;
-    order: ClientOrder;
-    intent: PaymentIntentResult;
-  } | null>(null);
+  const [success, setSuccess] = useState<{ customerAccess: CustomerOrderAccess; order: ClientOrder } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const [isShippingPending, startShippingTransition] = useTransition();
@@ -92,7 +87,7 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
       })
       .catch(() => {
         if (isMounted) {
-          setError("Nao foi possivel carregar o carrinho para checkout.");
+          setError("Nao foi possivel carregar o checkout.");
         }
       })
       .finally(() => {
@@ -107,15 +102,15 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
   }, [store.id]);
 
   if (isLoading) {
-    return <section className="card empty-state"><p>Carregando checkout...</p></section>;
+    return <section className="empty-block"><p>Carregando checkout...</p></section>;
   }
 
   if (!cart || cart.items.length === 0) {
     return (
-      <section className="card empty-state">
-        <h2>Nada para finalizar</h2>
-        <p>Seu checkout aparece aqui quando houver itens no carrinho da loja atual.</p>
-        <a className="button-link" href="/catalog">
+      <section className="empty-block">
+        <h1>Nada para finalizar</h1>
+        <p>Adicione produtos ao carrinho antes de avancar para a finalizacao.</p>
+        <a className="button-primary button-link-inline" href="/catalog">
           Voltar ao catalogo
         </a>
       </section>
@@ -124,314 +119,253 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
 
   const selectedShippingOption =
     shippingOptions.find((option) => option.id === selectedShippingMethodId) ?? null;
-  const checkoutTotalCents =
-    cart.summary.subtotalCents + (selectedShippingOption?.priceCents ?? 0);
+  const totalCents = cart.summary.subtotalCents + (selectedShippingOption?.priceCents ?? 0);
 
   return (
-    <section className="checkout-layout">
-      <div className="checkout-main">
-        <article className="card">
-          <div className="eyebrow">Checkout</div>
-          <h1 className="section-title">Dados do cliente e entrega</h1>
-          <p className="subtitle">
-            Finalize o pedido sem sair do contexto da loja. Ao concluir, a vitrine inicia a
-            intencao de pagamento e retorna os dados do provider.
-          </p>
+    <section className="commerce-layout">
+      <div className="commerce-main">
+        <div className="section-copy">
+          <h1>Finalizar compra</h1>
+          <p>Contato, entrega, frete e confirmacao no mesmo fluxo.</p>
+        </div>
 
-          <form
-            className="checkout-form"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
+        <form
+          className="checkout-form-card"
+          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
 
-              startTransition(async () => {
-                try {
-                  setError(null);
-                  const sessionId = ensureCartSession(store.id) ?? undefined;
-                  const orderResponse = await createOrderFromCart({
-                    sessionId,
-                    customerEmail: form.customerEmail,
-                    customerFullName: form.customerFullName,
-                    customerPhoneNumber: form.customerPhoneNumber || undefined,
-                    shippingMethodId: selectedShippingMethodId,
-                    shippingRecipientName: form.shippingRecipientName,
-                    shippingPhoneNumber: form.shippingPhoneNumber || undefined,
-                    shippingPostalCode: form.shippingPostalCode,
-                    shippingState: form.shippingState,
-                    shippingCity: form.shippingCity,
-                    shippingDistrict: form.shippingDistrict,
-                    shippingStreet: form.shippingStreet,
-                    shippingNumber: form.shippingNumber,
-                    shippingComplement: form.shippingComplement || undefined
-                  });
+            startTransition(async () => {
+              try {
+                setError(null);
+                const sessionId = ensureCartSession(store.id) ?? undefined;
+                const orderResponse = await createOrderFromCart({
+                  sessionId,
+                  customerEmail: form.customerEmail,
+                  customerFullName: form.customerFullName,
+                  customerPhoneNumber: form.customerPhoneNumber || undefined,
+                  shippingMethodId: selectedShippingMethodId,
+                  shippingRecipientName: form.shippingRecipientName,
+                  shippingPhoneNumber: form.shippingPhoneNumber || undefined,
+                  shippingPostalCode: form.shippingPostalCode,
+                  shippingState: form.shippingState,
+                  shippingCity: form.shippingCity,
+                  shippingDistrict: form.shippingDistrict,
+                  shippingStreet: form.shippingStreet,
+                  shippingNumber: form.shippingNumber,
+                  shippingComplement: form.shippingComplement || undefined
+                });
 
-                  const intentResponse = await createPaymentIntent(orderResponse.order.id, {
-                    sessionId,
-                    customerEmail: form.customerEmail
-                  });
+                await createPaymentIntent(orderResponse.order.id, {
+                  sessionId,
+                  customerEmail: form.customerEmail
+                });
 
-                  setSuccess({
-                    customerAccess: orderResponse.customerAccess,
-                    order: orderResponse.order,
-                    intent: intentResponse.intent
-                  });
-                } catch (caughtError) {
-                  const nextMessage =
-                    typeof caughtError === "object" &&
+                setSuccess({
+                  customerAccess: orderResponse.customerAccess,
+                  order: orderResponse.order
+                });
+              } catch (caughtError) {
+                setError(
+                  typeof caughtError === "object" &&
                     caughtError !== null &&
                     "message" in caughtError &&
                     typeof (caughtError as { message?: unknown }).message === "string"
-                      ? (caughtError as { message: string }).message
-                      : "Nao foi possivel concluir o checkout.";
-                  setError(nextMessage);
+                    ? (caughtError as { message: string }).message
+                    : "Nao foi possivel concluir o checkout."
+                );
+              }
+            });
+          }}
+        >
+          <div className="checkout-section-grid">
+            <label className="checkout-field">
+              <span>E-mail</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, customerEmail: event.target.value }))}
+                required
+                type="email"
+                value={form.customerEmail}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Nome completo</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, customerFullName: event.target.value }))}
+                required
+                value={form.customerFullName}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Celular</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, customerPhoneNumber: event.target.value }))}
+                value={form.customerPhoneNumber}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Destinatario</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingRecipientName: event.target.value }))}
+                required
+                value={form.shippingRecipientName}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Telefone de entrega</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingPhoneNumber: event.target.value }))}
+                value={form.shippingPhoneNumber}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>CEP</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingPostalCode: event.target.value }))}
+                required
+                value={form.shippingPostalCode}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Estado</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingState: event.target.value }))}
+                required
+                value={form.shippingState}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Cidade</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingCity: event.target.value }))}
+                required
+                value={form.shippingCity}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Bairro</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingDistrict: event.target.value }))}
+                required
+                value={form.shippingDistrict}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Rua</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingStreet: event.target.value }))}
+                required
+                value={form.shippingStreet}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Numero</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingNumber: event.target.value }))}
+                required
+                value={form.shippingNumber}
+              />
+            </label>
+            <label className="checkout-field">
+              <span>Complemento</span>
+              <input
+                onChange={(event) => setForm((current) => ({ ...current, shippingComplement: event.target.value }))}
+                value={form.shippingComplement}
+              />
+            </label>
+          </div>
+
+          <div className="shipping-box">
+            <div className="summary-row">
+              <strong>Frete</strong>
+              <button
+                className={`button-secondary button-button ${isShippingPending ? "button-disabled" : ""}`}
+                disabled={
+                  isShippingPending ||
+                  !form.customerEmail ||
+                  !form.shippingPostalCode ||
+                  !form.shippingState ||
+                  !form.shippingCity
                 }
-              });
-            }}
-          >
-            <div className="field-grid">
-              <label className="field">
-                <span className="field-label">E-mail</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, customerEmail: event.target.value }))
-                  }
-                  required
-                  type="email"
-                  value={form.customerEmail}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Nome completo</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, customerFullName: event.target.value }))
-                  }
-                  required
-                  value={form.customerFullName}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Telefone</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, customerPhoneNumber: event.target.value }))
-                  }
-                  value={form.customerPhoneNumber}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Destinatario</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      shippingRecipientName: event.target.value
-                    }))
-                  }
-                  required
-                  value={form.shippingRecipientName}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Telefone de entrega</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      shippingPhoneNumber: event.target.value
-                    }))
-                  }
-                  value={form.shippingPhoneNumber}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">CEP</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, shippingPostalCode: event.target.value }))
-                  }
-                  required
-                  value={form.shippingPostalCode}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Estado</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, shippingState: event.target.value }))
-                  }
-                  required
-                  value={form.shippingState}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Cidade</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, shippingCity: event.target.value }))
-                  }
-                  required
-                  value={form.shippingCity}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Bairro</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, shippingDistrict: event.target.value }))
-                  }
-                  required
-                  value={form.shippingDistrict}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Rua</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, shippingStreet: event.target.value }))
-                  }
-                  required
-                  value={form.shippingStreet}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Numero</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, shippingNumber: event.target.value }))
-                  }
-                  required
-                  value={form.shippingNumber}
-                />
-              </label>
-              <label className="field">
-                <span className="field-label">Complemento</span>
-                <input
-                  className="field-input"
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      shippingComplement: event.target.value
-                    }))
-                  }
-                  value={form.shippingComplement}
-                />
-              </label>
-            </div>
+                onClick={() => {
+                  startShippingTransition(async () => {
+                    try {
+                      setError(null);
+                      const sessionId = ensureCartSession(store.id) ?? undefined;
+                      const response = await calculateShippingOptions({
+                        sessionId,
+                        customerEmail: form.customerEmail,
+                        shippingPostalCode: form.shippingPostalCode,
+                        shippingState: form.shippingState,
+                        shippingCity: form.shippingCity,
+                        shippingDistrict: form.shippingDistrict || undefined
+                      });
 
-            <div className="card inset-card">
-              <div className="summary-row">
-                <strong>Frete</strong>
-                <button
-                  className={`button-link button-button ${isShippingPending ? "button-link-disabled" : ""}`}
-                  disabled={
-                    isShippingPending ||
-                    !form.customerEmail ||
-                    !form.shippingPostalCode ||
-                    !form.shippingState ||
-                    !form.shippingCity
-                  }
-                  onClick={() => {
-                    startShippingTransition(async () => {
-                      try {
-                        setError(null);
-                        const sessionId = ensureCartSession(store.id) ?? undefined;
-                        const response = await calculateShippingOptions({
-                          sessionId,
-                          customerEmail: form.customerEmail,
-                          shippingPostalCode: form.shippingPostalCode,
-                          shippingState: form.shippingState,
-                          shippingCity: form.shippingCity,
-                          shippingDistrict: form.shippingDistrict || undefined
-                        });
-                        setShippingOptions(response.shippingOptions);
-
-                        const defaultOption =
-                          response.shippingOptions.find((option) => option.isDefault) ??
-                          response.shippingOptions[0] ??
-                          null;
-
-                        setSelectedShippingMethodId(defaultOption?.id ?? "");
-                      } catch (caughtError) {
-                        const nextMessage =
-                          typeof caughtError === "object" &&
+                      setShippingOptions(response.shippingOptions);
+                      setSelectedShippingMethodId(
+                        response.shippingOptions.find((option) => option.isDefault)?.id ??
+                          response.shippingOptions[0]?.id ??
+                          ""
+                      );
+                    } catch (caughtError) {
+                      setError(
+                        typeof caughtError === "object" &&
                           caughtError !== null &&
                           "message" in caughtError &&
                           typeof (caughtError as { message?: unknown }).message === "string"
-                            ? (caughtError as { message: string }).message
-                            : "Nao foi possivel calcular o frete.";
-                        setError(nextMessage);
-                      }
-                    });
-                  }}
-                  type="button"
-                >
-                  {isShippingPending ? "Calculando..." : "Calcular frete"}
-                </button>
-              </div>
-
-              {shippingOptions.length > 0 ? (
-                <div className="field">
-                  <span className="field-label">Opcao de entrega</span>
-                  <select
-                    className="field-input"
-                    onChange={(event) => setSelectedShippingMethodId(event.target.value)}
-                    required
-                    value={selectedShippingMethodId}
-                  >
-                    <option value="">Selecione uma opcao</option>
-                    {shippingOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name} - {formatMoney(option.priceCents, cart.currencyCode, store.locale)}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedShippingOption ? (
-                    <p className="subtitle">
-                      {selectedShippingOption.note} Prazo estimado:{" "}
-                      {selectedShippingOption.estimatedDaysMin ?? 0} a{" "}
-                      {selectedShippingOption.estimatedDaysMax ?? 0} dias.
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
-                <p className="subtitle">
-                  Informe o endereco basico e calcule o frete antes de concluir o pedido.
-                </p>
-              )}
+                          ? (caughtError as { message: string }).message
+                          : "Nao foi possivel calcular o frete."
+                      );
+                    }
+                  });
+                }}
+                type="button"
+              >
+                {isShippingPending ? "Calculando..." : "Calcular frete"}
+              </button>
             </div>
 
-            <button
-              className={`button-link button-button ${isPending ? "button-link-disabled" : ""}`}
-              disabled={isPending || !selectedShippingMethodId}
-              type="submit"
-            >
-              {isPending ? "Processando..." : "Concluir pedido e iniciar pagamento"}
-            </button>
+            {shippingOptions.length > 0 ? (
+              <label className="checkout-field">
+                <span>Opcao de entrega</span>
+                <select
+                  onChange={(event) => setSelectedShippingMethodId(event.target.value)}
+                  required
+                  value={selectedShippingMethodId}
+                >
+                  <option value="">Selecione uma opcao</option>
+                  {shippingOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {`${option.name} - ${formatMoney(option.priceCents, cart.currencyCode, store.locale)}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <p className="helper-copy">Preencha o endereco principal para liberar as opcoes de frete.</p>
+            )}
+          </div>
 
-            {error ? <p className="error-copy">{error}</p> : null}
-          </form>
-        </article>
+          <button
+            className={`button-primary button-button ${isPending ? "button-disabled" : ""}`}
+            disabled={isPending || !selectedShippingMethodId}
+            type="submit"
+          >
+            {isPending ? "Processando..." : "Confirmar pedido"}
+          </button>
+
+          {error ? <p className="inline-feedback error">{error}</p> : null}
+        </form>
       </div>
 
-      <aside className="checkout-side">
-        <article className="card summary-card">
-          <div className="eyebrow">Resumo do pedido</div>
+      <aside className="commerce-side">
+        <div className="summary-card">
+          <h2>Resumo do pedido</h2>
           <div className="summary-list">
             {cart.items.map((item) => (
               <div className="summary-row" key={item.id}>
                 <span>
-                  {item.productName} x{item.quantity}
+                  {item.productName}
+                  {item.variantName ? ` · ${item.variantName}` : ""} x{item.quantity}
                 </span>
                 <strong>
                   {formatMoney(item.unitPriceCents * item.quantity, item.currencyCode, store.locale)}
@@ -451,36 +385,22 @@ export function CheckoutShell({ store }: CheckoutShellProps) {
                 : "Calcule para ver"}
             </strong>
           </div>
-          <div className="summary-row">
-            <span>Total estimado</span>
-            <strong>{formatMoney(checkoutTotalCents, cart.currencyCode, store.locale)}</strong>
+          <div className="summary-row summary-row-total">
+            <span>Total</span>
+            <strong>{formatMoney(totalCents, cart.currencyCode, store.locale)}</strong>
           </div>
+
           {success ? (
             <div className="success-card">
-              <h3>Pagamento iniciado</h3>
-              <p>Pedido `{success.order.id}` criado e intent pronta no provider.</p>
-              <p>
-                <a className="button-link" href={success.customerAccess.path}>
-                  Acompanhar pedido
-                </a>
-              </p>
-              <dl className="facts">
-                <div>
-                  <dt>Provider</dt>
-                  <dd>{success.intent.provider}</dd>
-                </div>
-                <div>
-                  <dt>Status</dt>
-                  <dd>{success.intent.status}</dd>
-                </div>
-                <div>
-                  <dt>Client secret</dt>
-                  <dd>{success.intent.clientSecret}</dd>
-                </div>
-              </dl>
+              <h3>Pedido confirmado</h3>
+              <p>Seu pedido foi criado com sucesso e ja pode ser acompanhado pela pagina publica.</p>
+              <a className="button-primary button-link-inline" href={success.customerAccess.path}>
+                Acompanhar pedido
+              </a>
+              <p className="helper-copy">Numero do pedido: {success.order.id}</p>
             </div>
           ) : null}
-        </article>
+        </div>
       </aside>
     </section>
   );

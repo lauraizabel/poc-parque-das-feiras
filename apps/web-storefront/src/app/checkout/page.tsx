@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { CheckoutShell } from "../../components/checkout-shell";
+import { StorefrontFooter } from "../../components/storefront-footer";
+import { StorefrontHeader } from "../../components/storefront-header";
 import { getStorefrontContext, getStorefrontHomepage } from "../../lib/storefront-context";
 import { buildStorefrontThemeStyle } from "../../lib/storefront-theme";
 
@@ -23,9 +25,9 @@ export default async function CheckoutPage() {
     return (
       <main className="shell">
         <section className="hero">
-          <span className="pill">Checkout indisponivel</span>
-          <h1 className="title">Esse host ainda nao resolveu uma loja publica.</h1>
-          <p className="subtitle">Assim que a loja estiver ativa, o checkout aparece aqui.</p>
+          <span className="pill">Checkout indisponível</span>
+          <h1 className="title">O checkout aparece aqui quando a loja estiver pronta.</h1>
+          <p className="subtitle">Assim que a vitrine for publicada, você poderá finalizar a compra nesta página.</p>
         </section>
       </main>
     );
@@ -37,32 +39,31 @@ export default async function CheckoutPage() {
     return (
       <main className="shell">
         <section className="hero">
-          <span className="pill">Checkout indisponivel</span>
-          <h1 className="title">Nao foi possivel carregar a loja.</h1>
+          <span className="pill">Checkout indisponível</span>
+          <h1 className="title">Não foi possível carregar a loja agora.</h1>
         </section>
       </main>
     );
   }
 
   return (
-    <main className="shell theme-shell" style={buildStorefrontThemeStyle(homepage.store)}>
-      <header className="nav">
-        <div>
-          <div className="eyebrow">Checkout</div>
-          {homepage.store.theme?.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img alt={homepage.store.name} className="store-logo" src={homepage.store.theme.logoUrl} />
-          ) : null}
-          <strong>{homepage.store.name}</strong>
-          <div className="host-badge">{homepage.store.matchedHost}</div>
-        </div>
-        <nav className="nav-links">
-          <a href="/">Home</a>
-          <a href="/catalog">Catalogo</a>
-          <a href="/cart">Carrinho</a>
-        </nav>
-      </header>
-      <CheckoutShell store={homepage.store} />
+    <main className="storefront-page" style={buildStorefrontThemeStyle(homepage.store)}>
+      <StorefrontHeader
+        announcementText={homepage.store.theme?.announcementText}
+        logoUrl={homepage.store.theme?.logoUrl}
+        navigation={[
+          { href: "/catalog?collection=new", label: "Novidades" },
+          { href: "/catalog", label: "Roupas" },
+          { href: "/catalog", label: "Acessorios" },
+          { href: "/catalog?collection=sale", label: "Sale", emphasis: "primary" }
+        ]}
+        storeId={homepage.store.id}
+        storeTitle={homepage.store.name}
+      />
+      <div className="shell storefront-main">
+        <CheckoutShell store={homepage.store} />
+      </div>
+      <StorefrontFooter storeTitle={homepage.store.name} />
     </main>
   );
 }

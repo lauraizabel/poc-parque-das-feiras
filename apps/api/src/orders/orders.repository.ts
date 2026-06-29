@@ -94,6 +94,9 @@ export class OrdersRepository {
     orderId: string;
     storeId: string;
     productId?: string | null;
+    variantId?: string | null;
+    variantName?: string | null;
+    variantSku?: string | null;
     productName: string;
     productSlug: string;
     quantity: number;
@@ -111,6 +114,9 @@ export class OrdersRepository {
         orderId: input.orderId,
         storeId: input.storeId,
         productId: input.productId ?? null,
+        variantId: input.variantId ?? null,
+        variantName: input.variantName ?? null,
+        variantSku: input.variantSku ?? null,
         productName: input.productName,
         productSlug: input.productSlug,
         quantity: input.quantity,
@@ -318,6 +324,7 @@ export class OrdersRepository {
       },
       select: {
         productId: true,
+        variantId: true,
         quantity: true
       }
     });
@@ -341,6 +348,29 @@ export class OrdersRepository {
 
       if (!product) {
         continue;
+      }
+
+      if (item.variantId) {
+        const variant = await tx.productVariant.findUnique({
+          where: {
+            id: item.variantId
+          },
+          select: {
+            id: true,
+            stockQuantity: true
+          }
+        });
+
+        if (variant) {
+          await tx.productVariant.update({
+            where: {
+              id: variant.id
+            },
+            data: {
+              stockQuantity: variant.stockQuantity + item.quantity
+            }
+          });
+        }
       }
 
       const nextStockQuantity = product.stockQuantity + item.quantity;

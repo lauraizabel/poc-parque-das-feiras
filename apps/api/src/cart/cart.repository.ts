@@ -119,6 +119,9 @@ export class CartRepository {
     cartId: string;
     storeId: string;
     productId: string;
+    variantId?: string | null;
+    variantName?: string | null;
+    variantSku?: string | null;
     quantity: number;
     productName: string;
     productSlug: string;
@@ -131,6 +134,9 @@ export class CartRepository {
         cartId: input.cartId,
         storeId: input.storeId,
         productId: input.productId,
+        variantId: input.variantId ?? null,
+        variantName: input.variantName ?? null,
+        variantSku: input.variantSku ?? null,
         quantity: input.quantity,
         productName: input.productName,
         productSlug: input.productSlug,

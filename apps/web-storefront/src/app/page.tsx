@@ -1,23 +1,16 @@
-import { env } from "../lib/env";
+import { StorefrontFooter } from "../components/storefront-footer";
+import { StorefrontHeader } from "../components/storefront-header";
 import { getStorefrontContext, getStorefrontHomepage } from "../lib/storefront-context";
 import { buildStorefrontThemeStyle } from "../lib/storefront-theme";
 
-const pillars = [
-  {
-    title: "Tenant-aware storefront",
-    body: "Vitrine publica preparada para resolver host, dominio customizado e catalogo por loja."
-  },
-  {
-    title: "Onboarding de lojistas",
-    body: "A mesma base suporta fluxos de criacao de loja, subdominio e setup inicial."
-  },
-  {
-    title: "Checkout pronto para crescer",
-    body: "O app publico ja conversa com a API modular pensada para carrinho, checkout e pedidos."
-  }
-];
-
 export const dynamic = "force-dynamic";
+
+function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR") {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currencyCode
+  }).format(valueInCents / 100);
+}
 
 function prettyStoreName(slug: string) {
   return slug
@@ -27,193 +20,193 @@ function prettyStoreName(slug: string) {
     .join(" ");
 }
 
+const defaultBenefits = [
+  { title: "Frete inteligente", description: "Calculo simples e checkout sem surpresa." },
+  { title: "Compra segura", description: "Pedido, pagamento e acompanhamento integrados." },
+  { title: "Curadoria clara", description: "Colecoes, destaques e oferta bem organizados." },
+  { title: "Troca facil", description: "Mensagem comercial pronta para inspirar confianca." }
+];
+
 export default async function HomePage() {
   const storefront = await getStorefrontContext();
   const isResolvedStore = storefront.kind === "store";
   const homepage = isResolvedStore ? await getStorefrontHomepage() : null;
   const storeTitle = isResolvedStore
     ? homepage?.store.name ?? prettyStoreName(storefront.storeSlug)
-    : "Marketplace";
+    : "Atelie";
+  const categories = homepage?.categories.slice(0, 5) ?? [];
+  const featuredProducts = homepage?.products.slice(0, 4) ?? [];
+  const newArrivals = homepage?.newArrivals.slice(0, 4) ?? [];
+  const saleHighlights = homepage?.saleHighlights.slice(0, 1) ?? [];
+  const storeId = storefront.kind === "store" ? storefront.storeId : "root";
 
   return (
-    <main className="shell theme-shell" style={buildStorefrontThemeStyle(homepage?.store)}>
-      <header className="nav">
-        <div>
-          <div className="eyebrow">Storefront</div>
-          {homepage?.store.theme?.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img alt={storeTitle} className="store-logo" src={homepage.store.theme.logoUrl} />
-          ) : null}
-          <strong>{storeTitle}</strong>
-          <div className="host-badge">{storefront.matchedHost}</div>
-        </div>
-        <nav className="nav-links">
-          {isResolvedStore ? <a href="/catalog">Catalogo</a> : null}
-          {isResolvedStore ? <a href="/cart">Carrinho</a> : null}
-          <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
-          <a href="http://localhost:3002">Dashboard</a>
-        </nav>
-      </header>
+    <main className="storefront-page" style={buildStorefrontThemeStyle(homepage?.store)}>
+      <StorefrontHeader
+        announcementText={homepage?.store.theme?.announcementText}
+        logoUrl={homepage?.store.theme?.logoUrl}
+        navigation={[
+          { href: "/catalog?collection=new", label: "Novidades" },
+          { href: "/catalog", label: "Roupas" },
+          { href: "/catalog", label: "Acessorios" },
+          { href: "/catalog?collection=sale", label: "Sale", emphasis: "primary" }
+        ]}
+        storeId={homepage?.store.id ?? storeId}
+        storeTitle={storeTitle}
+      />
 
-      <section className="hero">
-        {homepage?.store.theme?.announcementText ? (
-          <div className="announcement-bar">{homepage.store.theme.announcementText}</div>
-        ) : null}
-        <span className="pill">
-          {isResolvedStore
-            ? storefront.source === "custom-domain"
-              ? "Dominio proprio ativo"
-              : "Subdominio da loja"
-            : storefront.kind === "unknown"
-              ? "Host sem loja resolvida"
-              : "Marketplace root"}
-        </span>
-        <h1 className="title">
-          {isResolvedStore
-            ? homepage?.store.theme?.heroTitle || `${storeTitle} agora responde com homepage publica orientada por host.`
-            : "A mesma storefront agora responde lojas diferentes conforme o host."}
-        </h1>
-        <p className="subtitle">
-          {isResolvedStore
-            ? homepage?.store.theme?.heroSubtitle ||
-              `A requisicao foi resolvida para a loja ${storefront.storeSlug}, e a home publica ja mostra identidade, categorias e produtos ativos sem trocar de app.`
-            : storefront.kind === "unknown"
-              ? "Esse host ainda nao resolveu uma loja publica. Enquanto isso, o shell mostra um estado neutro e seguro para a vitrine."
-              : "Esse host representa a raiz da storefront. O shell agora centraliza a leitura do tenant e prepara o caminho para paginas publicas especificas de cada loja."}
-        </p>
-        {homepage?.store.theme?.bannerUrl ? (
-          <div className="hero-banner card">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={`Banner da loja ${storeTitle}`}
-              className="hero-banner-image"
-              src={homepage.store.theme.bannerUrl}
-            />
+      <div className="shell storefront-main">
+        <section className="hero-split">
+          <div className="hero-copy-card">
+            <div className="hero-kicker">Colecao da temporada</div>
+            <h1>
+              {homepage?.store.theme?.heroTitle ?? "Texturas e pecas-chave para uma vitrine com cara de marca."}
+            </h1>
+            <p>
+              {homepage?.store.theme?.heroSubtitle ??
+                "Use a home publica como uma entrada editorial: categorias, destaques, sale e uma rota clara ate a compra."}
+            </p>
+            <div className="hero-buttons">
+              <a className="button-primary button-link-inline" href="/catalog">
+                Comprar agora
+              </a>
+              <a className="button-secondary button-link-inline" href="/catalog?collection=new">
+                Ver novidades
+              </a>
+            </div>
           </div>
-        ) : null}
-      </section>
 
-      {isResolvedStore && homepage ? (
-        <>
-          <section className="section-head">
-            <div>
-              <div className="eyebrow">Categorias</div>
-              <h2 className="section-title">Navegue pela loja</h2>
-            </div>
-            <a className="button-link" href="/catalog">
-              Ver catalogo completo
-            </a>
-          </section>
-
-          <section className="grid">
-            {homepage.categories.length > 0 ? (
-              homepage.categories.map((category) => (
-                <a className="card category-card" href={`/catalog?category=${category.slug}`} key={category.id}>
-                  <h2>{category.name}</h2>
-                  <p>{category.description?.trim() || "Colecao publica pronta para filtro."}</p>
-                </a>
-              ))
+          <div className="hero-visual-card">
+            {homepage?.store.theme?.bannerUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`Banner da loja ${storeTitle}`}
+                className="hero-visual-image"
+                src={homepage.store.theme.bannerUrl}
+              />
             ) : (
-              <article className="card">
-                <h2>Loja sem categorias</h2>
-                <p>O tenant foi resolvido corretamente, mas a loja ainda nao organizou o catalogo.</p>
-              </article>
+              <div className="hero-placeholder">
+                <span>imagem de campanha</span>
+              </div>
             )}
-          </section>
+          </div>
+        </section>
 
-          <section className="section-head">
-            <div>
-              <div className="eyebrow">Produtos ativos</div>
-              <h2 className="section-title">Destaques publicados</h2>
-            </div>
-          </section>
+        <section className="section-heading">
+          <div>
+            <h2>Compre por categoria</h2>
+            <p>Rotas diretas para as areas principais do catalogo.</p>
+          </div>
+          <a href="/catalog">Ver tudo</a>
+        </section>
 
-          {homepage.products.length > 0 ? (
-            <section className="product-grid">
-              {homepage.products.map((product) => (
-                <article className="product-card" key={product.id}>
-                  <a className="product-card-link" href={`/catalog/${product.slug}`}>
-                    <div className="product-image">
-                      {product.images[0]?.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          alt={product.images[0]?.altText ?? product.name}
-                          className="product-image-tag"
-                          src={product.images[0].imageUrl}
-                        />
-                      ) : (
-                        <div className="product-image-placeholder">{product.name.slice(0, 1)}</div>
+        <section className="category-grid">
+          {categories.map((category) => (
+            <a className="category-card" href={`/catalog?category=${category.slug}`} key={category.id}>
+              <div className="category-card-media" />
+              <strong>{category.name}</strong>
+              <span>{category.productCount} produtos</span>
+            </a>
+          ))}
+        </section>
+
+        <section className="section-heading">
+          <div>
+            <h2>Destaques da semana</h2>
+            <p>Produtos em foco com preco e CTA na primeira dobra.</p>
+          </div>
+          <a href="/catalog">Ver catalogo</a>
+        </section>
+
+        <section className="product-grid">
+          {featuredProducts.map((product) => (
+            <article className="product-card" key={product.id}>
+              <a href={`/catalog/${product.slug}`}>
+                <div className="product-card-image">
+                  {product.images[0]?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img alt={product.images[0].altText ?? product.name} src={product.images[0].imageUrl} />
+                  ) : (
+                    <div className="product-card-placeholder">{product.name.slice(0, 1)}</div>
+                  )}
+                </div>
+                <div className="product-card-meta">{product.category?.name ?? "Colecao"}</div>
+                <h3>{product.name}</h3>
+                <div className="product-card-price">
+                  <strong>
+                    {formatMoney(product.priceCents, product.currencyCode, homepage?.store.locale ?? "pt-BR")}
+                  </strong>
+                  {product.compareAtCents ? (
+                    <span>
+                      {formatMoney(
+                        product.compareAtCents,
+                        product.currencyCode,
+                        homepage?.store.locale ?? "pt-BR"
                       )}
-                    </div>
-                    <div className="product-copy">
-                      <div className="product-meta">
-                        <span>{product.category?.name ?? "Sem categoria"}</span>
-                        {product.isFeatured ? <span>Destaque</span> : null}
-                      </div>
-                      <h3>{product.name}</h3>
-                      <p>{product.description?.trim() || "Produto publicado e visivel na vitrine."}</p>
-                    </div>
-                  </a>
-                </article>
-              ))}
-            </section>
-          ) : (
-            <section className="card empty-state">
-              <h2>Loja sem produtos publicados</h2>
-              <p>O tenant ja funciona, e agora o estado vazio da home fica amigavel ate a loja publicar itens.</p>
-            </section>
-          )}
-        </>
-      ) : (
-        <section className="grid">
-          {pillars.map((pillar) => (
-            <article className="card" key={pillar.title}>
-              <h2>{pillar.title}</h2>
-              <p>{pillar.body}</p>
+                    </span>
+                  ) : null}
+                </div>
+              </a>
             </article>
           ))}
         </section>
-      )}
 
-      <section className="card" style={{ marginBottom: 64 }}>
-        <h2>Estado da resolucao</h2>
-        {isResolvedStore ? (
-          <>
-            <p>
-              Loja resolvida com sucesso por <strong>{storefront.source}</strong>. A home publica e
-              o catalogo ja usam esse contexto para exibir apenas produtos ativos e disponiveis.
-            </p>
-            <dl className="facts">
-              <div>
-                <dt>Store ID</dt>
-                <dd>{storefront.storeId}</dd>
-              </div>
-              <div>
-                <dt>Slug</dt>
-                <dd>{storefront.storeSlug}</dd>
-              </div>
-              <div>
-                <dt>Host</dt>
-                <dd>{storefront.matchedHost}</dd>
-              </div>
-              {homepage ? (
-                <div>
-                  <dt>Produtos ativos</dt>
-                  <dd>{homepage.products.length}</dd>
+        {saleHighlights[0] ? (
+          <section className="sale-banner">
+            <div>
+              <span className="sale-banner-kicker">Liquida da estacao</span>
+              <h2>Ate ofertas especiais em pecas selecionadas</h2>
+              <p>Use os produtos com compare-at para abastecer essa area automaticamente.</p>
+            </div>
+            <a className="button-secondary button-link-inline" href="/catalog?collection=sale">
+              Comprar sale
+            </a>
+          </section>
+        ) : null}
+
+        <section className="section-heading">
+          <div>
+            <h2>Novidades</h2>
+            <p>Uma prateleira pronta para descoberta recorrente.</p>
+          </div>
+          <a href="/catalog?collection=new">Ver novidades</a>
+        </section>
+
+        <section className="product-grid">
+          {newArrivals.map((product) => (
+            <article className="product-card" key={product.id}>
+              <a href={`/catalog/${product.slug}`}>
+                <div className="product-card-image">
+                  {product.images[0]?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img alt={product.images[0].altText ?? product.name} src={product.images[0].imageUrl} />
+                  ) : (
+                    <div className="product-card-placeholder">{product.name.slice(0, 1)}</div>
+                  )}
                 </div>
-              ) : null}
-            </dl>
-          </>
-        ) : (
-          <>
-            <p>
-              O shell publico ja sabe diferenciar host raiz, host desconhecido e host de loja.
-              Isso prepara a renderizacao multi-tenant sem duplicar app publica.
-            </p>
-            <a href="/">Recarregar shell publico</a>
-          </>
-        )}
-      </section>
+                <div className="product-card-meta">Novo</div>
+                <h3>{product.name}</h3>
+                <div className="product-card-price">
+                  <strong>
+                    {formatMoney(product.priceCents, product.currencyCode, homepage?.store.locale ?? "pt-BR")}
+                  </strong>
+                </div>
+              </a>
+            </article>
+          ))}
+        </section>
+
+        <section className="benefits-grid">
+          {defaultBenefits.map((benefit) => (
+            <article className="benefit-card" key={benefit.title}>
+              <h3>{benefit.title}</h3>
+              <p>{benefit.description}</p>
+            </article>
+          ))}
+        </section>
+      </div>
+
+      <StorefrontFooter storeTitle={storeTitle} />
     </main>
   );
 }

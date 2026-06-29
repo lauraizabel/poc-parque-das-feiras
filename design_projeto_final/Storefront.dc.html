@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#F6F1E9}
+  @keyframes scFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .scView{animation:scFade .45s cubic-bezier(.22,.61,.36,1)}
+  ::selection{background:#BE6238;color:#fff}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#F6F1E9;color:#241F1B;font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased">
+
+  <sc-if value="{{ showAnnouncement }}" hint-placeholder-val="{{ true }}">
+  <div style="background:#241F1B;color:#EFE7DA;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:9px 16px;font-weight:500">{{ announcement }}</div>
+  </sc-if>
+
+  <header style="position:sticky;top:0;z-index:50;background:rgba(246,241,233,.88);backdrop-filter:blur(12px);border-bottom:1px solid #E4DCCF">
+    <div style="max-width:1240px;margin:0 auto;padding:0 28px;height:68px;display:flex;align-items:center;gap:32px">
+      <div onClick="{{ goHome }}" style="font-family:'Spectral',serif;font-weight:600;font-size:25px;letter-spacing:.14em;cursor:pointer;flex:0 0 auto">{{ brandName }}</div>
+      <nav style="display:flex;gap:26px;flex:1 1 auto">
+        <span onClick="{{ goNew }}" style="font-size:14.5px;font-weight:500;cursor:pointer;letter-spacing:.01em" style-hover="color:#BE6238">Novidades</span>
+        <span onClick="{{ goRoupas }}" style="font-size:14.5px;font-weight:500;cursor:pointer" style-hover="color:#BE6238">Roupas</span>
+        <span onClick="{{ goAcessorios }}" style="font-size:14.5px;font-weight:500;cursor:pointer" style-hover="color:#BE6238">Acessórios</span>
+        <span onClick="{{ goSale }}" style="font-size:14.5px;font-weight:600;cursor:pointer;color:#BE6238">Sale</span>
+      </nav>
+      <div style="display:flex;align-items:center;gap:18px;flex:0 0 auto">
+        <div style="display:flex;align-items:center;gap:9px;border:1px solid #E0D7C8;background:#FBF8F2;border-radius:999px;padding:8px 14px;width:200px;cursor:text" style-hover="border-color:#C9BCA6">
+          <span style="font-size:14px;opacity:.5">⌕</span>
+          <span style="font-size:13.5px;color:#9A9082">Buscar produtos</span>
+        </div>
+        <span style="font-size:14.5px;font-weight:500;cursor:pointer" style-hover="color:#BE6238">Conta</span>
+        <div onClick="{{ goCart }}" style="position:relative;cursor:pointer;display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600" style-hover="color:#BE6238">
+          Sacola
+          <span style="background:#241F1B;color:#fff;font-size:11px;font-weight:700;min-width:19px;height:19px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px">{{ cartCount }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div class="scView">
+
+      <section style="max-width:1240px;margin:0 auto;padding:30px 28px 8px">
+        <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:0;border-radius:18px;overflow:hidden;background:#EFE6D7;min-height:480px">
+          <div style="padding:64px 56px;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-family:'Spectral',serif;font-style:italic;font-size:18px;color:#BE6238;margin-bottom:18px">Coleção Outono · 2026</div>
+            <h1 style="font-family:'Spectral',serif;font-weight:500;font-size:54px;line-height:1.04;letter-spacing:-.01em;margin-bottom:20px;text-wrap:balance">Texturas que aquecem o dia inteiro</h1>
+            <p style="font-size:16.5px;line-height:1.5;color:#5C5349;max-width:380px;margin-bottom:32px">Tricôs, alfaiataria leve e peças-curinga para montar looks sem esforço. Novidades toda semana.</p>
+            <div style="display:flex;gap:14px;flex-wrap:wrap">
+              <button onClick="{{ goRoupas }}" style="background:#241F1B;color:#F6F1E9;border:none;font-family:inherit;font-size:15px;font-weight:600;padding:15px 32px;border-radius:999px;cursor:pointer;letter-spacing:.01em" style-hover="background:#000">Comprar agora</button>
+              <button onClick="{{ goNew }}" style="background:transparent;color:#241F1B;border:1px solid #C3B6A1;font-family:inherit;font-size:15px;font-weight:600;padding:15px 30px;border-radius:999px;cursor:pointer" style-hover="border-color:#241F1B">Ver novidades</button>
+            </div>
+          </div>
+          <div style="position:relative;background:#D8B49C;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 18px)">
+            <div style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:flex-start;padding:24px">
+              <span style="font-family:'Spectral',serif;font-style:italic;color:rgba(36,31,27,.45);font-size:13px">imagem de campanha — look outono</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="max-width:1240px;margin:0 auto;padding:46px 28px 12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px">
+          <h2 style="font-family:'Spectral',serif;font-weight:500;font-size:27px">Compre por categoria</h2>
+          <span onClick="{{ goRoupas }}" style="font-size:14px;font-weight:600;color:#BE6238;cursor:pointer">Ver tudo →</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px">
+          <sc-for list="{{ categories }}" as="cat" hint-placeholder-count="5">
+            <div onClick="{{ cat.open }}" style="cursor:pointer;border-radius:14px;overflow:hidden">
+              <div style="aspect-ratio:3/4;background:{{ cat.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 2px,transparent 2px 16px);border-radius:14px;transition:transform .3s" style-hover="transform:translateY(-4px)"></div>
+              <div style="font-size:15px;font-weight:600;margin-top:11px">{{ cat.name }}</div>
+              <div style="font-size:13px;color:#8A8175;margin-top:2px">{{ cat.count }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="max-width:1240px;margin:0 auto;padding:48px 28px 12px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px">
+          <h2 style="font-family:'Spectral',serif;font-weight:500;font-size:27px">Destaques da semana</h2>
+          <span onClick="{{ goRoupas }}" style="font-size:14px;font-weight:600;color:#BE6238;cursor:pointer">Ver catálogo →</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px">
+          <sc-for list="{{ featured }}" as="p" hint-placeholder-count="8">
+            <div style="cursor:pointer">
+              <div onClick="{{ p.open }}" style="position:relative;aspect-ratio:3/4;background:{{ p.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 2px,transparent 2px 16px);border-radius:13px;overflow:hidden">
+                <sc-if value="{{ p.badge }}" hint-placeholder-val="Novo">
+                  <span style="position:absolute;top:12px;left:12px;background:#241F1B;color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;padding:5px 10px;border-radius:999px">{{ p.badge }}</span>
+                </sc-if>
+              </div>
+              <div style="font-size:12px;color:#8A8175;margin-top:11px;letter-spacing:.04em;text-transform:uppercase">{{ p.category }}</div>
+              <div onClick="{{ p.open }}" style="font-size:15px;font-weight:600;margin-top:3px;line-height:1.25" style-hover="color:#BE6238">{{ p.name }}</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px">
+                <span style="font-size:15px;font-weight:700">{{ p.priceFmt }}</span>
+                <sc-if value="{{ p.oldPriceFmt }}" hint-placeholder-val="">
+                  <span style="font-size:13px;color:#A89C8C;text-decoration:line-through">{{ p.oldPriceFmt }}</span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="max-width:1240px;margin:0 auto;padding:48px 28px 12px">
+        <div onClick="{{ goSale }}" style="cursor:pointer;border-radius:18px;overflow:hidden;background:#BE6238;display:grid;grid-template-columns:1fr 1fr;min-height:240px">
+          <div style="padding:48px 52px;display:flex;flex-direction:column;justify-content:center;color:#FBF1E8">
+            <div style="font-family:'Spectral',serif;font-style:italic;font-size:16px;opacity:.85;margin-bottom:10px">Liquida de estação</div>
+            <h2 style="font-family:'Spectral',serif;font-weight:500;font-size:38px;line-height:1.05;margin-bottom:18px">Até 40% off em peças selecionadas</h2>
+            <span style="font-size:14.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase">Comprar sale →</span>
+          </div>
+          <div style="background:#A9512A;background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.12) 0 2px,transparent 2px 18px)"></div>
+        </div>
+      </section>
+
+      <sc-if value="{{ showBenefits }}" hint-placeholder-val="{{ true }}">
+      <section style="max-width:1240px;margin:0 auto;padding:46px 28px 60px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;border-top:1px solid #E4DCCF;padding-top:34px">
+          <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="4">
+            <div style="display:flex;gap:13px;align-items:flex-start">
+              <span style="font-size:21px;line-height:1;color:#BE6238">{{ b.icon }}</span>
+              <div>
+                <div style="font-size:14.5px;font-weight:600">{{ b.title }}</div>
+                <div style="font-size:13px;color:#8A8175;margin-top:3px;line-height:1.4">{{ b.desc }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+      </sc-if>
+
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ isCatalog }}" hint-placeholder-val="{{ false }}"><div class="scView"><section style="max-width:1240px;margin:0 auto;padding:30px 28px 8px">
+        <div style="font-size:13px;color:#8A8175;margin-bottom:14px"><span onClick="{{ goHome }}" style="cursor:pointer" style-hover="color:#BE6238">Início</span> <span style="opacity:.5">/</span> {{ catTitle }}</div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;border-bottom:1px solid #E4DCCF;padding-bottom:22px">
+          <div>
+            <h1 style="font-family:'Spectral',serif;font-weight:500;font-size:38px;line-height:1">{{ catTitle }}</h1>
+            <div style="font-size:14px;color:#8A8175;margin-top:8px">{{ catCount }} produtos</div>
+          </div>
+          <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:#5C5349">Ordenar
+            <select value="{{ sort }}" onChange="{{ setSort }}" style="font-family:inherit;font-size:14px;border:1px solid #DDD3C3;background:#FBF8F2;border-radius:999px;padding:9px 16px;color:#241F1B;cursor:pointer;outline:none">
+              <option value="relevancia">Relevância</option>
+              <option value="menor">Menor preço</option>
+              <option value="maior">Maior preço</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section style="max-width:1240px;margin:0 auto;padding:24px 28px 70px;display:grid;grid-template-columns:212px 1fr;gap:36px;align-items:start">
+        <aside style="position:sticky;top:88px">
+          <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A8175;margin-bottom:14px">Categorias</div>
+          <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:30px">
+            <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="9">
+              <div onClick="{{ c.set }}" style="font-size:14.5px;padding:8px 12px;border-radius:9px;cursor:pointer;font-weight:{{ c.weight }};background:{{ c.bg }};color:{{ c.color }}" style-hover="background:#EFE6D7">{{ c.name }}</div>
+            </sc-for>
+          </div>
+          <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A8175;margin-bottom:14px">Tamanho</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:30px">
+            <sc-for list="{{ sizeFilters }}" as="s" hint-placeholder-count="5">
+              <div style="min-width:42px;text-align:center;font-size:13.5px;font-weight:500;border:1px solid #DDD3C3;border-radius:8px;padding:8px 6px;cursor:pointer" style-hover="border-color:#241F1B">{{ s }}</div>
+            </sc-for>
+          </div>
+          <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8A8175;margin-bottom:14px">Preço</div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-size:14px;color:#5C5349">
+            <span style="cursor:pointer" style-hover="color:#241F1B">Até R$150</span>
+            <span style="cursor:pointer" style-hover="color:#241F1B">R$150 – R$250</span>
+            <span style="cursor:pointer" style-hover="color:#241F1B">R$250 – R$400</span>
+            <span style="cursor:pointer" style-hover="color:#241F1B">Acima de R$400</span>
+          </div>
+        </aside>
+
+        <div>
+          <sc-if value="{{ catCount }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+            <sc-for list="{{ catProducts }}" as="p" hint-placeholder-count="9">
+              <div style="cursor:pointer">
+                <div onClick="{{ p.open }}" style="position:relative;aspect-ratio:3/4;background:{{ p.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 2px,transparent 2px 16px);border-radius:13px;overflow:hidden">
+                  <sc-if value="{{ p.badge }}" hint-placeholder-val="Novo">
+                    <span style="position:absolute;top:12px;left:12px;background:#241F1B;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px">{{ p.badge }}</span>
+                  </sc-if>
+                </div>
+                <div style="font-size:12px;color:#8A8175;margin-top:11px;letter-spacing:.04em;text-transform:uppercase">{{ p.category }}</div>
+                <div onClick="{{ p.open }}" style="font-size:15px;font-weight:600;margin-top:3px;line-height:1.25" style-hover="color:#BE6238">{{ p.name }}</div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px">
+                  <span style="font-size:15px;font-weight:700">{{ p.priceFmt }}</span>
+                  <sc-if value="{{ p.oldPriceFmt }}" hint-placeholder-val="">
+                    <span style="font-size:13px;color:#A89C8C;text-decoration:line-through">{{ p.oldPriceFmt }}</span>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{ catEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:80px 20px;background:#FBF8F2;border-radius:16px;border:1px solid #EDE4D6">
+            <div style="font-family:'Spectral',serif;font-size:24px;margin-bottom:8px">Nada por aqui ainda</div>
+            <p style="font-size:14.5px;color:#8A8175;margin-bottom:22px">Não encontramos peças nesta seleção. Veja toda a coleção.</p>
+            <button onClick="{{ goRoupas }}" style="background:#241F1B;color:#F6F1E9;border:none;font-family:inherit;font-size:14.5px;font-weight:600;padding:13px 28px;border-radius:999px;cursor:pointer">Ver todos os produtos</button>
+          </div>
+          </sc-if>
+        </div>
+      </section></div></sc-if>
+    <sc-if value="{{ isPdp }}" hint-placeholder-val="{{ false }}"><div class="scView"><section style="max-width:1240px;margin:0 auto;padding:26px 28px 8px">
+        <div style="font-size:13px;color:#8A8175"><span onClick="{{ goHome }}" style="cursor:pointer" style-hover="color:#BE6238">Início</span> <span style="opacity:.5">/</span> <span onClick="{{ goRoupas }}" style="cursor:pointer" style-hover="color:#BE6238">{{ cur.category }}</span> <span style="opacity:.5">/</span> {{ cur.name }}</div>
+      </section>
+      <section style="max-width:1240px;margin:0 auto;padding:18px 28px 20px;display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:start">
+        <div style="display:grid;grid-template-columns:74px 1fr;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="aspect-ratio:3/4;background:{{ cur.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 14px);border-radius:9px;border:2px solid #241F1B"></div>
+            <div style="aspect-ratio:3/4;background:#E6DAC6;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 14px);border-radius:9px"></div>
+            <div style="aspect-ratio:3/4;background:#CBBBA6;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 14px);border-radius:9px"></div>
+          </div>
+          <div style="position:relative;aspect-ratio:4/5;background:{{ cur.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 2px,transparent 2px 20px);border-radius:16px;overflow:hidden">
+            <div style="position:absolute;bottom:18px;left:20px;font-family:'Spectral',serif;font-style:italic;color:rgba(36,31,27,.4);font-size:13px">foto do produto — {{ cur.name }}</div>
+          </div>
+        </div>
+
+        <div style="position:sticky;top:90px">
+          <div style="font-size:12.5px;color:#8A8175;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">{{ cur.category }}</div>
+          <h1 style="font-family:'Spectral',serif;font-weight:500;font-size:34px;line-height:1.08;margin-bottom:14px">{{ cur.name }}</h1>
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+            <span style="font-size:26px;font-weight:700">{{ cur.priceFmt }}</span>
+            <sc-if value="{{ cur.oldPriceFmt }}" hint-placeholder-val="">
+              <span style="font-size:17px;color:#A89C8C;text-decoration:line-through">{{ cur.oldPriceFmt }}</span>
+              <span style="background:#BE6238;color:#fff;font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px">{{ cur.badge }}</span>
+            </sc-if>
+          </div>
+          <div style="font-size:13.5px;color:#5C5349;margin-bottom:24px">ou 6x de {{ cur.installmentFmt }} sem juros</div>
+
+          <div style="display:flex;align-items:center;gap:7px;font-size:13.5px;color:#3E7A52;font-weight:600;margin-bottom:24px"><span style="width:8px;height:8px;border-radius:999px;background:#3E7A52;display:inline-block"></span>{{ curAvail }}</div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+            <span style="font-size:13.5px;font-weight:600">Tamanho</span>
+            <span style="font-size:13px;color:#BE6238;cursor:pointer" style-hover="text-decoration:underline">Guia de tamanhos</span>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:8px">
+            <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="5">
+              <div onClick="{{ s.pick }}" style="min-width:50px;text-align:center;font-size:14.5px;font-weight:600;padding:12px 8px;border-radius:10px;cursor:pointer;border:1.5px solid {{ s.border }};background:{{ s.bg }};color:{{ s.color }}">{{ s.label }}</div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ sizeError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:13px;color:#B23A2E;margin-bottom:8px">Selecione um tamanho para continuar.</div>
+          </sc-if>
+
+          <div style="display:flex;flex-direction:column;gap:11px;margin-top:18px">
+            <button onClick="{{ addCur }}" style="background:#241F1B;color:#F6F1E9;border:none;font-family:inherit;font-size:15.5px;font-weight:600;padding:17px;border-radius:999px;cursor:pointer;letter-spacing:.01em" style-hover="background:#000">Adicionar à sacola</button>
+            <button onClick="{{ buyNow }}" style="background:transparent;color:#241F1B;border:1.5px solid #C3B6A1;font-family:inherit;font-size:15.5px;font-weight:600;padding:16px;border-radius:999px;cursor:pointer" style-hover="border-color:#241F1B">Comprar agora</button>
+          </div>
+
+          <div style="margin-top:30px;border-top:1px solid #E4DCCF">
+            <div style="padding:18px 0;border-bottom:1px solid #E4DCCF">
+              <div style="font-size:14.5px;font-weight:600;margin-bottom:8px">Descrição</div>
+              <p style="font-size:14px;line-height:1.6;color:#5C5349">Modelagem confortável em tecido encorpado de toque macio. Caimento fluido, ideal para compor looks do dia a dia ao trabalho. Peça versátil que acompanha você em qualquer estação.</p>
+            </div>
+            <div style="padding:18px 0;border-bottom:1px solid #E4DCCF;display:flex;justify-content:space-between;font-size:14px"><span style="color:#5C5349">Composição</span><span style="font-weight:500">100% algodão · forro em viscose</span></div>
+            <div style="padding:18px 0;border-bottom:1px solid #E4DCCF;display:flex;justify-content:space-between;font-size:14px"><span style="color:#5C5349">Entrega</span><span style="font-weight:500">Em até 48h · rastreável</span></div>
+            <div style="padding:18px 0;display:flex;justify-content:space-between;font-size:14px"><span style="color:#5C5349">Trocas</span><span style="font-weight:500">Grátis em até 30 dias</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section style="max-width:1240px;margin:0 auto;padding:30px 28px 70px">
+        <h2 style="font-family:'Spectral',serif;font-weight:500;font-size:25px;margin-bottom:22px">Você também pode gostar</h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px">
+          <sc-for list="{{ related }}" as="p" hint-placeholder-count="4">
+            <div style="cursor:pointer">
+              <div onClick="{{ p.open }}" style="position:relative;aspect-ratio:3/4;background:{{ p.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.14) 0 2px,transparent 2px 16px);border-radius:13px;overflow:hidden">
+                <sc-if value="{{ p.badge }}" hint-placeholder-val="Novo">
+                  <span style="position:absolute;top:12px;left:12px;background:#241F1B;color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px">{{ p.badge }}</span>
+                </sc-if>
+              </div>
+              <div style="font-size:12px;color:#8A8175;margin-top:11px;letter-spacing:.04em;text-transform:uppercase">{{ p.category }}</div>
+              <div onClick="{{ p.open }}" style="font-size:15px;font-weight:600;margin-top:3px" style-hover="color:#BE6238">{{ p.name }}</div>
+              <div style="font-size:15px;font-weight:700;margin-top:6px">{{ p.priceFmt }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </section></div></sc-if>
+    <sc-if value="{{ isCart }}" hint-placeholder-val="{{ false }}"><div class="scView"><section style="max-width:1100px;margin:0 auto;padding:34px 28px 70px">
+        <h1 style="font-family:'Spectral',serif;font-weight:500;font-size:38px;margin-bottom:6px">Sua sacola</h1>
+
+        <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding:80px 20px;background:#FBF8F2;border-radius:16px;border:1px solid #EDE4D6;margin-top:20px">
+          <div style="font-family:'Spectral',serif;font-size:26px;margin-bottom:8px">Sua sacola está vazia</div>
+          <p style="font-size:14.5px;color:#8A8175;margin-bottom:24px">Que tal começar pelas novidades da estação?</p>
+          <button onClick="{{ goRoupas }}" style="background:#241F1B;color:#F6F1E9;border:none;font-family:inherit;font-size:15px;font-weight:600;padding:14px 30px;border-radius:999px;cursor:pointer">Explorar a loja</button>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ cartCount }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:36px;align-items:start;margin-top:24px">
+          <div>
+            <div style="font-size:14px;color:#8A8175;margin-bottom:14px">{{ cartCount }} itens</div>
+            <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+              <div style="display:grid;grid-template-columns:96px 1fr auto;gap:18px;padding:20px 0;border-top:1px solid #E4DCCF;align-items:center">
+                <div style="aspect-ratio:3/4;background:{{ it.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 12px);border-radius:10px"></div>
+                <div>
+                  <div style="font-size:12px;color:#8A8175;letter-spacing:.04em;text-transform:uppercase">{{ it.category }}</div>
+                  <div style="font-size:16px;font-weight:600;margin-top:3px">{{ it.name }}</div>
+                  <div style="font-size:13.5px;color:#5C5349;margin-top:5px">Tamanho {{ it.size }}</div>
+                  <div style="display:flex;align-items:center;gap:18px;margin-top:12px">
+                    <div style="display:flex;align-items:center;border:1px solid #DDD3C3;border-radius:999px;overflow:hidden">
+                      <span onClick="{{ it.dec }}" style="padding:6px 13px;cursor:pointer;font-size:16px;user-select:none" style-hover="background:#EFE6D7">−</span>
+                      <span style="padding:6px 6px;font-size:14px;font-weight:600;min-width:24px;text-align:center">{{ it.qty }}</span>
+                      <span onClick="{{ it.inc }}" style="padding:6px 13px;cursor:pointer;font-size:16px;user-select:none" style-hover="background:#EFE6D7">+</span>
+                    </div>
+                    <span onClick="{{ it.remove }}" style="font-size:13.5px;color:#8A8175;cursor:pointer" style-hover="color:#B23A2E">Remover</span>
+                  </div>
+                </div>
+                <div style="font-size:16px;font-weight:700;text-align:right">{{ it.lineFmt }}</div>
+              </div>
+            </sc-for>
+            <div style="border-top:1px solid #E4DCCF;margin-top:8px"></div>
+          </div>
+
+          <aside style="position:sticky;top:90px;background:#FBF8F2;border:1px solid #EDE4D6;border-radius:16px;padding:26px">
+            <div style="font-size:17px;font-weight:700;margin-bottom:18px">Resumo</div>
+            <div style="display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:12px"><span style="color:#5C5349">Subtotal</span><span style="font-weight:600">{{ subtotalFmt }}</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:12px"><span style="color:#5C5349">Frete</span><span style="font-weight:600">{{ shippingFmt }}</span></div>
+            <sc-if value="{{ freeShipReached }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12.5px;color:#3E7A52;background:#EAF1EA;border-radius:8px;padding:8px 11px;margin-bottom:14px">✓ Você ganhou frete grátis</div>
+            </sc-if>
+            <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700;border-top:1px solid #E4DCCF;padding-top:16px;margin-top:4px"><span>Total</span><span>{{ totalFmt }}</span></div>
+            <button onClick="{{ goCheckout }}" style="width:100%;background:#241F1B;color:#F6F1E9;border:none;font-family:inherit;font-size:15.5px;font-weight:600;padding:16px;border-radius:999px;cursor:pointer;margin-top:20px" style-hover="background:#000">Finalizar compra</button>
+            <button onClick="{{ goRoupas }}" style="width:100%;background:transparent;color:#5C5349;border:none;font-family:inherit;font-size:14px;font-weight:600;padding:12px;cursor:pointer;margin-top:6px">Continuar comprando</button>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:12.5px;color:#8A8175;margin-top:14px"><span style="color:#3E7A52">◈</span>Pagamento 100% seguro</div>
+          </aside>
+        </div>
+        </sc-if>
+      </section></div></sc-if>
+    <sc-if value="{{ isCheckout }}" hint-placeholder-val="{{ false }}"><div class="scView"><section style="max-width:1100px;margin:0 auto;padding:34px 28px 70px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <h1 style="font-family:'Spectral',serif;font-weight:500;font-size:34px">Finalizar compra</h1>
+          <span onClick="{{ goCart }}" style="font-size:13.5px;color:#8A8175;cursor:pointer" style-hover="color:#BE6238">← Voltar à sacola</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:36px;align-items:start;margin-top:22px">
+          <div style="display:flex;flex-direction:column;gap:18px">
+
+            <div style="background:#FBF8F2;border:1px solid #EDE4D6;border-radius:16px;padding:26px">
+              <div style="display:flex;align-items:center;gap:11px;margin-bottom:18px"><span style="width:24px;height:24px;border-radius:999px;background:#241F1B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">1</span><span style="font-size:16px;font-weight:700">Contato</span></div>
+              <input placeholder="E-mail" style="width:100%;font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none;margin-bottom:11px"/>
+              <input placeholder="Celular (WhatsApp)" style="width:100%;font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+            </div>
+
+            <div style="background:#FBF8F2;border:1px solid #EDE4D6;border-radius:16px;padding:26px">
+              <div style="display:flex;align-items:center;gap:11px;margin-bottom:18px"><span style="width:24px;height:24px;border-radius:999px;background:#241F1B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">2</span><span style="font-size:16px;font-weight:700">Entrega</span></div>
+              <input placeholder="Nome completo" style="width:100%;font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none;margin-bottom:11px"/>
+              <div style="display:grid;grid-template-columns:1fr 2fr;gap:11px;margin-bottom:11px">
+                <input placeholder="CEP" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+                <input placeholder="Endereço" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px">
+                <input placeholder="Número" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+                <input placeholder="Cidade" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+                <input placeholder="UF" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+              </div>
+            </div>
+
+            <div style="background:#FBF8F2;border:1px solid #EDE4D6;border-radius:16px;padding:26px">
+              <div style="display:flex;align-items:center;gap:11px;margin-bottom:18px"><span style="width:24px;height:24px;border-radius:999px;background:#241F1B;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">3</span><span style="font-size:16px;font-weight:700">Pagamento</span></div>
+              <div style="display:flex;gap:10px;margin-bottom:16px">
+                <div style="flex:1;text-align:center;font-size:14px;font-weight:600;border:1.5px solid #241F1B;background:#241F1B;color:#fff;border-radius:10px;padding:12px;cursor:pointer">Cartão</div>
+                <div style="flex:1;text-align:center;font-size:14px;font-weight:600;border:1.5px solid #DDD3C3;border-radius:10px;padding:12px;cursor:pointer" style-hover="border-color:#241F1B">Pix</div>
+                <div style="flex:1;text-align:center;font-size:14px;font-weight:600;border:1.5px solid #DDD3C3;border-radius:10px;padding:12px;cursor:pointer" style-hover="border-color:#241F1B">Boleto</div>
+              </div>
+              <input placeholder="Número do cartão" style="width:100%;font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none;margin-bottom:11px"/>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:11px">
+                <input placeholder="Nome no cartão" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+                <input placeholder="Validade" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+                <input placeholder="CVV" style="font-family:inherit;font-size:14.5px;border:1px solid #DDD3C3;background:#fff;border-radius:10px;padding:13px 15px;outline:none"/>
+              </div>
+            </div>
+          </div>
+
+          <aside style="position:sticky;top:90px;background:#FBF8F2;border:1px solid #EDE4D6;border-radius:16px;padding:26px">
+            <div style="font-size:17px;font-weight:700;margin-bottom:18px">Resumo do pedido</div>
+            <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+              <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+                <div style="width:48px;aspect-ratio:3/4;flex:0 0 auto;background:{{ it.tone }};background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 10px);border-radius:7px"></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:600;line-height:1.2">{{ it.name }}</div>
+                  <div style="font-size:12.5px;color:#8A8175;margin-top:2px">Tam. {{ it.size }} · {{ it.qty }}x</div>
+                </div>
+                <div style="font-size:13.5px;font-weight:700">{{ it.lineFmt }}</div>
+              </div>
+            </sc-for>
+            <div style="border-top:1px solid #E4DCCF;margin-top:6px;padding-top:14px">
+              <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px"><span style="color:#5C5349">Subtotal</span><span style="font-weight:600">{{ subtotalFmt }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px"><span style="color:#5C5349">Frete</span><span style="font-weight:600">{{ shippingFmt }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:700;border-top:1px solid #E4DCCF;padding-top:14px;margin-top:4px"><span>Total</span><span>{{ totalFmt }}</span></div>
+            </div>
+            <button onClick="{{ goHome }}" style="width:100%;background:#BE6238;color:#fff;border:none;font-family:inherit;font-size:15.5px;font-weight:700;padding:16px;border-radius:999px;cursor:pointer;margin-top:18px" style-hover="background:#A9512A">Pagar {{ totalFmt }}</button>
+            <div style="display:flex;align-items:center;gap:8px;justify-content:center;font-size:12.5px;color:#8A8175;margin-top:14px"><span style="color:#3E7A52">◈</span>Compra protegida · dados criptografados</div>
+          </aside>
+        </div>
+      </section></div></sc-if>
+  </main>
+
+  <footer style="background:#241F1B;color:#CABFAE;margin-top:20px">
+    <div style="max-width:1240px;margin:0 auto;padding:54px 28px 34px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px">
+      <div>
+        <div style="font-family:'Spectral',serif;font-weight:600;font-size:23px;letter-spacing:.14em;color:#F6F1E9;margin-bottom:14px">{{ brandName }}</div>
+        <p style="font-size:13.5px;line-height:1.55;max-width:240px;color:#9C9281">Moda atemporal, feita para o dia a dia. Novidades toda semana e troca fácil.</p>
+      </div>
+      <div>
+        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#7E7565;margin-bottom:14px">Loja</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:14px">
+          <span onClick="{{ goNew }}" style="cursor:pointer" style-hover="color:#F6F1E9">Novidades</span>
+          <span onClick="{{ goRoupas }}" style="cursor:pointer" style-hover="color:#F6F1E9">Roupas</span>
+          <span onClick="{{ goAcessorios }}" style="cursor:pointer" style-hover="color:#F6F1E9">Acessórios</span>
+          <span onClick="{{ goSale }}" style="cursor:pointer" style-hover="color:#F6F1E9">Sale</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#7E7565;margin-bottom:14px">Ajuda</div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:14px">
+          <span style="cursor:pointer" style-hover="color:#F6F1E9">Trocas e devoluções</span>
+          <span style="cursor:pointer" style-hover="color:#F6F1E9">Entrega e frete</span>
+          <span style="cursor:pointer" style-hover="color:#F6F1E9">Guia de tamanhos</span>
+          <span style="cursor:pointer" style-hover="color:#F6F1E9">Fale conosco</span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#7E7565;margin-bottom:14px">Receba novidades</div>
+        <div style="display:flex;gap:8px;background:#332D27;border-radius:999px;padding:5px 5px 5px 16px">
+          <input placeholder="Seu e-mail" style="background:transparent;border:none;outline:none;color:#F6F1E9;font-family:inherit;font-size:13.5px;flex:1;min-width:0"/>
+          <button style="background:#BE6238;color:#fff;border:none;font-family:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:999px;cursor:pointer">OK</button>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid #36302A">
+      <div style="max-width:1240px;margin:0 auto;padding:18px 28px;display:flex;justify-content:space-between;font-size:12.5px;color:#7E7565">
+        <span>© 2026 {{ brandName }}. Todos os direitos reservados.</span>
+        <span>Pagamento seguro · Pix, cartão e boleto</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;brandName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;ATELIÊ&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Marca&quot;},&quot;announcement&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Frete grátis acima de R$199 · Troca fácil em 30 dias&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Marca&quot;},&quot;showAnnouncement&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;showBenefits&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;freeShippingThreshold&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:199,&quot;min&quot;:0,&quot;max&quot;:500,&quot;step&quot;:10,&quot;unit&quot;:&quot;R$&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Comercial&quot;}}">
+class Component extends DCLogic {
+  state = { view: 'home', currentId: null, selectedSize: null, cart: [], cat: 'Tudo', sort: 'relevancia' };
+
+  products = [
+    { id:'p1', name:'Vestido Midi de Linho', category:'Vestidos', price:289.9, oldPrice:359.9, badge:'-19%', tone:'#D8B49C' },
+    { id:'p2', name:'Camisa Oversized de Algodão', category:'Camisas', price:179.9, badge:'Novo', tone:'#E6DAC6' },
+    { id:'p3', name:'Calça de Alfaiataria', category:'Calças', price:249.9, tone:'#CBBBA6' },
+    { id:'p4', name:'Tricô Gola Alta', category:'Malhas', price:199.9, oldPrice:259.9, badge:'-23%', tone:'#BFC0A0' },
+    { id:'p5', name:'Jaqueta Jeans Reta', category:'Jaquetas', price:329.9, badge:'Novo', tone:'#B9C3C7' },
+    { id:'p6', name:'Blazer Estruturado', category:'Casacos', price:399.9, tone:'#D2CBC0' },
+    { id:'p7', name:'Saia Plissada Midi', category:'Saias', price:169.9, tone:'#E8CFC6' },
+    { id:'p8', name:'Camiseta Algodão Pima', category:'Básicos', price:89.9, tone:'#EDE4D6' },
+    { id:'p9', name:'Vestido Slip de Cetim', category:'Vestidos', price:219.9, oldPrice:259.9, badge:'-15%', tone:'#E4D3BE' },
+    { id:'p10', name:'Calça Wide Leg', category:'Calças', price:229.9, tone:'#DED2BC' },
+    { id:'p11', name:'Cardigã de Tricô', category:'Malhas', price:259.9, badge:'Novo', tone:'#D6A98B' },
+    { id:'p12', name:'Bolsa Tote de Couro', category:'Acessórios', price:349.9, tone:'#C2A487' },
+  ];
+
+  sizes = ['PP','P','M','G','GG'];
+
+  fmt(n){ const [i,d]=n.toFixed(2).split('.'); return 'R$ '+i.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+d; }
+
+  decorate(p){ return { ...p, priceFmt:this.fmt(p.price), oldPriceFmt:p.oldPrice?this.fmt(p.oldPrice):'', installmentFmt:this.fmt(p.price/6), open:()=>this.openPdp(p.id) }; }
+
+  nav(view, extra={}){ this.setState({ view, ...extra }); if (typeof window!=='undefined') window.scrollTo(0,0); }
+  openPdp(id){ this.nav('pdp', { currentId:id, selectedSize:null }); }
+  goHome=()=>this.nav('home');
+  goRoupas=()=>this.nav('catalog',{cat:'Tudo'});
+  goNew=()=>this.nav('catalog',{cat:'Novidades'});
+  goAcessorios=()=>this.nav('catalog',{cat:'Acessórios'});
+  goSale=()=>this.nav('catalog',{cat:'Sale'});
+  goCart=()=>this.nav('cart');
+  goCheckout=()=>this.nav('checkout');
+
+  setCat=(c)=>this.setState({cat:c});
+  setSort=(e)=>this.setState({sort:e.target.value});
+
+  addToCart(p, size){
+    if(!size){ this.setState({ sizeError:true }); return; }
+    this.setState(s=>{
+      const i=s.cart.findIndex(it=>it.id===p.id && it.size===size);
+      let cart;
+      if(i>=0){ cart=s.cart.map((it,idx)=>idx===i?{...it,qty:it.qty+1}:it); }
+      else { cart=[...s.cart,{id:p.id,size,qty:1}]; }
+      return { cart, sizeError:false };
+    });
+  }
+  changeQty(id,size,delta){
+    this.setState(s=>{
+      let cart=s.cart.map(it=>(it.id===id&&it.size===size)?{...it,qty:Math.max(1,it.qty+delta)}:it);
+      return { cart };
+    });
+  }
+  removeItem(id,size){ this.setState(s=>({cart:s.cart.filter(it=>!(it.id===id&&it.size===size))})); }
+
+  filteredProducts(){
+    const c=this.state.cat;
+    let list=this.products;
+    if(c==='Sale') list=list.filter(p=>p.oldPrice);
+    else if(c==='Novidades') list=list.filter(p=>p.badge==='Novo');
+    else if(c==='Acessórios') list=list.filter(p=>p.category==='Acessórios');
+    else if(c!=='Tudo') list=list.filter(p=>p.category===c);
+    const s=this.state.sort;
+    list=[...list];
+    if(s==='menor') list.sort((a,b)=>a.price-b.price);
+    else if(s==='maior') list.sort((a,b)=>b.price-a.price);
+    return list;
+  }
+
+  renderVals(){
+    const st=this.state;
+    const cartDetailed=st.cart.map(it=>{
+      const p=this.products.find(x=>x.id===it.id);
+      return { ...it, name:p.name, category:p.category, tone:p.tone, price:p.price, priceFmt:this.fmt(p.price), lineFmt:this.fmt(p.price*it.qty),
+        inc:()=>this.changeQty(it.id,it.size,1), dec:()=>this.changeQty(it.id,it.size,-1), remove:()=>this.removeItem(it.id,it.size) };
+    });
+    const subtotal=cartDetailed.reduce((s,it)=>s+it.price*it.qty,0);
+    const threshold=this.props.freeShippingThreshold ?? 199;
+    const shipping=cartDetailed.length===0?0:(subtotal>=threshold?0:19.9);
+    const total=subtotal+shipping;
+    const cartCount=st.cart.reduce((s,it)=>s+it.qty,0);
+
+    const cur=this.products.find(p=>p.id===st.currentId)||this.products[0];
+    const related=this.products.filter(p=>p.category===cur.category && p.id!==cur.id).concat(this.products.filter(p=>p.category!==cur.category)).slice(0,4).map(p=>this.decorate(p));
+
+    const catList=['Tudo','Vestidos','Camisas','Calças','Malhas','Jaquetas','Saias','Acessórios','Sale'];
+
+    return {
+      brandName: this.props.brandName ?? 'ATELIÊ',
+      announcement: this.props.announcement ?? 'Frete grátis acima de R$199 · Troca fácil em 30 dias',
+      showAnnouncement: this.props.showAnnouncement ?? true,
+      showBenefits: this.props.showBenefits ?? true,
+
+      isHome: st.view==='home', isCatalog: st.view==='catalog', isPdp: st.view==='pdp', isCart: st.view==='cart', isCheckout: st.view==='checkout',
+      goHome:this.goHome, goRoupas:this.goRoupas, goNew:this.goNew, goAcessorios:this.goAcessorios, goSale:this.goSale, goCart:this.goCart, goCheckout:this.goCheckout,
+
+      cartCount,
+      featured: this.products.slice(0,8).map(p=>this.decorate(p)),
+      categories: [
+        {name:'Novidades', count:'Toda semana', tone:'#D8B49C', open:this.goNew},
+        {name:'Vestidos', count:'24 peças', tone:'#E8CFC6', open:()=>this.nav('catalog',{cat:'Vestidos'})},
+        {name:'Malhas & Tricô', count:'18 peças', tone:'#BFC0A0', open:()=>this.nav('catalog',{cat:'Malhas'})},
+        {name:'Alfaiataria', count:'31 peças', tone:'#CBBBA6', open:()=>this.nav('catalog',{cat:'Calças'})},
+        {name:'Acessórios', count:'12 peças', tone:'#C2A487', open:this.goAcessorios},
+      ],
+      benefits: [
+        {icon:'⊿', title:'Entrega para todo o Brasil', desc:'Envio em até 48h e rastreio em tempo real.'},
+        {icon:'↻', title:'Troca fácil em 30 dias', desc:'Primeira troca por nossa conta.'},
+        {icon:'◈', title:'Pagamento seguro', desc:'Pix, cartão em até 6x ou boleto.'},
+        {icon:'✦', title:'Curadoria de estação', desc:'Peças novas selecionadas toda semana.'},
+      ],
+
+      // catalog
+      catList,
+      cat: st.cat,
+      catTitle: st.cat==='Tudo'?'Todos os produtos':(st.cat==='Sale'?'Sale':st.cat),
+      catProducts: this.filteredProducts().map(p=>this.decorate(p)),
+      catCount: this.filteredProducts().length,
+      sort: st.sort,
+      setSort: this.setSort,
+      isCat: (c)=> st.cat===c,
+      makeCatHandler: this.setCat,
+      catChips: catList.map(c=>({ name:c, set:()=>this.setState({cat:c}), weight: st.cat===c?'700':'500', bg: st.cat===c?'#EFE6D7':'transparent', color: st.cat===c?'#241F1B':'#5C5349' })),
+      sizeFilters: this.sizes,
+      catEmpty: this.filteredProducts().length===0,
+
+      // pdp
+      cur: this.decorate(cur),
+      curAvail: 'Em estoque · pronta entrega',
+      sizes: this.sizes.map(sz=>({ label:sz, pick:()=>this.setState({selectedSize:sz, sizeError:false}), border: st.selectedSize===sz?'#241F1B':'#DDD3C3', bg: st.selectedSize===sz?'#241F1B':'transparent', color: st.selectedSize===sz?'#F6F1E9':'#241F1B' })),
+      selectedSize: st.selectedSize,
+      sizeError: !!st.sizeError,
+      addCur: ()=>{ this.addToCart(cur, st.selectedSize); },
+      buyNow: ()=>{ if(st.selectedSize){ this.addToCart(cur, st.selectedSize); this.nav('cart'); } else { this.setState({sizeError:true}); } },
+      related,
+
+      // cart
+      cartItems: cartDetailed,
+      cartEmpty: cartDetailed.length===0,
+      subtotalFmt: this.fmt(subtotal),
+      shippingFmt: shipping===0?'Grátis':this.fmt(shipping),
+      totalFmt: this.fmt(total),
+      freeShipReached: subtotal>=threshold,
+    };
+  }
+}
+</script>
+</body>
+</html>

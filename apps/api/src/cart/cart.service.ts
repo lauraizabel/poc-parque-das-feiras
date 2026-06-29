@@ -45,29 +45,35 @@ export class CartService {
 
   async addItem(publicStore: PublicStorefrontContext, input: AddCartItemInput) {
     const cart = await this.ensureActiveCart(publicStore, input, true);
-    const product = await this.ensurePurchasableProduct(
+    const purchase = await this.ensurePurchasableProduct(
       publicStore.storeId,
       input.productId,
+      input.variantId ?? null,
       input.quantity
     );
 
-    const existingItem = cart!.items.find((item) => item.productId === input.productId) ?? null;
+    const existingItem = cart!.items.find(
+      (item) => item.productId === input.productId && (item.variantId ?? null) === (purchase.variant?.id ?? null)
+    ) ?? null;
 
     if (existingItem) {
       const nextQuantity = existingItem.quantity + input.quantity;
-      this.assertStockAvailable(product.stockQuantity, nextQuantity);
+      this.assertStockAvailable(purchase.stockQuantity, nextQuantity);
       await this.cartRepository.updateCartItemQuantity(existingItem.id, nextQuantity);
     } else {
       await this.cartRepository.addCartItem({
         cartId: cart!.id,
         storeId: publicStore.storeId,
-        productId: product.id,
+        productId: purchase.product.id,
+        variantId: purchase.variant?.id ?? null,
+        variantName: purchase.variant?.name ?? null,
+        variantSku: purchase.variant?.sku ?? null,
         quantity: input.quantity,
-        productName: product.name,
-        productSlug: product.slug,
-        unitPriceCents: product.priceCents,
-        compareAtCents: product.compareAtCents,
-        currencyCode: product.currencyCode
+        productName: purchase.product.name,
+        productSlug: purchase.product.slug,
+        unitPriceCents: purchase.unitPriceCents,
+        compareAtCents: purchase.product.compareAtCents,
+        currencyCode: purchase.product.currencyCode
       });
     }
 
@@ -103,14 +109,19 @@ export class CartService {
       });
     }
 
-    const product = await this.ensurePurchasableProduct(publicStore.storeId, item.productId, input.quantity);
+    const purchase = await this.ensurePurchasableProduct(
+      publicStore.storeId,
+      item.productId,
+      item.variantId ?? null,
+      input.quantity
+    );
     await this.cartRepository.updateCartItemQuantity(cartItemId, input.quantity);
     const refreshedCart = await this.cartRepository.getCartByIdAndStore(cart.id, publicStore.storeId);
 
     return {
       store: publicStore,
       cart: this.serializeCart(refreshedCart!),
-      productStatus: product.status
+      productStatus: purchase.product.status
     };
   }
 
@@ -197,7 +208,12 @@ export class CartService {
     return cart;
   }
 
-  private async ensurePurchasableProduct(storeId: string, productId: string, quantity: number) {
+  private async ensurePurchasableProduct(
+    storeId: string,
+    productId: string,
+    variantId: string | null,
+    quantity: number
+  ) {
     const product = await this.catalogRepository.findProductById(productId);
 
     if (!product || product.storeId !== storeId) {
@@ -217,9 +233,40 @@ export class CartService {
       });
     }
 
-    this.assertStockAvailable(product.stockQuantity, quantity);
+    const variants = await this.catalogRepository.listProductVariantsByProductId(product.id);
+    let variant = null;
 
-    return product;
+    if (variants.length > 0 && !variantId) {
+      throw new BadRequestException({
+        message: "Product variant selection is required",
+        code: "PRODUCT_VARIANT_REQUIRED",
+        productId
+      });
+    }
+
+    if (variantId) {
+      variant = variants.find((item) => item.id === variantId) ?? null;
+
+      if (!variant || variant.productId !== product.id) {
+        throw new NotFoundException({
+          message: "Product variant not found for this storefront",
+          code: "PRODUCT_VARIANT_NOT_FOUND",
+          productId,
+          variantId
+        });
+      }
+
+      this.assertStockAvailable(variant.stockQuantity, quantity);
+    } else {
+      this.assertStockAvailable(product.stockQuantity, quantity);
+    }
+
+    return {
+      product,
+      variant,
+      unitPriceCents: variant?.priceCents ?? product.priceCents,
+      stockQuantity: variant?.stockQuantity ?? product.stockQuantity
+    };
   }
 
   private assertStockAvailable(stockQuantity: number, quantity: number) {
@@ -240,13 +287,16 @@ export class CartService {
     customerEmail: string | null;
     status: string;
     currencyCode: string;
-    items: Array<{
-      id: string;
-      productId: string;
-      productName: string;
-      productSlug: string;
-      quantity: number;
-      unitPriceCents: number;
+      items: Array<{
+        id: string;
+        productId: string;
+        variantId: string | null;
+        variantName: string | null;
+        variantSku: string | null;
+        productName: string;
+        productSlug: string;
+        quantity: number;
+        unitPriceCents: number;
       compareAtCents: number | null;
       currencyCode: string;
     }>;

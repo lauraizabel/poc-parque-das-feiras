@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { StorefrontFooter } from "../../../components/storefront-footer";
+import { StorefrontHeader } from "../../../components/storefront-header";
 import { getStorefrontContext, getStorefrontHomepage, getStorefrontPublicOrder } from "../../../lib/storefront-context";
 import { buildStorefrontThemeStyle } from "../../../lib/storefront-theme";
 
@@ -40,9 +42,8 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   if (storefront.kind !== "store") {
     return (
       <main className="shell">
-        <section className="hero">
-          <span className="pill">Pedido indisponivel</span>
-          <h1 className="title">Esse host ainda nao resolveu uma loja publica.</h1>
+        <section className="empty-block">
+          <h1>Pedido indisponivel</h1>
         </section>
       </main>
     );
@@ -53,9 +54,8 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   if (!homepage) {
     return (
       <main className="shell">
-        <section className="hero">
-          <span className="pill">Pedido indisponivel</span>
-          <h1 className="title">Nao foi possivel carregar a loja.</h1>
+        <section className="empty-block">
+          <h1>Nao foi possivel carregar a loja agora.</h1>
         </section>
       </main>
     );
@@ -64,16 +64,14 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   if (!token) {
     return (
       <main className="shell">
-        <header className="nav">
-          <div>
-            <div className="eyebrow">Acompanhar pedido</div>
-            <strong>{homepage.store.name}</strong>
-            <div className="host-badge">{homepage.store.matchedHost}</div>
-          </div>
-        </header>
-        <section className="card empty-state">
-          <h1 className="section-title">Link incompleto</h1>
-          <p className="subtitle">Esse pedido precisa do token publico gerado no checkout.</p>
+        <StorefrontHeader
+          navigation={[{ href: "/", label: "Inicio" }, { href: "/catalog", label: "Catalogo" }]}
+          storeId={homepage.store.id}
+          storeTitle={homepage.store.name}
+        />
+        <section className="empty-block">
+          <h1>Link incompleto</h1>
+          <p>Abra o link de acompanhamento completo enviado apos a compra para ver seu pedido.</p>
         </section>
       </main>
     );
@@ -84,16 +82,14 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   if (!orderPayload) {
     return (
       <main className="shell">
-        <header className="nav">
-          <div>
-            <div className="eyebrow">Acompanhar pedido</div>
-            <strong>{homepage.store.name}</strong>
-            <div className="host-badge">{homepage.store.matchedHost}</div>
-          </div>
-        </header>
-        <section className="card empty-state">
-          <h1 className="section-title">Pedido nao encontrado</h1>
-          <p className="subtitle">Verifique se o link de acompanhamento esta completo e atualizado.</p>
+        <StorefrontHeader
+          navigation={[{ href: "/", label: "Inicio" }, { href: "/catalog", label: "Catalogo" }]}
+          storeId={homepage.store.id}
+          storeTitle={homepage.store.name}
+        />
+        <section className="empty-block">
+          <h1>Pedido nao encontrado</h1>
+          <p>Verifique se o link de acompanhamento esta completo e atualizado.</p>
         </section>
       </main>
     );
@@ -102,35 +98,29 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
   const order = orderPayload.order;
 
   return (
-    <main className="shell theme-shell" style={buildStorefrontThemeStyle(homepage.store)}>
-      <header className="nav">
-        <div>
-          <div className="eyebrow">Acompanhar pedido</div>
-          {homepage.store.theme?.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img alt={homepage.store.name} className="store-logo" src={homepage.store.theme.logoUrl} />
-          ) : null}
-          <strong>{homepage.store.name}</strong>
-          <div className="host-badge">{homepage.store.matchedHost}</div>
-        </div>
-        <nav className="nav-links">
-          <a href="/">Home</a>
-          <a href="/catalog">Catalogo</a>
-          <a href="/cart">Carrinho</a>
-        </nav>
-      </header>
+    <main className="storefront-page" style={buildStorefrontThemeStyle(homepage.store)}>
+      <StorefrontHeader
+        announcementText={homepage.store.theme?.announcementText}
+        logoUrl={homepage.store.theme?.logoUrl}
+        navigation={[
+          { href: "/catalog?collection=new", label: "Novidades" },
+          { href: "/catalog", label: "Roupas" },
+          { href: "/catalog", label: "Acessorios" },
+          { href: "/catalog?collection=sale", label: "Sale", emphasis: "primary" }
+        ]}
+        storeId={homepage.store.id}
+        storeTitle={homepage.store.name}
+      />
 
-      <section className="checkout-layout">
-        <div className="checkout-main">
-          <article className="card">
-            <div className="eyebrow">Pedido {order.id}</div>
-            <h1 className="section-title">Status atual: {order.status}</h1>
-            <p className="subtitle">
-              {order.customerFullName ?? order.customerEmail} pode acompanhar aqui o pagamento,
-              o envio e o resumo da compra sem precisar entrar no painel.
-            </p>
+      <div className="shell storefront-main">
+        <section className="commerce-layout">
+          <div className="commerce-main">
+            <div className="section-copy">
+              <h1>{`Pedido ${order.id}`}</h1>
+              <p>{`${order.customerFullName ?? order.customerEmail} pode acompanhar aqui pagamento e entrega.`}</p>
+            </div>
 
-            <div className="summary-list">
+            <div className="summary-card">
               {order.items.map((item) => (
                 <div className="summary-row" key={item.id}>
                   <span>
@@ -141,9 +131,6 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                   </strong>
                 </div>
               ))}
-            </div>
-
-            <div className="card inset-card">
               <div className="summary-row">
                 <span>Pagamento</span>
                 <strong>{order.payment?.status ?? "Aguardando"}</strong>
@@ -153,8 +140,8 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                 <strong>{order.shipment?.status ?? "PENDENTE"}</strong>
               </div>
               <div className="summary-row">
-                <span>Metodo de frete</span>
-                <strong>{order.shipment?.shippingMethodName ?? order.shippingMethod?.name ?? "Nao definido"}</strong>
+                <span>Método de frete</span>
+                <strong>{order.shipment?.shippingMethodName ?? order.shippingMethod?.name ?? "A definir"}</strong>
               </div>
               {order.shipment?.trackingCode ? (
                 <div className="summary-row">
@@ -170,12 +157,11 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                 </p>
               ) : null}
             </div>
-          </article>
-        </div>
+          </div>
 
-        <aside className="checkout-side">
-          <article className="card summary-card">
-            <div className="eyebrow">Resumo</div>
+          <aside className="commerce-side">
+            <div className="summary-card">
+              <h2>Resumo</h2>
             <div className="summary-row">
               <span>Subtotal</span>
               <strong>{formatMoney(order.subtotalCents, order.currencyCode, homepage.store.locale)}</strong>
@@ -193,8 +179,8 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
               <strong>{formatMoney(order.totalCents, order.currencyCode, homepage.store.locale)}</strong>
             </div>
 
-            <div className="card inset-card">
-              <div className="eyebrow">Endereco de entrega</div>
+              <div className="shipping-box">
+                <strong>Endereco de entrega</strong>
               <p>
                 {order.shippingAddress.recipientName}
                 <br />
@@ -206,9 +192,11 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
                 CEP {order.shippingAddress.postalCode}
               </p>
             </div>
-          </article>
-        </aside>
-      </section>
+            </div>
+          </aside>
+        </section>
+      </div>
+      <StorefrontFooter storeTitle={homepage.store.name} />
     </main>
   );
 }

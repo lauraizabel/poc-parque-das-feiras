@@ -61,6 +61,25 @@ export class CatalogRepository {
         storeId,
         status: CategoryStatus.ACTIVE
       },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        sortOrder: true,
+        _count: {
+          select: {
+            products: {
+              where: {
+                status: ProductStatus.ACTIVE,
+                stockQuantity: {
+                  gt: 0
+                }
+              }
+            }
+          }
+        }
+      },
       orderBy: [
         { sortOrder: "asc" },
         { createdAt: "asc" }
@@ -145,15 +164,61 @@ export class CatalogRepository {
     });
   }
 
-  countPublicProductsByStore(storeId: string, categoryId?: string) {
+  countPublicProductsByStore(input: {
+    storeId: string;
+    categoryId?: string;
+    collection?: "new" | "sale";
+    search?: string;
+    size?: string;
+  }) {
     return prisma.product.count({
       where: {
-        storeId,
-        categoryId,
+        storeId: input.storeId,
+        categoryId: input.categoryId,
         status: ProductStatus.ACTIVE,
         stockQuantity: {
           gt: 0
-        }
+        },
+        ...(input.collection === "sale"
+          ? {
+              compareAtCents: {
+                gt: 0
+              }
+            }
+          : {}),
+        ...(input.search
+          ? {
+              OR: [
+                {
+                  name: {
+                    contains: input.search,
+                    mode: "insensitive"
+                  }
+                },
+                {
+                  description: {
+                    contains: input.search,
+                    mode: "insensitive"
+                  }
+                }
+              ]
+            }
+          : {}),
+        ...(input.size
+          ? {
+              variants: {
+                some: {
+                  name: {
+                    equals: input.size,
+                    mode: "insensitive"
+                  },
+                  stockQuantity: {
+                    gt: 0
+                  }
+                }
+              }
+            }
+          : {})
       }
     });
   }
@@ -161,9 +226,13 @@ export class CatalogRepository {
   listPublicProductsByStore(input: {
     storeId: string;
     categoryId?: string;
+    collection?: "new" | "sale";
+    search?: string;
+    size?: string;
     skip?: number;
     take?: number;
     featuredFirst?: boolean;
+    sort?: "relevancia" | "menor" | "maior" | "recentes";
   }) {
     return prisma.product.findMany({
       where: {
@@ -172,7 +241,47 @@ export class CatalogRepository {
         status: ProductStatus.ACTIVE,
         stockQuantity: {
           gt: 0
-        }
+        },
+        ...(input.collection === "sale"
+          ? {
+              compareAtCents: {
+                gt: 0
+              }
+            }
+          : {}),
+        ...(input.search
+          ? {
+              OR: [
+                {
+                  name: {
+                    contains: input.search,
+                    mode: "insensitive"
+                  }
+                },
+                {
+                  description: {
+                    contains: input.search,
+                    mode: "insensitive"
+                  }
+                }
+              ]
+            }
+          : {}),
+        ...(input.size
+          ? {
+              variants: {
+                some: {
+                  name: {
+                    equals: input.size,
+                    mode: "insensitive"
+                  },
+                  stockQuantity: {
+                    gt: 0
+                  }
+                }
+              }
+            }
+          : {})
       },
       include: {
         category: true,
@@ -183,11 +292,23 @@ export class CatalogRepository {
             { createdAt: "asc" }
           ],
           take: 1
+        },
+        variants: {
+          orderBy: [
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ]
         }
       },
-      orderBy: input.featuredFirst
-        ? [{ isFeatured: "desc" }, { createdAt: "desc" }]
-        : [{ createdAt: "desc" }],
+      orderBy: input.sort === "menor"
+        ? [{ priceCents: "asc" }, { createdAt: "desc" }]
+        : input.sort === "maior"
+          ? [{ priceCents: "desc" }, { createdAt: "desc" }]
+          : input.sort === "recentes"
+            ? [{ createdAt: "desc" }]
+            : input.featuredFirst
+              ? [{ isFeatured: "desc" }, { createdAt: "desc" }]
+              : [{ createdAt: "desc" }],
       skip: input.skip ?? 0,
       take: input.take
     });
@@ -209,8 +330,81 @@ export class CatalogRepository {
             { sortOrder: "asc" },
             { createdAt: "asc" }
           ]
+        },
+        variants: {
+          orderBy: [
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ]
         }
       }
+    });
+  }
+
+  listRelatedPublicProducts(input: {
+    storeId: string;
+    productId: string;
+    categoryId?: string | null;
+    take: number;
+  }) {
+    return prisma.product.findMany({
+      where: {
+        storeId: input.storeId,
+        id: {
+          not: input.productId
+        },
+        status: ProductStatus.ACTIVE,
+        stockQuantity: {
+          gt: 0
+        },
+        ...(input.categoryId
+          ? {
+              categoryId: input.categoryId
+            }
+          : {})
+      },
+      include: {
+        category: true,
+        images: {
+          orderBy: [
+            { isPrimary: "desc" },
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ],
+          take: 1
+        },
+        variants: {
+          orderBy: [
+            { sortOrder: "asc" },
+            { createdAt: "asc" }
+          ]
+        }
+      },
+      orderBy: [
+        { isFeatured: "desc" },
+        { createdAt: "desc" }
+      ],
+      take: input.take
+    });
+  }
+
+  findProductVariantById(variantId: string) {
+    return prisma.productVariant.findUnique({
+      where: {
+        id: variantId
+      }
+    });
+  }
+
+  listProductVariantsByProductId(productId: string) {
+    return prisma.productVariant.findMany({
+      where: {
+        productId
+      },
+      orderBy: [
+        { sortOrder: "asc" },
+        { createdAt: "asc" }
+      ]
     });
   }
 

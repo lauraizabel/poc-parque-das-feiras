@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
+import { StorefrontFooter } from "../../components/storefront-footer";
+import { StorefrontHeader } from "../../components/storefront-header";
 import { getStorefrontCatalog, getStorefrontContext } from "../../lib/storefront-context";
 import { buildStorefrontThemeStyle } from "../../lib/storefront-theme";
 
 type CatalogPageProps = {
   searchParams?: Promise<{
     category?: string | string[];
+    collection?: "new" | "sale" | Array<"new" | "sale">;
     page?: string | string[];
+    search?: string | string[];
+    size?: string | string[];
+    sort?: "relevancia" | "menor" | "maior" | "recentes" | Array<"relevancia" | "menor" | "maior" | "recentes">;
   }>;
 };
 
@@ -25,24 +31,45 @@ function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR
   }).format(valueInCents / 100);
 }
 
-function buildCatalogHref(category: string | null, page: number) {
-  const search = new URLSearchParams();
+function buildCatalogHref(input: {
+  category?: string | null;
+  collection?: "new" | "sale" | null;
+  search?: string | null;
+  size?: string | null;
+  sort?: "relevancia" | "menor" | "maior" | "recentes";
+  page?: number;
+}) {
+  const params = new URLSearchParams();
 
-  if (category) {
-    search.set("category", category);
+  if (input.category) {
+    params.set("category", input.category);
   }
 
-  if (page > 1) {
-    search.set("page", page.toString());
+  if (input.collection) {
+    params.set("collection", input.collection);
   }
 
-  const query = search.toString();
+  if (input.search) {
+    params.set("search", input.search);
+  }
+
+  if (input.size) {
+    params.set("size", input.size);
+  }
+
+  if (input.sort && input.sort !== "relevancia") {
+    params.set("sort", input.sort);
+  }
+
+  if (input.page && input.page > 1) {
+    params.set("page", input.page.toString());
+  }
+
+  const query = params.toString();
   return query ? `/catalog?${query}` : "/catalog";
 }
 
-export async function generateMetadata({
-  searchParams
-}: CatalogPageProps): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: CatalogPageProps): Promise<Metadata> {
   const storefront = await getStorefrontContext();
   const params = (await searchParams) ?? {};
   const category = asSingleValue(params.category);
@@ -53,10 +80,8 @@ export async function generateMetadata({
     };
   }
 
-  const suffix = category ? ` | ${category}` : "";
-
   return {
-    title: `${storefront.storeSlug}${suffix} | Catalogo`,
+    title: `${storefront.storeSlug}${category ? ` | ${category}` : ""} | Catalogo`,
     description: `Catalogo publico da loja ${storefront.storeSlug}.`
   };
 }
@@ -67,15 +92,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   if (storefront.kind !== "store") {
     return (
       <main className="shell">
-        <section className="hero">
-          <span className="pill">Catalogo indisponivel</span>
-          <h1 className="title">Esse host ainda nao resolveu uma loja publica.</h1>
-          <p className="subtitle">
-            Assim que a resolucao do tenant estiver ativa para esse host, o catalogo publico
-            aparece aqui com filtros por categoria.
-          </p>
-          <a className="button-link" href="/">
-            Voltar para a home
+        <section className="empty-block">
+          <h1>Catalogo indisponivel</h1>
+          <p>Esta vitrine ainda esta sendo preparada.</p>
+          <a className="button-primary button-link-inline" href="/">
+            Voltar para a loja
           </a>
         </section>
       </main>
@@ -84,9 +105,17 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
 
   const params = (await searchParams) ?? {};
   const category = asSingleValue(params.category) ?? null;
+  const collection = asSingleValue(params.collection) as "new" | "sale" | undefined;
+  const search = asSingleValue(params.search) ?? null;
+  const size = asSingleValue(params.size) ?? null;
+  const sort = (asSingleValue(params.sort) as "relevancia" | "menor" | "maior" | "recentes" | undefined) ?? "relevancia";
   const page = parsePage(asSingleValue(params.page));
   const catalog = await getStorefrontCatalog({
     category,
+    collection: collection ?? null,
+    search,
+    size,
+    sort,
     page,
     pageSize: 12
   });
@@ -94,166 +123,203 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   if (!catalog) {
     return (
       <main className="shell">
-        <section className="hero">
-          <span className="pill">Catalogo indisponivel</span>
-          <h1 className="title">Nao foi possivel carregar os produtos desta loja.</h1>
-          <p className="subtitle">
-            A resolucao do tenant funcionou, mas a leitura do catalogo falhou nesta requisicao.
-          </p>
+        <section className="empty-block">
+          <h1>Catalogo indisponivel</h1>
+          <p>Nao conseguimos mostrar os produtos agora.</p>
         </section>
       </main>
     );
   }
 
-  const hasProducts = catalog.products.length > 0;
-  const currentCategory = catalog.categories.find(
-    (item) => item.slug === catalog.selectedCategorySlug
+  const title = catalog.selectedCollection === "sale"
+    ? "Sale"
+    : catalog.selectedCollection === "new"
+      ? "Novidades"
+      : catalog.categories.find((item) => item.slug === catalog.selectedCategorySlug)?.name ?? "Catalogo";
+  const sizeOptions = Array.from(
+    new Set(
+      catalog.products.flatMap((product) => product.variants.map((variant) => variant.name))
+    )
   );
 
   return (
-    <main className="shell theme-shell" style={buildStorefrontThemeStyle(catalog.store)}>
-      <header className="nav">
-        <div>
-          <div className="eyebrow">Catalogo</div>
-          {catalog.store.theme?.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img alt={catalog.store.name} className="store-logo" src={catalog.store.theme.logoUrl} />
-          ) : null}
-          <strong>{catalog.store.name}</strong>
-          <div className="host-badge">{catalog.store.matchedHost}</div>
-        </div>
-        <nav className="nav-links">
-          <a href="/">Home</a>
-          <a href="/catalog">Todos os produtos</a>
-          <a href="/cart">Carrinho</a>
-        </nav>
-      </header>
+    <main className="storefront-page" style={buildStorefrontThemeStyle(catalog.store)}>
+      <StorefrontHeader
+        announcementText={catalog.store.theme?.announcementText}
+        logoUrl={catalog.store.theme?.logoUrl}
+        navigation={[
+          { href: "/catalog?collection=new", label: "Novidades" },
+          { href: "/catalog", label: "Roupas" },
+          { href: "/catalog", label: "Acessorios" },
+          { href: "/catalog?collection=sale", label: "Sale", emphasis: "primary" }
+        ]}
+        searchValue={catalog.search}
+        storeId={catalog.store.id}
+        storeTitle={catalog.store.name}
+      />
 
-      <section className="hero hero-compact">
-        <span className="pill">
-          {catalog.pagination.totalItems} produto{catalog.pagination.totalItems === 1 ? "" : "s"}{" "}
-          disponiveis
-        </span>
-        <h1 className="title title-small">
-          {currentCategory
-            ? `Colecao ${currentCategory.name}`
-            : `Catalogo da ${catalog.store.name}`}
-        </h1>
-        <p className="subtitle">
-          Filtros simples por categoria, tenant isolado por host e apenas produtos ativos com
-          estoque aparecem publicamente.
-        </p>
-      </section>
+      <div className="shell storefront-main">
+        <section className="catalog-hero">
+          <div className="catalog-breadcrumbs">
+            <a href="/">Inicio</a>
+            <span>/</span>
+            <span>{title}</span>
+          </div>
+          <div className="catalog-heading-row">
+            <div>
+              <h1>{title}</h1>
+              <p>
+                {catalog.pagination.totalItems} produtos
+                {catalog.search ? ` para "${catalog.search}"` : ""}
+              </p>
+            </div>
+            <form action="/catalog" className="catalog-sort-form">
+              {catalog.selectedCategorySlug ? <input name="category" type="hidden" value={catalog.selectedCategorySlug} /> : null}
+              {catalog.selectedCollection ? <input name="collection" type="hidden" value={catalog.selectedCollection} /> : null}
+              {catalog.search ? <input name="search" type="hidden" value={catalog.search} /> : null}
+              {catalog.selectedSize ? <input name="size" type="hidden" value={catalog.selectedSize} /> : null}
+              <select defaultValue={catalog.sort} name="sort">
+                <option value="relevancia">Relevancia</option>
+                <option value="menor">Menor preco</option>
+                <option value="maior">Maior preco</option>
+                <option value="recentes">Mais recentes</option>
+              </select>
+              <button className="button-secondary button-button" type="submit">
+                Aplicar
+              </button>
+            </form>
+          </div>
+        </section>
 
-      <section className="filters">
-        <a
-          className={`filter-chip ${catalog.selectedCategorySlug ? "" : "filter-chip-active"}`}
-          href="/catalog"
-        >
-          Todos
-        </a>
-        {catalog.categories.map((item) => (
-          <a
-            className={`filter-chip ${
-              catalog.selectedCategorySlug === item.slug ? "filter-chip-active" : ""
-            }`}
-            href={buildCatalogHref(item.slug, 1)}
-            key={item.id}
-          >
-            {item.name}
-          </a>
-        ))}
-      </section>
-
-      {hasProducts ? (
-        <section className="product-grid">
-          {catalog.products.map((product) => (
-            <article className="product-card" key={product.id}>
-              <a className="product-card-link" href={`/catalog/${product.slug}`}>
-                <div className="product-image">
-                  {product.images[0]?.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt={product.images[0]?.altText ?? product.name}
-                      className="product-image-tag"
-                      src={product.images[0].imageUrl}
-                    />
-                  ) : (
-                    <div className="product-image-placeholder">{product.name.slice(0, 1)}</div>
-                  )}
-                </div>
-                <div className="product-copy">
-                  <div className="product-meta">
-                    <span>{product.category?.name ?? "Sem categoria"}</span>
-                    {product.isFeatured ? <span>Destaque</span> : null}
-                  </div>
-                  <h2>{product.name}</h2>
-                  <p>{product.description?.trim() || "Produto publicado e pronto para compra."}</p>
-                  <div className="price-row">
-                    <strong>
-                      {formatMoney(
-                        product.priceCents,
-                        product.currencyCode,
-                        catalog.store.locale
-                      )}
-                    </strong>
-                    {product.compareAtCents ? (
-                      <span>
-                        {formatMoney(
-                          product.compareAtCents,
-                          product.currencyCode,
-                          catalog.store.locale
-                        )}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
+        <section className="catalog-layout">
+          <aside className="catalog-sidebar">
+            <div className="catalog-sidebar-group">
+              <div className="catalog-sidebar-label">Colecoes</div>
+              <a
+                className={!catalog.selectedCategorySlug && !catalog.selectedCollection ? "catalog-chip catalog-chip-active" : "catalog-chip"}
+                href="/catalog"
+              >
+                Tudo
               </a>
-            </article>
-          ))}
-        </section>
-      ) : (
-        <section className="empty-state card">
-          <h2>Nenhum produto encontrado</h2>
-          <p>
-            {catalog.selectedCategorySlug
-              ? "Essa categoria ainda nao tem produtos ativos com estoque."
-              : "A loja ainda nao publicou produtos para essa vitrine."}
-          </p>
-        </section>
-      )}
+              <a
+                className={catalog.selectedCollection === "new" ? "catalog-chip catalog-chip-active" : "catalog-chip"}
+                href={buildCatalogHref({ collection: "new", search: catalog.search, sort: catalog.sort })}
+              >
+                Novidades
+              </a>
+              <a
+                className={catalog.selectedCollection === "sale" ? "catalog-chip catalog-chip-active" : "catalog-chip"}
+                href={buildCatalogHref({ collection: "sale", search: catalog.search, sort: catalog.sort })}
+              >
+                Sale
+              </a>
+              {catalog.categories.map((item) => (
+                <a
+                  className={catalog.selectedCategorySlug === item.slug ? "catalog-chip catalog-chip-active" : "catalog-chip"}
+                  href={buildCatalogHref({ category: item.slug, search: catalog.search, sort: catalog.sort })}
+                  key={item.id}
+                >
+                  {item.name}
+                </a>
+              ))}
+            </div>
 
-      {catalog.pagination.totalPages > 1 ? (
-        <nav className="pagination">
-          <a
-            aria-disabled={catalog.pagination.page <= 1}
-            className={`button-link ${catalog.pagination.page <= 1 ? "button-link-disabled" : ""}`}
-            href={buildCatalogHref(
-              catalog.selectedCategorySlug,
-              Math.max(1, catalog.pagination.page - 1)
+            {sizeOptions.length > 0 ? (
+              <div className="catalog-sidebar-group">
+                <div className="catalog-sidebar-label">Tamanho</div>
+                <div className="size-filter-list">
+                  {sizeOptions.map((option) => (
+                    <a
+                      className={catalog.selectedSize === option ? "catalog-size-chip catalog-size-chip-active" : "catalog-size-chip"}
+                      href={buildCatalogHref({
+                        category: catalog.selectedCategorySlug,
+                        collection: catalog.selectedCollection,
+                        search: catalog.search,
+                        sort: catalog.sort,
+                        size: catalog.selectedSize === option ? null : option
+                      })}
+                      key={option}
+                    >
+                      {option}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </aside>
+
+          <div>
+            {catalog.products.length > 0 ? (
+              <section className="product-grid">
+                {catalog.products.map((product) => (
+                  <article className="product-card" key={product.id}>
+                    <a href={`/catalog/${product.slug}`}>
+                      <div className="product-card-image">
+                        {product.images[0]?.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img alt={product.images[0].altText ?? product.name} src={product.images[0].imageUrl} />
+                        ) : (
+                          <div className="product-card-placeholder">{product.name.slice(0, 1)}</div>
+                        )}
+                      </div>
+                      <div className="product-card-meta">{product.category?.name ?? "Colecao"}</div>
+                      <h2>{product.name}</h2>
+                      <div className="product-card-price">
+                        <strong>{formatMoney(product.priceCents, product.currencyCode, catalog.store.locale)}</strong>
+                        {product.compareAtCents ? (
+                          <span>{formatMoney(product.compareAtCents, product.currencyCode, catalog.store.locale)}</span>
+                        ) : null}
+                      </div>
+                    </a>
+                  </article>
+                ))}
+              </section>
+            ) : (
+              <section className="empty-block">
+                <h2>Nenhum produto encontrado</h2>
+                <p>Refine os filtros ou volte para toda a colecao.</p>
+                <a className="button-primary button-link-inline" href="/catalog">
+                  Ver todos os produtos
+                </a>
+              </section>
             )}
-          >
-            Pagina anterior
-          </a>
-          <span className="pagination-copy">
-            Pagina {catalog.pagination.page} de {catalog.pagination.totalPages}
-          </span>
-          <a
-            aria-disabled={catalog.pagination.page >= catalog.pagination.totalPages}
-            className={`button-link ${
-              catalog.pagination.page >= catalog.pagination.totalPages
-                ? "button-link-disabled"
-                : ""
-            }`}
-            href={buildCatalogHref(
-              catalog.selectedCategorySlug,
-              Math.min(catalog.pagination.totalPages, catalog.pagination.page + 1)
-            )}
-          >
-            Proxima pagina
-          </a>
-        </nav>
-      ) : null}
+
+            {catalog.pagination.totalPages > 1 ? (
+              <nav className="catalog-pagination">
+                <a
+                  className="button-secondary button-link-inline"
+                  href={buildCatalogHref({
+                    category: catalog.selectedCategorySlug,
+                    collection: catalog.selectedCollection,
+                    search: catalog.search,
+                    size: catalog.selectedSize,
+                    sort: catalog.sort,
+                    page: Math.max(1, catalog.pagination.page - 1)
+                  })}
+                >
+                  Pagina anterior
+                </a>
+                <span>{`Pagina ${catalog.pagination.page} de ${catalog.pagination.totalPages}`}</span>
+                <a
+                  className="button-secondary button-link-inline"
+                  href={buildCatalogHref({
+                    category: catalog.selectedCategorySlug,
+                    collection: catalog.selectedCollection,
+                    search: catalog.search,
+                    size: catalog.selectedSize,
+                    sort: catalog.sort,
+                    page: Math.min(catalog.pagination.totalPages, catalog.pagination.page + 1)
+                  })}
+                >
+                  Proxima pagina
+                </a>
+              </nav>
+            ) : null}
+          </div>
+        </section>
+      </div>
+
+      <StorefrontFooter storeTitle={catalog.store.name} />
     </main>
   );
 }

@@ -13,6 +13,9 @@ export type ClientStore = {
 export type ClientCartItem = {
   id: string;
   productId: string;
+  variantId: string | null;
+  variantName: string | null;
+  variantSku: string | null;
   productName: string;
   productSlug: string;
   quantity: number;
@@ -121,6 +124,7 @@ export async function addCartItem(input: {
   sessionId: string;
   customerEmail?: string;
   productId: string;
+  variantId?: string;
   quantity: number;
 }) {
   return apiRequest<{

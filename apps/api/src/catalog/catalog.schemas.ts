@@ -73,6 +73,10 @@ export const updateProductImageSchema = z.object({
 
 export const publicCatalogProductsQuerySchema = z.object({
   category: sanitizedOptionalString({ min: 1, max: 80 }),
+  collection: z.enum(["new", "sale"]).optional(),
+  search: sanitizedOptionalString({ min: 1, max: 120 }),
+  size: sanitizedOptionalString({ min: 1, max: 40 }),
+  sort: z.enum(["relevancia", "menor", "maior", "recentes"]).default("relevancia"),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(24).default(12)
 }).strict();
