@@ -9,7 +9,8 @@ import {
   OrderStatus,
   PaymentProvider,
   PaymentStatus,
-  PlatformRole
+  PlatformRole,
+  StoreStatus
 } from "@prisma/client";
 import { prisma } from "@acme/database";
 import { AppModule } from "../app.module";
@@ -32,8 +33,10 @@ describe("admin api", () => {
   const merchantEmail = `admin-merchant-${suffix}@example.com`;
   const platformAdminEmail = `admin-platform-${suffix}@example.com`;
   const storeSlug = `admin-store-${suffix}`;
+  const activeStoreSlug = `admin-active-store-${suffix}`;
   const customerEmail = `admin-customer-${suffix}@example.com`;
   const domainHost = `www.admin-${suffix}.example.com`;
+  const activeDomainHost = `www.admin-active-${suffix}.example.com`;
 
   let app: INestApplication;
   let baseUrl = "";
@@ -42,9 +45,11 @@ describe("admin api", () => {
   let platformAdminUserId = "";
   let platformAdminToken = "";
   let storeId = "";
+  let activeStoreId = "";
   let orderId = "";
   let paymentId = "";
   let domainId = "";
+  let activeDomainId = "";
 
   before(async () => {
     const testingModule = await Test.createTestingModule({
@@ -77,6 +82,22 @@ describe("admin api", () => {
     merchantUserId = merchantRegistration.body.user.id;
     storeId = merchantRegistration.body.store.id;
     merchantToken = merchantRegistration.body.tokens.accessToken;
+
+    const activeStoreFixture = await requestJson<{
+      store: { id: string };
+    }>({
+      method: "POST",
+      path: "/stores/fixtures",
+      headers: {
+        authorization: `Bearer ${merchantToken}`
+      },
+      body: {
+        role: "STORE_OWNER",
+        name: "Admin Active Store",
+        slug: activeStoreSlug
+      }
+    });
+    activeStoreId = activeStoreFixture.body.store.id;
 
     const adminRegistration = await requestJson<{
       user: { id: string };
@@ -119,6 +140,17 @@ describe("admin api", () => {
       }
     });
     domainId = domain.id;
+
+    const activeDomain = await prisma.storeDomain.create({
+      data: {
+        host: activeDomainHost,
+        status: DomainStatus.ACTIVE,
+        dnsTargetValue: `${activeStoreSlug}.lvh.me`,
+        activatedAt: new Date("2026-06-29T13:00:00.000Z"),
+        storeId: activeStoreId
+      }
+    });
+    activeDomainId = activeDomain.id;
 
     const cart = await prisma.cart.create({
       data: {
@@ -174,8 +206,10 @@ describe("admin api", () => {
   });
 
   after(async () => {
-    if (storeId) {
-      await prisma.store.delete({ where: { id: storeId } }).catch(() => null);
+    for (const currentStoreId of [activeStoreId, storeId]) {
+      if (currentStoreId) {
+        await prisma.store.delete({ where: { id: currentStoreId } }).catch(() => null);
+      }
     }
 
     for (const userId of [platformAdminUserId, merchantUserId]) {
@@ -246,6 +280,91 @@ describe("admin api", () => {
     assert.equal(storesResponse.body.stores[0]?.activeDomain?.host, domainHost);
     assert.ok((storesResponse.body.stores[0]?.ordersCount ?? 0) >= 1);
 
+    const activeStoreDetail = await requestJson<{
+      store: {
+        id: string;
+        slug: string;
+        status: string;
+        domains: Array<{ id: string; host: string; status: string }>;
+        counts: {
+          members: number;
+          orders: number;
+          payments: number;
+          products: number;
+        };
+      };
+    }>({
+      path: `/admin/stores/${activeStoreId}`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      }
+    });
+
+    assert.equal(activeStoreDetail.statusCode, 200);
+    assert.equal(activeStoreDetail.body.store.id, activeStoreId);
+    assert.equal(activeStoreDetail.body.store.slug, activeStoreSlug);
+    assert.equal(activeStoreDetail.body.store.status, StoreStatus.TRIALING);
+    assert.equal(activeStoreDetail.body.store.domains.length, 1);
+    assert.equal(activeStoreDetail.body.store.domains[0]?.id, activeDomainId);
+    assert.equal(activeStoreDetail.body.store.domains[0]?.host, activeDomainHost);
+    assert.equal(activeStoreDetail.body.store.domains[0]?.status, DomainStatus.ACTIVE);
+    assert.equal(activeStoreDetail.body.store.counts.members, 1);
+    assert.equal(activeStoreDetail.body.store.counts.orders, 0);
+
+    const updatedStoreResponse = await requestJson<{
+      store: {
+        id: string;
+        status: string;
+      };
+    }>({
+      method: "PATCH",
+      path: `/admin/stores/${activeStoreId}/status`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      },
+      body: {
+        status: StoreStatus.ACTIVE
+      }
+    });
+
+    assert.equal(updatedStoreResponse.statusCode, 200);
+    assert.equal(updatedStoreResponse.body.store.id, activeStoreId);
+    assert.equal(updatedStoreResponse.body.store.status, StoreStatus.ACTIVE);
+
+    const createdFrom = new Date(Date.now() - 60_000).toISOString();
+    const createdTo = new Date(Date.now() + 60_000).toISOString();
+    const filteredActiveStoresResponse = await requestJson<{
+      stores: Array<{
+        id: string;
+        slug: string;
+        status: string;
+        activeDomain: { host: string; status: string } | null;
+      }>;
+    }>({
+      path:
+        `/admin/stores?status=${StoreStatus.ACTIVE}` +
+        `&search=${activeStoreSlug}` +
+        `&hasActiveDomain=true&createdFrom=${encodeURIComponent(createdFrom)}` +
+        `&createdTo=${encodeURIComponent(createdTo)}`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      }
+    });
+
+    assert.equal(filteredActiveStoresResponse.statusCode, 200);
+    assert.equal(filteredActiveStoresResponse.body.stores.length, 1);
+    assert.equal(filteredActiveStoresResponse.body.stores[0]?.id, activeStoreId);
+    assert.equal(filteredActiveStoresResponse.body.stores[0]?.slug, activeStoreSlug);
+    assert.equal(filteredActiveStoresResponse.body.stores[0]?.status, StoreStatus.ACTIVE);
+    assert.equal(
+      filteredActiveStoresResponse.body.stores[0]?.activeDomain?.host,
+      activeDomainHost
+    );
+    assert.equal(
+      filteredActiveStoresResponse.body.stores[0]?.activeDomain?.status,
+      DomainStatus.ACTIVE
+    );
+
     const usersResponse = await requestJson<{
       users: Array<{
         id: string;
@@ -266,8 +385,8 @@ describe("admin api", () => {
     assert.equal(usersResponse.body.users[0]?.id, merchantUserId);
     assert.equal(usersResponse.body.users[0]?.email, merchantEmail);
     assert.equal(usersResponse.body.users[0]?.platformRole, PlatformRole.CUSTOMER);
-    assert.equal(usersResponse.body.users[0]?.ownedStoresCount, 1);
-    assert.equal(usersResponse.body.users[0]?.membershipsCount, 1);
+    assert.equal(usersResponse.body.users[0]?.ownedStoresCount, 2);
+    assert.equal(usersResponse.body.users[0]?.membershipsCount, 2);
 
     const ordersResponse = await requestJson<{
       orders: Array<{

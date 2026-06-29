@@ -1,10 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { AdminRepository } from "./admin.repository";
 import {
   ListAdminDomainsQuery,
   ListAdminOrdersQuery,
   ListAdminStoresQuery,
-  ListAdminUsersQuery
+  ListAdminUsersQuery,
+  UpdateAdminStoreStatusInput
 } from "./admin.schemas";
 
 @Injectable()
@@ -64,6 +65,32 @@ export class AdminService {
         ordersCount: store._count.orders,
         createdAt: store.createdAt
       }))
+    };
+  }
+
+  async getStoreDetail(storeId: string) {
+    const store = await this.adminRepository.findStoreById(storeId);
+
+    if (!store) {
+      throw new NotFoundException("Store not found");
+    }
+
+    return {
+      store: this.mapStoreDetail(store)
+    };
+  }
+
+  async updateStoreStatus(storeId: string, input: UpdateAdminStoreStatusInput) {
+    const store = await this.adminRepository.findStoreById(storeId);
+
+    if (!store) {
+      throw new NotFoundException("Store not found");
+    }
+
+    const updatedStore = await this.adminRepository.updateStoreStatus(storeId, input);
+
+    return {
+      store: this.mapStoreDetail(updatedStore)
     };
   }
 
@@ -130,6 +157,44 @@ export class AdminService {
         },
         createdAt: domain.createdAt
       }))
+    };
+  }
+
+  private mapStoreDetail(store: Awaited<ReturnType<AdminRepository["findStoreById"]>>) {
+    const resolvedStore = store!;
+
+    return {
+      id: resolvedStore.id,
+      name: resolvedStore.name,
+      slug: resolvedStore.slug,
+      defaultSubdomain: resolvedStore.defaultSubdomain,
+      status: resolvedStore.status,
+      supportEmail: resolvedStore.supportEmail,
+      currencyCode: resolvedStore.currencyCode,
+      locale: resolvedStore.locale,
+      owner: {
+        id: resolvedStore.owner.id,
+        email: resolvedStore.owner.email,
+        fullName: resolvedStore.owner.fullName
+      },
+      counts: {
+        members: resolvedStore._count.storeMembers,
+        pendingInvites: resolvedStore._count.memberInvites,
+        orders: resolvedStore._count.orders,
+        payments: resolvedStore._count.payments,
+        products: resolvedStore._count.products
+      },
+      domains: resolvedStore.domains.map((domain) => ({
+        id: domain.id,
+        host: domain.host,
+        status: domain.status,
+        dnsTargetValue: domain.dnsTargetValue,
+        dnsLastCheckedAt: domain.dnsLastCheckedAt,
+        activatedAt: domain.activatedAt,
+        createdAt: domain.createdAt
+      })),
+      createdAt: resolvedStore.createdAt,
+      updatedAt: resolvedStore.updatedAt
     };
   }
 }

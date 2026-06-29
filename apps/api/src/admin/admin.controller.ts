@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Query, UseGuards } from "@nestjs/common";
 import { PlatformRole } from "@prisma/client";
 import { AuthorizationGuard } from "../auth/authorization.guard";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
@@ -9,8 +9,10 @@ import {
   listAdminOrdersQuerySchema,
   listAdminStoresQuerySchema,
   listAdminUsersQuerySchema,
+  parseAdminBody,
   parseAdminQuery
 } from "./admin.schemas";
+import { updateAdminStoreStatusSchema } from "./admin.schemas";
 
 @Controller("admin")
 export class AdminController {
@@ -33,6 +35,23 @@ export class AdminController {
   @Get("stores")
   listStores(@Query() query: unknown) {
     return this.adminService.listStores(parseAdminQuery(listAdminStoresQuerySchema, query));
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
+  @Get("stores/:storeId")
+  getStoreDetail(@Param("storeId") storeId: string) {
+    return this.adminService.getStoreDetail(storeId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
+  @Patch("stores/:storeId/status")
+  updateStoreStatus(@Param("storeId") storeId: string, @Body() body: unknown) {
+    return this.adminService.updateStoreStatus(
+      storeId,
+      parseAdminBody(updateAdminStoreStatusSchema, body)
+    );
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

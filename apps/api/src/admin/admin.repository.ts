@@ -6,7 +6,8 @@ import {
   ListAdminDomainsQuery,
   ListAdminOrdersQuery,
   ListAdminStoresQuery,
-  ListAdminUsersQuery
+  ListAdminUsersQuery,
+  UpdateAdminStoreStatusInput
 } from "./admin.schemas";
 
 @Injectable()
@@ -74,6 +75,31 @@ export class AdminRepository {
     const search = input.search?.toLowerCase();
     const where: Prisma.StoreWhereInput = {
       ...(input.status ? { status: input.status } : {}),
+      ...((input.createdFrom || input.createdTo)
+        ? {
+            createdAt: {
+              ...(input.createdFrom ? { gte: input.createdFrom } : {}),
+              ...(input.createdTo ? { lte: input.createdTo } : {})
+            }
+          }
+        : {}),
+      ...(input.hasActiveDomain === undefined
+        ? {}
+        : input.hasActiveDomain
+          ? {
+              domains: {
+                some: {
+                  status: "ACTIVE"
+                }
+              }
+            }
+          : {
+              domains: {
+                none: {
+                  status: "ACTIVE"
+                }
+              }
+            }),
       ...(search
         ? {
             OR: [
@@ -109,6 +135,55 @@ export class AdminRepository {
       },
       orderBy: [{ createdAt: "desc" }],
       take: input.limit
+    });
+  }
+
+  findStoreById(storeId: string) {
+    return prisma.store.findUnique({
+      where: {
+        id: storeId
+      },
+      include: {
+        owner: true,
+        domains: {
+          orderBy: [{ createdAt: "desc" }]
+        },
+        _count: {
+          select: {
+            storeMembers: true,
+            memberInvites: true,
+            orders: true,
+            payments: true,
+            products: true
+          }
+        }
+      }
+    });
+  }
+
+  updateStoreStatus(storeId: string, input: UpdateAdminStoreStatusInput) {
+    return prisma.store.update({
+      where: {
+        id: storeId
+      },
+      data: {
+        status: input.status
+      },
+      include: {
+        owner: true,
+        domains: {
+          orderBy: [{ createdAt: "desc" }]
+        },
+        _count: {
+          select: {
+            storeMembers: true,
+            memberInvites: true,
+            orders: true,
+            payments: true,
+            products: true
+          }
+        }
+      }
     });
   }
 

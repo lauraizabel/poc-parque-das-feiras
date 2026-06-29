@@ -512,10 +512,10 @@ Legenda de prioridade:
 - [x] Dependências: autenticação e domínios principais.
 
 ### Task 12.2 (P1): Implementar listagem e detalhe de lojas no admin
-- [ ] Criar CRUD operacional básico para visualizar lojas, status, owner e domínio.
-- [ ] Critérios de aceite: admin consegue localizar uma loja e entender seu estado operacional.
-- [ ] Notas técnicas: incluir filtros por status, data de criação e domínio ativo.
-- [ ] Dependências: Store e StoreDomain.
+- [x] Criar CRUD operacional básico para visualizar lojas, status, owner e domínio.
+- [x] Critérios de aceite: admin consegue localizar uma loja e entender seu estado operacional.
+- [x] Notas técnicas: incluir filtros por status, data de criação e domínio ativo.
+- [x] Dependências: Store e StoreDomain.
 
 ### Task 12.3 (P1): Implementar listagem e detalhe de usuários no admin
 - [ ] Criar telas/endpoints para visualizar usuários e memberships.
