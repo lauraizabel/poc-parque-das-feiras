@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import { PaymentStatus } from "@prisma/client";
+import { NotificationChannel, NotificationStatus, PaymentStatus } from "@prisma/client";
+import { toSafePayloadSummary } from "../platform/security/payload-summary";
 import { NotificationsRepository } from "./notifications.repository";
 import {
   createEmailNotificationQueue,
@@ -59,10 +60,42 @@ export class NotificationsService {
     const job = this.normalizeEmailJob(input);
     const queue = createEmailNotificationQueue();
     const jobId = this.buildEmailJobId(job);
+    const notification = await this.notificationsRepository.createNotification({
+      storeId: this.extractMetadataValue(job.metadata?.storeId),
+      userId: this.extractMetadataValue(job.metadata?.userId),
+      channel: NotificationChannel.EMAIL,
+      status: NotificationStatus.PENDING,
+      recipient: job.to,
+      subject: job.subject,
+      templateKey: job.templateKey,
+      payloadSummary: {
+        metadata: job.metadata ?? {},
+        variables: job.variables ?? {}
+      }
+    });
 
     try {
-      const queuedJob = await queue.add("send-email-notification", job, {
+      const queuedJob = await queue.add("send-email-notification", {
+        ...job,
+        metadata: {
+          ...(job.metadata ?? {}),
+          notificationId: notification.id
+        }
+      }, {
         jobId
+      });
+
+      await this.notificationsRepository.updateNotificationStatus({
+        notificationId: notification.id,
+        status: NotificationStatus.QUEUED,
+        payloadSummary: {
+          metadata: {
+            ...(job.metadata ?? {}),
+            notificationId: notification.id,
+            queueJobId: queuedJob.id ?? jobId
+          },
+          variables: job.variables ?? {}
+        }
       });
 
       return {
@@ -70,11 +103,20 @@ export class NotificationsService {
         queue: getEmailNotificationQueueMonitoring(),
         jobId: queuedJob.id ?? jobId,
         notification: {
+          id: notification.id,
           to: job.to,
           subject: job.subject,
           templateKey: job.templateKey
         }
       };
+    } catch (error) {
+      await this.notificationsRepository.updateNotificationStatus({
+        notificationId: notification.id,
+        status: NotificationStatus.FAILED,
+        failedAt: new Date(),
+        failureMessage: error instanceof Error ? error.message : "Notification queue dispatch failed"
+      });
+      throw error;
     } finally {
       await queue.close();
     }
@@ -82,19 +124,42 @@ export class NotificationsService {
 
   async processEmailNotificationJob(input: EmailNotificationJob) {
     const job = this.normalizeEmailJob(input);
-    const deliveredAt = new Date().toISOString();
+    const deliveredAt = new Date();
+    const deliveredAtIso = deliveredAt.toISOString();
     const delivery = {
       channel: "email",
       provider: "console",
       to: job.to,
       subject: job.subject,
       templateKey: job.templateKey,
-      deliveredAt,
+      deliveredAt: deliveredAtIso,
       metadata: job.metadata ?? {},
       variables: job.variables ?? {}
     };
 
-    this.logger.log(`Email notification delivered to ${job.to}`, JSON.stringify(delivery));
+    const notificationId = this.extractMetadataValue(job.metadata?.notificationId);
+
+    if (notificationId) {
+      await this.notificationsRepository.updateNotificationStatus({
+        notificationId,
+        status: NotificationStatus.DELIVERED,
+        provider: "console",
+        deliveredAt,
+        payloadSummary: {
+          metadata: job.metadata ?? {},
+          variables: job.variables ?? {},
+          delivery: {
+            provider: "console",
+            deliveredAt: deliveredAtIso
+          }
+        }
+      });
+    }
+
+    this.logger.log(
+      `Email notification delivered to ${job.to}`,
+      toSafePayloadSummary(delivery) ?? "{}"
+    );
 
     return {
       delivered: true,
@@ -221,6 +286,10 @@ export class NotificationsService {
       sanitizeSegment(job.to),
       Date.now().toString(36)
     ].join("-");
+  }
+
+  private extractMetadataValue(value: unknown) {
+    return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
   }
 
   private buildMerchantPaymentNotificationJobs(

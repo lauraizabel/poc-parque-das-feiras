@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { prisma } from "@acme/database";
-import { StatusTransitionEntityType } from "@prisma/client";
+import { AuditLogChannel, StatusTransitionEntityType } from "@prisma/client";
 import { DomainBoundary } from "../platform/domain-boundary";
+import { toSafePayloadSummary } from "../platform/security/payload-summary";
 
 @Injectable()
 export class AuditRepository {
@@ -40,6 +41,28 @@ export class AuditRepository {
         actorType: input.actorType ?? null,
         actorId: input.actorId ?? null,
         metadata: input.metadata ?? null
+      }
+    });
+  }
+
+  createAuditLog(input: {
+    action: string;
+    channel: AuditLogChannel;
+    userId?: string | null;
+    storeId?: string | null;
+    entityType?: string | null;
+    entityId?: string | null;
+    payloadSummary?: unknown;
+  }) {
+    return prisma.auditLog.create({
+      data: {
+        action: input.action,
+        channel: input.channel,
+        userId: input.userId ?? null,
+        storeId: input.storeId ?? null,
+        entityType: input.entityType ?? null,
+        entityId: input.entityId ?? null,
+        payloadSummary: toSafePayloadSummary(input.payloadSummary)
       }
     });
   }

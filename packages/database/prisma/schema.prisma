@@ -153,6 +153,25 @@ enum AuthFlowAuditAction {
   PASSWORD_RESET_COMPLETED
 }
 
+enum AuditLogChannel {
+  HTTP_API
+  JOB
+  SYSTEM
+  WEBHOOK
+}
+
+enum NotificationChannel {
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  QUEUED
+  DELIVERED
+  FAILED
+  CANCELED
+}
+
 model User {
   id               String        @id @default(cuid())
   email            String        @unique
@@ -167,6 +186,8 @@ model User {
   carts            Cart[]
   authFlowTokens   AuthFlowToken[]
   authFlowAudits   AuthFlowAudit[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 }
@@ -235,10 +256,59 @@ model Store {
   products          Product[]
   carts             Cart[]
   cartItems         CartItem[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
   @@index([ownerId])
+}
+
+model AuditLog {
+  id             String          @id @default(cuid())
+  userId         String?
+  storeId        String?
+  action         String
+  channel        AuditLogChannel
+  entityType     String?
+  entityId       String?
+  payloadSummary String?
+  user           User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  store          Store?          @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  createdAt      DateTime        @default(now())
+
+  @@index([userId, createdAt])
+  @@index([storeId, createdAt])
+  @@index([action, createdAt])
+  @@index([channel, createdAt])
+  @@index([entityType, entityId, createdAt])
+}
+
+model Notification {
+  id             String             @id @default(cuid())
+  userId         String?
+  storeId        String?
+  channel        NotificationChannel
+  status         NotificationStatus @default(PENDING)
+  recipient      String
+  subject        String?
+  templateKey    String?
+  provider       String?
+  payloadSummary String?
+  queuedAt       DateTime?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  failureMessage String?
+  user           User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  store          Store?             @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([storeId, createdAt])
+  @@index([channel, status, createdAt])
+  @@index([recipient, createdAt])
+  @@index([templateKey, createdAt])
 }
 
 model StoreTheme {

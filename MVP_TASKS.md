@@ -544,10 +544,10 @@ Legenda de prioridade:
 ## Epic 13: Notificações, auditoria e observabilidade
 
 ### Task 13.1 (P1): Modelar AuditLog e Notification
-- [ ] Criar entidades `AuditLog` e `Notification` com contexto de usuário, loja, ação, canal e payload resumido.
-- [ ] Critérios de aceite: ações sensíveis e notificações principais podem ser persistidas.
-- [ ] Notas técnicas: evitar gravar dados sensíveis completos em logs.
-- [ ] Dependências: Prisma e módulos de domínio.
+- [x] Criar entidades `AuditLog` e `Notification` com contexto de usuário, loja, ação, canal e payload resumido.
+- [x] Critérios de aceite: ações sensíveis e notificações principais podem ser persistidas.
+- [x] Notas técnicas: evitar gravar dados sensíveis completos em logs.
+- [x] Dependências: Prisma e módulos de domínio.
 
 ### Task 13.2 (P1): Implementar trilha de auditoria para ações críticas
 - [ ] Registrar eventos como login, criação de loja, alteração de domínio, mudança de papel, criação de produto e mudança de status de pedido.
