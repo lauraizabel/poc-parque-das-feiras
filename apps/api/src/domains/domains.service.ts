@@ -18,7 +18,8 @@ import { CreateStoreDomainInput } from "./domains.schemas";
 import {
   createDomainDnsVerificationQueue,
   createDomainSslProvisioningQueue,
-  createDomainSslStatusQueue
+  createDomainSslStatusQueue,
+  getDomainQueueMonitoring
 } from "./domains.queue";
 
 const SSL_STATUS_RECHECK_DELAY_MS = 30_000;
@@ -38,6 +39,12 @@ export class DomainsService {
 
   getBoundary() {
     return this.domainsRepository.getBoundary();
+  }
+
+  async getQueueMonitoring() {
+    return {
+      queues: await getDomainQueueMonitoring()
+    };
   }
 
   async getStoreDomain(storeId: string) {

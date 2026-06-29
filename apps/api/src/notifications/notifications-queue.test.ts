@@ -3,26 +3,36 @@ import { describe, it } from "node:test";
 import { ConsoleEmailProvider } from "./providers/console-email.provider";
 import { NotificationsRepository } from "./notifications.repository";
 import { NotificationsService } from "./notifications.service";
+import { getEmailNotificationQueueMonitoring, getEmailNotificationQueuePolicySnapshot } from "./notifications.queue";
 
 describe("notifications queue", () => {
   const consoleProvider = new ConsoleEmailProvider();
   const service = new NotificationsService(new NotificationsRepository(), consoleProvider);
 
-  it("exposes queue monitoring details for email notifications", () => {
-    const monitoring = service.getQueueMonitoring();
+  it("exposes queue policy snapshot for email notifications", () => {
+    const snapshot = getEmailNotificationQueuePolicySnapshot();
 
-    assert.deepEqual(monitoring, {
-      queue: {
-        queueName: "notifications-email",
-        profile: "notifications-email",
-        attempts: 5,
-        backoffDelayMs: 10_000,
-        removeOnComplete: 200,
-        removeOnFail: 1_000,
-        timeoutMs: 30_000,
-        concurrency: 4
-      }
+    assert.deepEqual(snapshot, {
+      queueName: "notifications-email",
+      profile: "notifications-email",
+      attempts: 5,
+      backoffDelayMs: 10_000,
+      removeOnComplete: 200,
+      removeOnFail: 1_000,
+      timeoutMs: 30_000,
+      concurrency: 4
     });
+  });
+
+  it("includes live queue counts in monitoring (null when redis is unreachable)", async () => {
+    const monitoring = await getEmailNotificationQueueMonitoring();
+
+    assert.equal(monitoring.queueName, "notifications-email");
+    assert.equal(monitoring.profile, "notifications-email");
+    assert.equal(typeof monitoring.attempts, "number");
+    assert.equal(typeof monitoring.timeoutMs, "number");
+    // counts may be null if redis is unreachable, but the field exists
+    assert.ok(monitoring.counts === null || typeof monitoring.counts === "object");
   });
 
   it("processes a valid email notification job", async () => {

@@ -23,6 +23,30 @@ export type QueuePolicy = {
   concurrency: number;
 };
 
+export type QueueCounts = {
+  wait: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+  paused: number;
+};
+
+export type QueuePolicySnapshot = {
+  queueName: string;
+  profile: QueueProfileName;
+  attempts: number;
+  backoffDelayMs: number;
+  removeOnComplete: number;
+  removeOnFail: number;
+  timeoutMs: number;
+  concurrency: number;
+};
+
+export type QueueMonitoringSnapshot = QueuePolicySnapshot & {
+  counts: QueueCounts | null;
+};
+
 const QUEUE_POLICIES: Record<QueueProfileName, QueuePolicy> = {
   default: {
     attempts: 3,
@@ -122,10 +146,10 @@ export function buildQueueDefaultJobOptions(
   };
 }
 
-export function getQueueMonitoringSnapshot(
+export function getQueuePolicySnapshot(
   queueName: string,
   profile: QueueProfileName = "default"
-) {
+): QueuePolicySnapshot {
   const policy = getQueuePolicy(profile);
 
   return {
@@ -137,6 +161,39 @@ export function getQueueMonitoringSnapshot(
     removeOnFail: policy.removeOnFail,
     timeoutMs: policy.timeoutMs,
     concurrency: policy.concurrency
+  };
+}
+
+/**
+ * Returns the policy snapshot and live job counts for the given queue.
+ * If the queue cannot be reached (e.g. Redis is down), counts will be null.
+ */
+export async function getQueueMonitoringSnapshot(
+  queueName: string,
+  profile: QueueProfileName = "default"
+): Promise<QueueMonitoringSnapshot> {
+  const policySnapshot = getQueuePolicySnapshot(queueName, profile);
+  let counts: QueueCounts | null = null;
+
+  try {
+    const queue = new Queue(queueName, buildQueueOptions(profile));
+    const jobCounts = await queue.getJobCounts();
+    counts = {
+      wait: jobCounts.wait ?? 0,
+      active: jobCounts.active ?? 0,
+      completed: jobCounts.completed ?? 0,
+      failed: jobCounts.failed ?? 0,
+      delayed: jobCounts.delayed ?? 0,
+      paused: jobCounts.paused ?? 0
+    };
+    await queue.close();
+  } catch {
+    // Queue unreachable — counts will be null
+  }
+
+  return {
+    ...policySnapshot,
+    counts
   };
 }
 

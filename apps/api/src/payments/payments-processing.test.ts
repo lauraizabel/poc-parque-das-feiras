@@ -60,10 +60,11 @@ describe("payments webhook processing", () => {
     notificationsService = app.get(NotificationsService);
     notificationsService.enqueueEmailNotification = (async (input: EmailNotificationJob) => {
       queuedNotifications.push(input);
+      const monitoring = await notificationsService.getQueueMonitoring();
 
       return {
         queued: true,
-        queue: notificationsService.getQueueMonitoring().queue,
+        queue: monitoring.queue,
         jobId: `test-email-${queuedNotifications.length}`,
         notification: {
           to: input.to,

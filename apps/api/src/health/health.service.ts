@@ -1,27 +1,114 @@
 import { Injectable } from "@nestjs/common";
 import { prisma } from "@acme/database";
 import Redis from "ioredis";
+import { getEmailNotificationQueueMonitoring } from "../notifications/notifications.queue";
+import { getPaymentQueueMonitoring } from "../payments/payments.queue";
+import { getDomainQueueMonitoring } from "../domains/domains.queue";
 
 type DependencyStatus = "up" | "down";
+
+type HealthCheckResult = {
+  status: DependencyStatus;
+  message?: string;
+  endpoint?: string;
+};
+
+type QueueCheckResult = {
+  queueName: string;
+  profile: string;
+  status: DependencyStatus;
+  counts: {
+    wait: number | null;
+    active: number | null;
+    completed: number | null;
+    failed: number | null;
+    delayed: number | null;
+    paused: number | null;
+  } | null;
+};
 
 @Injectable()
 export class HealthService {
   async getHealth() {
-    const [database, redis, storage] = await Promise.all([
+    const [database, redis, storage, queues] = await Promise.all([
       this.checkDatabase(),
       this.checkRedis(),
-      this.checkStorage()
+      this.checkStorage(),
+      this.checkQueues()
     ]);
 
-    const checks = { database, redis, storage };
-    const status = Object.values(checks).every((check) => check.status === "up") ? "ok" : "degraded";
+    const allUp = [database, redis, storage].every((check) => check.status === "up");
+    const allQueuesUp = queues.every((q) => q.status === "up");
+    const status = allUp && allQueuesUp ? "ok" : "degraded";
 
     return {
       status,
       service: "api",
       timestamp: new Date().toISOString(),
-      checks
+      checks: {
+        database,
+        redis,
+        storage,
+        queues
+      }
     };
+  }
+
+  async getQueueHealthDetails() {
+    const [email, payment, domain] = await Promise.all([
+      getEmailNotificationQueueMonitoring(),
+      getPaymentQueueMonitoring(),
+      getDomainQueueMonitoring()
+    ]);
+
+    return {
+      queues: [
+        email,
+        payment,
+        ...domain
+      ]
+    };
+  }
+
+  private async checkQueues(): Promise<QueueCheckResult[]> {
+    const [email, payment, domain] = await Promise.allSettled([
+      getEmailNotificationQueueMonitoring(),
+      getPaymentQueueMonitoring(),
+      getDomainQueueMonitoring()
+    ]);
+
+    const results: QueueCheckResult[] = [];
+
+    if (email.status === "fulfilled") {
+      results.push({
+        queueName: email.value.queueName,
+        profile: email.value.profile,
+        status: email.value.counts !== null ? "up" : "down",
+        counts: email.value.counts
+      });
+    }
+
+    if (payment.status === "fulfilled") {
+      results.push({
+        queueName: payment.value.queueName,
+        profile: payment.value.profile,
+        status: payment.value.counts !== null ? "up" : "down",
+        counts: payment.value.counts
+      });
+    }
+
+    if (domain.status === "fulfilled") {
+      for (const d of domain.value) {
+        results.push({
+          queueName: d.queueName,
+          profile: d.profile,
+          status: d.counts !== null ? "up" : "down",
+          counts: d.counts
+        });
+      }
+    }
+
+    return results;
   }
 
   private async checkDatabase() {

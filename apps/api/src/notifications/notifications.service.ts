@@ -8,7 +8,8 @@ import { NotificationsRepository } from "./notifications.repository";
 import {
   createEmailNotificationQueue,
   EmailNotificationJob,
-  getEmailNotificationQueueMonitoring
+  getEmailNotificationQueueMonitoring,
+  getEmailNotificationQueuePolicySnapshot
 } from "./notifications.queue";
 
 @Injectable()
@@ -24,9 +25,9 @@ export class NotificationsService {
     return this.notificationsRepository.getBoundary();
   }
 
-  getQueueMonitoring() {
+  async getQueueMonitoring() {
     return {
-      queue: getEmailNotificationQueueMonitoring()
+      queue: await getEmailNotificationQueueMonitoring()
     };
   }
 
@@ -47,7 +48,7 @@ export class NotificationsService {
               )
             )
           : [],
-        queue: getEmailNotificationQueueMonitoring(),
+      queue: await getEmailNotificationQueueMonitoring(),
         paymentTemplates: [
           "payment-approved-customer",
           "payment-approved-store",
@@ -106,7 +107,7 @@ export class NotificationsService {
 
       return {
         queued: true,
-        queue: getEmailNotificationQueueMonitoring(),
+      queue: await getEmailNotificationQueueMonitoring(),
         jobId: queuedJob.id ?? jobId,
         notification: {
           id: notification.id,

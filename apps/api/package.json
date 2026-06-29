@@ -35,11 +35,14 @@
     "test:payments-processing": "node --test dist/payments/payments-processing.test.js",
     "test:payments-modeling": "node --test dist/payments/payments-modeling.test.js",
     "test:notifications-queue": "node --test dist/notifications/notifications-queue.test.js",
+    "test:domains-queue": "node --test dist/domains/domains-queue.test.js",
+    "test:payments-queue": "node --test dist/payments/payments-queue.test.js",
+    "test:health-queues": "node --test dist/health/health-queues.test.js",
     "test:shipping-api": "node --test dist/shipping/shipping-api.test.js",
     "test:shipping-modeling": "node --test dist/shipping/shipping-modeling.test.js",
     "test:tenant-resolution": "node --test dist/domains/tenant-resolution.test.js",
     "test:domains": "node --test dist/domains/tenant-resolution.test.js dist/domains/domain-registration.test.js dist/domains/domain-dns-verification.test.js dist/domains/domain-ssl-provisioning.test.js dist/domains/domain-lifecycle.test.js",
-    "test:ci": "node --test dist/auth/auth-validation.test.js dist/auth/auth-authorization.test.js dist/domains/tenant-resolution.test.js dist/catalog/catalog-categories.test.js dist/cart/cart-modeling.test.js dist/orders/orders-modeling.test.js dist/payments/payments-state-machine.test.js dist/notifications/notifications-queue.test.js dist/shipping/shipping-modeling.test.js"
+    "test:ci": "node --test dist/auth/auth-validation.test.js dist/auth/auth-authorization.test.js dist/domains/tenant-resolution.test.js dist/catalog/catalog-categories.test.js dist/cart/cart-modeling.test.js dist/orders/orders-modeling.test.js dist/payments/payments-state-machine.test.js dist/notifications/notifications-queue.test.js dist/domains/domains-queue.test.js dist/payments/payments-queue.test.js dist/health/health-queues.test.js dist/shipping/shipping-modeling.test.js"
   },
   "dependencies": {
     "@acme/config": "workspace:*",

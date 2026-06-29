@@ -1,4 +1,4 @@
-import { createQueue, createWorker, getQueueMonitoringSnapshot } from "@acme/queue";
+import { createQueue, createWorker, getQueueMonitoringSnapshot, getQueuePolicySnapshot } from "@acme/queue";
 
 export const PAYMENT_WEBHOOK_QUEUE = "payment-webhook-processing";
 
@@ -20,8 +20,15 @@ export function createPaymentWebhookWorker(
   );
 }
 
-export function getPaymentQueueMonitoring() {
-  return getQueueMonitoringSnapshot(
+export function getPaymentQueuePolicySnapshot() {
+  return getQueuePolicySnapshot(
+    PAYMENT_WEBHOOK_QUEUE,
+    "payment-webhook-processing"
+  );
+}
+
+export async function getPaymentQueueMonitoring() {
+  return await getQueueMonitoringSnapshot(
     PAYMENT_WEBHOOK_QUEUE,
     "payment-webhook-processing"
   );

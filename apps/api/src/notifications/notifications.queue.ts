@@ -1,4 +1,4 @@
-import { createQueue, createWorker, getQueueMonitoringSnapshot } from "@acme/queue";
+import { createQueue, createWorker, getQueueMonitoringSnapshot, getQueuePolicySnapshot } from "@acme/queue";
 
 export const EMAIL_NOTIFICATION_QUEUE = "notifications-email";
 
@@ -24,6 +24,10 @@ export function createEmailNotificationWorker(
   );
 }
 
-export function getEmailNotificationQueueMonitoring() {
-  return getQueueMonitoringSnapshot(EMAIL_NOTIFICATION_QUEUE, "notifications-email");
+export function getEmailNotificationQueuePolicySnapshot() {
+  return getQueuePolicySnapshot(EMAIL_NOTIFICATION_QUEUE, "notifications-email");
+}
+
+export async function getEmailNotificationQueueMonitoring() {
+  return await getQueueMonitoringSnapshot(EMAIL_NOTIFICATION_QUEUE, "notifications-email");
 }

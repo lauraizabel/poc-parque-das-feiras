@@ -44,10 +44,11 @@ describe("auth token flows", () => {
     notificationsService = app.get(NotificationsService);
     notificationsService.enqueueEmailNotification = (async (input: EmailNotificationJob) => {
       queuedNotifications.push(input);
+      const monitoring = await notificationsService.getQueueMonitoring();
 
       return {
         queued: true,
-        queue: notificationsService.getQueueMonitoring().queue,
+        queue: monitoring.queue,
         jobId: `auth-test-email-${queuedNotifications.length}`,
         notification: {
           to: input.to,

@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import {
   buildQueueDefaultJobOptions,
   buildWorkerOptions,
-  getQueueMonitoringSnapshot,
+  getQueuePolicySnapshot,
   getQueuePolicy
 } from "./index";
 
@@ -11,7 +11,7 @@ describe("queue policies", () => {
   it("defines retries and timeout for notification email jobs", () => {
     const policy = getQueuePolicy("notifications-email");
     const options = buildQueueDefaultJobOptions("notifications-email");
-    const snapshot = getQueueMonitoringSnapshot("notifications-email", "notifications-email");
+    const snapshot = getQueuePolicySnapshot("notifications-email", "notifications-email");
 
     assert.equal(policy.attempts, 5);
     assert.equal(policy.timeoutMs, 30_000);
@@ -26,7 +26,7 @@ describe("queue policies", () => {
   it("defines stronger retry policy for domain ssl status monitoring", () => {
     const policy = getQueuePolicy("domain-ssl-status");
     const workerOptions = buildWorkerOptions("domain-ssl-status");
-    const snapshot = getQueueMonitoringSnapshot("domain-ssl-status", "domain-ssl-status");
+    const snapshot = getQueuePolicySnapshot("domain-ssl-status", "domain-ssl-status");
 
     assert.equal(policy.attempts, 10);
     assert.equal(policy.timeoutMs, 60_000);
@@ -35,8 +35,8 @@ describe("queue policies", () => {
     assert.equal(snapshot.backoffDelayMs, 30_000);
   });
 
-  it("exposes monitoring snapshot for payment webhook processing", () => {
-    const snapshot = getQueueMonitoringSnapshot(
+  it("exposes policy snapshot for payment webhook processing", () => {
+    const snapshot = getQueuePolicySnapshot(
       "payment-webhook-processing",
       "payment-webhook-processing"
     );

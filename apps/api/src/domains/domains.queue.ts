@@ -1,4 +1,4 @@
-import { createQueue, createWorker, getQueueMonitoringSnapshot } from "@acme/queue";
+import { createQueue, createWorker, getQueueMonitoringSnapshot, getQueuePolicySnapshot } from "@acme/queue";
 
 export const DOMAIN_DNS_VERIFICATION_QUEUE = "domain-dns-verification";
 export const DOMAIN_SSL_PROVISIONING_QUEUE = "domain-ssl-provisioning";
@@ -50,10 +50,18 @@ export function createDomainSslStatusWorker(
   );
 }
 
-export function getDomainQueueMonitoring() {
+export function getDomainQueuePolicySnapshots() {
   return [
-    getQueueMonitoringSnapshot(DOMAIN_DNS_VERIFICATION_QUEUE, "domain-dns-verification"),
-    getQueueMonitoringSnapshot(DOMAIN_SSL_PROVISIONING_QUEUE, "domain-ssl-provisioning"),
-    getQueueMonitoringSnapshot(DOMAIN_SSL_STATUS_QUEUE, "domain-ssl-status")
+    getQueuePolicySnapshot(DOMAIN_DNS_VERIFICATION_QUEUE, "domain-dns-verification"),
+    getQueuePolicySnapshot(DOMAIN_SSL_PROVISIONING_QUEUE, "domain-ssl-provisioning"),
+    getQueuePolicySnapshot(DOMAIN_SSL_STATUS_QUEUE, "domain-ssl-status")
+  ];
+}
+
+export async function getDomainQueueMonitoring() {
+  return [
+    await getQueueMonitoringSnapshot(DOMAIN_DNS_VERIFICATION_QUEUE, "domain-dns-verification"),
+    await getQueueMonitoringSnapshot(DOMAIN_SSL_PROVISIONING_QUEUE, "domain-ssl-provisioning"),
+    await getQueueMonitoringSnapshot(DOMAIN_SSL_STATUS_QUEUE, "domain-ssl-status")
   ];
 }

@@ -23,7 +23,7 @@ import { canTransitionOrderStatus } from "../orders/order-status.rules";
 import { OrdersRepository } from "../orders/orders.repository";
 import { NotificationsService } from "../notifications/notifications.service";
 import { PaymentsRepository } from "./payments.repository";
-import { createPaymentWebhookQueue } from "./payments.queue";
+import { createPaymentWebhookQueue, getPaymentQueueMonitoring } from "./payments.queue";
 import { StripeConnectPaymentGatewayAdapter } from "./stripe-connect.adapter";
 import { CreateOrderPaymentIntentInput } from "./payments.schemas";
 
@@ -43,6 +43,12 @@ export class PaymentsService {
 
   getBoundary() {
     return this.paymentsRepository.getBoundary();
+  }
+
+  async getQueueMonitoring() {
+    return {
+      queue: await getPaymentQueueMonitoring()
+    };
   }
 
   async createOrderPaymentIntent(
