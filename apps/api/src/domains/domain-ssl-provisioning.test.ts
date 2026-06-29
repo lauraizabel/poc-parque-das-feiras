@@ -128,6 +128,9 @@ describe("domain ssl provisioning", () => {
       {
         recordEvent: async () => null
       } as never,
+      {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
+      } as never,
       new DomainsDnsService(),
       new DomainsSslService({
         get: (key: string) => {
@@ -164,6 +167,9 @@ describe("domain ssl provisioning", () => {
       } as never,
       {
         recordEvent: async () => null
+      } as never,
+      {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
       } as never,
       new DomainsDnsService(),
       new DomainsSslService({
@@ -230,6 +236,9 @@ describe("domain ssl provisioning", () => {
       {
         recordEvent: async () => null
       } as never,
+      {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
+      } as never,
       new DomainsDnsService(),
       new DomainsSslService({
         get: (key: string) => {
@@ -273,6 +282,9 @@ describe("domain ssl provisioning", () => {
       } as never,
       {
         recordEvent: async () => null
+      } as never,
+      {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
       } as never,
       new DomainsDnsService(),
       new DomainsSslService({

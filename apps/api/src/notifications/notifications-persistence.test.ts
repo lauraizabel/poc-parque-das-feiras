@@ -2,12 +2,14 @@ import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 import { prisma } from "@acme/database";
 import { NotificationChannel, NotificationStatus } from "@prisma/client";
+import { ConsoleEmailProvider } from "./providers/console-email.provider";
 import { NotificationsRepository } from "./notifications.repository";
 import { NotificationsService } from "./notifications.service";
 
 describe("notifications persistence", () => {
   const repository = new NotificationsRepository();
-  const service = new NotificationsService(repository);
+  const consoleProvider = new ConsoleEmailProvider();
+  const service = new NotificationsService(repository, consoleProvider);
   const cleanupStoreIds = new Set<string>();
   const cleanupUserIds = new Set<string>();
   const cleanupNotificationIds = new Set<string>();

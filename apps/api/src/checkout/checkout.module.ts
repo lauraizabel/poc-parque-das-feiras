@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/c
 import { CartModule } from "../cart/cart.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { DomainsModule } from "../domains/domains.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { PublicStorefrontMiddleware } from "../domains/public-storefront.middleware";
 import { OrdersModule } from "../orders/orders.module";
 import { PaymentsModule } from "../payments/payments.module";
@@ -11,7 +12,7 @@ import { CheckoutRepository } from "./checkout.repository";
 import { CheckoutService } from "./checkout.service";
 
 @Module({
-  imports: [DomainsModule, CartModule, CatalogModule, OrdersModule, PaymentsModule, ShippingModule],
+  imports: [DomainsModule, CartModule, CatalogModule, OrdersModule, PaymentsModule, ShippingModule, NotificationsModule],
   controllers: [CheckoutController],
   providers: [CheckoutService, CheckoutRepository],
   exports: [CheckoutService, CheckoutRepository]

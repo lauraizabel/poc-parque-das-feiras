@@ -49,6 +49,23 @@ export class DomainsRepository {
     });
   }
 
+  findDomainWithStore(domainId: string) {
+    return prisma.storeDomain.findUnique({
+      where: { id: domainId },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            owner: { select: { email: true } },
+            supportEmail: true
+          }
+        }
+      }
+    });
+  }
+
   findActiveDomain(hostname: string) {
     return prisma.storeDomain.findFirst({
       where: {

@@ -1,6 +1,9 @@
-import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, Logger } from "@nestjs/common";
 import { NotificationChannel, NotificationStatus, PaymentStatus } from "@prisma/client";
 import { toSafePayloadSummary } from "../platform/security/payload-summary";
+import { EmailProvider } from "./providers/email-provider.types";
+import { EMAIL_PROVIDER_TOKEN } from "./providers/email-provider-factory";
+import { renderTemplate } from "./templates/renderer";
 import { NotificationsRepository } from "./notifications.repository";
 import {
   createEmailNotificationQueue,
@@ -12,7 +15,10 @@ import {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
 
-  constructor(private readonly notificationsRepository: NotificationsRepository) {}
+  constructor(
+    private readonly notificationsRepository: NotificationsRepository,
+    @Inject(EMAIL_PROVIDER_TOKEN) private readonly emailProvider: EmailProvider
+  ) {}
 
   getBoundary() {
     return this.notificationsRepository.getBoundary();
@@ -124,47 +130,85 @@ export class NotificationsService {
 
   async processEmailNotificationJob(input: EmailNotificationJob) {
     const job = this.normalizeEmailJob(input);
-    const deliveredAt = new Date();
-    const deliveredAtIso = deliveredAt.toISOString();
-    const delivery = {
-      channel: "email",
-      provider: "console",
-      to: job.to,
-      subject: job.subject,
-      templateKey: job.templateKey,
-      deliveredAt: deliveredAtIso,
-      metadata: job.metadata ?? {},
-      variables: job.variables ?? {}
-    };
-
     const notificationId = this.extractMetadataValue(job.metadata?.notificationId);
+    const rendered = renderTemplate(job.templateKey, job.variables ?? {});
+    const subject = rendered?.subject ?? job.subject;
+    const html = rendered?.html ?? `<p>${job.subject}</p>`;
+    const text = rendered?.text ?? job.subject;
+
+    const sendResult = await this.emailProvider.send({
+      to: job.to,
+      subject,
+      html,
+      text
+    });
+
+    if (sendResult.success) {
+      const deliveredAt = new Date();
+
+      if (notificationId) {
+        await this.notificationsRepository.updateNotificationStatus({
+          notificationId,
+          status: NotificationStatus.DELIVERED,
+          provider: sendResult.provider,
+          deliveredAt,
+          payloadSummary: {
+            metadata: job.metadata ?? {},
+            variables: job.variables ?? {},
+            delivery: {
+              provider: sendResult.provider,
+              providerMessageId: sendResult.providerMessageId,
+              deliveredAt: deliveredAt.toISOString()
+            }
+          }
+        });
+      }
+
+      this.logger.log(
+        `Email sent via ${sendResult.provider} to ${job.to} — subject: "${subject}"`
+      );
+
+      return {
+        delivered: true,
+        delivery: {
+          channel: "email",
+          provider: sendResult.provider,
+          providerMessageId: sendResult.providerMessageId,
+          to: job.to,
+          subject,
+          templateKey: job.templateKey,
+          deliveredAt: deliveredAt.toISOString(),
+          metadata: job.metadata ?? {},
+          variables: job.variables ?? {}
+        }
+      };
+    }
 
     if (notificationId) {
       await this.notificationsRepository.updateNotificationStatus({
         notificationId,
-        status: NotificationStatus.DELIVERED,
-        provider: "console",
-        deliveredAt,
+        status: NotificationStatus.FAILED,
+        provider: sendResult.provider,
+        failedAt: new Date(),
+        failureMessage: sendResult.errorMessage ?? "Email delivery failed",
         payloadSummary: {
           metadata: job.metadata ?? {},
           variables: job.variables ?? {},
-          delivery: {
-            provider: "console",
-            deliveredAt: deliveredAtIso
+          error: {
+            provider: sendResult.provider,
+            message: sendResult.errorMessage
           }
         }
       });
     }
 
-    this.logger.log(
-      `Email notification delivered to ${job.to}`,
-      toSafePayloadSummary(delivery) ?? "{}"
+    this.logger.error(
+      `Email delivery failed via ${sendResult.provider} to ${job.to} — ${sendResult.errorMessage}`
     );
 
-    return {
-      delivered: true,
-      delivery
-    };
+    throw new Error(
+      `Email delivery failed: ${sendResult.errorMessage ?? "Unknown error"}`
+    );
   }
 
   async notifyPaymentStatusChange(input: {

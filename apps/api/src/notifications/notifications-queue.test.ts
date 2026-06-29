@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { ConsoleEmailProvider } from "./providers/console-email.provider";
 import { NotificationsRepository } from "./notifications.repository";
 import { NotificationsService } from "./notifications.service";
 
 describe("notifications queue", () => {
-  const service = new NotificationsService(new NotificationsRepository());
+  const consoleProvider = new ConsoleEmailProvider();
+  const service = new NotificationsService(new NotificationsRepository(), consoleProvider);
 
   it("exposes queue monitoring details for email notifications", () => {
     const monitoring = service.getQueueMonitoring();

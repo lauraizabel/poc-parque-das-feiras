@@ -2,12 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AuditLogChannel, DomainStatus } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import { AuthenticatedUser } from "../auth/auth.types";
+import { NotificationsService } from "../notifications/notifications.service";
 import { DomainsDnsService } from "./domains-dns.service";
 import { DomainsSslService } from "./domains-ssl.service";
 import { DomainsRepository } from "./domains.repository";
@@ -23,10 +25,13 @@ const SSL_STATUS_RECHECK_DELAY_MS = 30_000;
 
 @Injectable()
 export class DomainsService {
+  private readonly logger = new Logger(DomainsService.name);
+
   constructor(
     private readonly domainsRepository: DomainsRepository,
     private readonly configService: ConfigService,
     private readonly auditService: AuditService,
+    private readonly notificationsService: NotificationsService,
     private readonly domainsDnsResolver: DomainsDnsService,
     private readonly domainsSslService: DomainsSslService
   ) {}
@@ -347,7 +352,7 @@ export class DomainsService {
     const provisioningMetadata = JSON.stringify(result.payload ?? {});
 
     if (result.status === "active") {
-      return this.domainsRepository.updateDomainSslStatus(domainId, {
+      const updatedDomain = await this.domainsRepository.updateDomainSslStatus(domainId, {
         status: DomainStatus.ACTIVE,
         sslProvisioningId: result.externalId,
         sslProvisioningMetadata: provisioningMetadata,
@@ -356,6 +361,9 @@ export class DomainsService {
         sslErrorMessage: null,
         activatedAt: checkedAt
       });
+
+      void this.tryEnqueueDomainActivatedNotification(domainId);
+      return updatedDomain;
     }
 
     if (result.status === "error") {
@@ -411,7 +419,7 @@ export class DomainsService {
     const provisioningMetadata = JSON.stringify(result.payload ?? {});
 
     if (result.status === "active") {
-      return this.domainsRepository.updateDomainSslStatus(domainId, {
+      const updatedDomain = await this.domainsRepository.updateDomainSslStatus(domainId, {
         status: DomainStatus.ACTIVE,
         sslProvisioningId: domain.sslProvisioningId,
         sslProvisioningMetadata: provisioningMetadata,
@@ -420,6 +428,9 @@ export class DomainsService {
         sslErrorMessage: null,
         activatedAt: checkedAt
       });
+
+      void this.tryEnqueueDomainActivatedNotification(domainId);
+      return updatedDomain;
     }
 
     if (result.status === "error") {
@@ -446,6 +457,57 @@ export class DomainsService {
 
     await this.enqueueSslStatusSync(domainId, SSL_STATUS_RECHECK_DELAY_MS);
     return updatedDomain;
+  }
+
+  private async tryEnqueueDomainActivatedNotification(domainId: string) {
+    try {
+      const domainWithStore = await this.domainsRepository.findDomainWithStore(domainId);
+
+      if (!domainWithStore?.store) {
+        return;
+      }
+
+      const store = domainWithStore.store;
+
+      await this.notificationsService.enqueueEmailNotification({
+        to: store.owner.email,
+        subject: `Domínio ativado — ${store.name}`,
+        templateKey: "domain-activated",
+        variables: {
+          storeName: store.name,
+          domainHost: domainWithStore.host,
+          storeSlug: store.slug
+        },
+        metadata: {
+          storeId: store.id,
+          domainId: domainWithStore.id,
+          audience: "merchant"
+        }
+      });
+
+      if (store.supportEmail) {
+        await this.notificationsService.enqueueEmailNotification({
+          to: store.supportEmail,
+          subject: `Domínio ativado — ${store.name}`,
+          templateKey: "domain-activated",
+          variables: {
+            storeName: store.name,
+            domainHost: domainWithStore.host,
+            storeSlug: store.slug
+          },
+          metadata: {
+            storeId: store.id,
+            domainId: domainWithStore.id,
+            audience: "merchant"
+          }
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to enqueue domain-activated notification for domain ${domainId}`,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
   }
 
   async resolveHost(request: {

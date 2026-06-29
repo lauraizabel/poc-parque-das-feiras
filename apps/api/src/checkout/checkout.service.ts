@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException
 } from "@nestjs/common";
 import { createHash, randomBytes } from "node:crypto";
@@ -8,6 +9,7 @@ import { OrderStatus, ProductStatus, ShippingMethodType } from "@prisma/client";
 import { PublicStorefrontContext } from "../auth/auth.types";
 import { CartRepository } from "../cart/cart.repository";
 import { CatalogRepository } from "../catalog/catalog.repository";
+import { NotificationsService } from "../notifications/notifications.service";
 import { OrdersRepository } from "../orders/orders.repository";
 import { PaymentsRepository } from "../payments/payments.repository";
 import { ShippingRepository } from "../shipping/shipping.repository";
@@ -20,10 +22,15 @@ export class CheckoutService {
     private readonly checkoutRepository: CheckoutRepository,
     private readonly cartRepository: CartRepository,
     private readonly catalogRepository: CatalogRepository,
+    private readonly notificationsService: NotificationsService,
     private readonly ordersRepository: OrdersRepository,
     private readonly paymentsRepository: PaymentsRepository,
     private readonly shippingRepository: ShippingRepository
-  ) {}
+  ) {
+    this.logger = new Logger(CheckoutService.name);
+  }
+
+  private readonly logger: Logger;
 
   getBoundary() {
     return this.checkoutRepository.getBoundary();
@@ -245,7 +252,17 @@ export class CheckoutService {
       stockAdjustments
     });
 
+    const itemCount = cart.items.length;
     const storedOrder = await this.ordersRepository.getOrderById(order.id);
+
+    void this.enqueueOrderCreatedNotifications(
+      publicStore.storeId,
+      order.id,
+      input,
+      itemCount,
+      totalCents,
+      cart.currencyCode
+    );
 
     return {
       store: publicStore,
@@ -259,6 +276,77 @@ export class CheckoutService {
         status: storedOrder?.status ?? OrderStatus.CREATED
       }
     };
+  }
+
+  private async enqueueOrderCreatedNotifications(
+    storeId: string,
+    orderId: string,
+    input: CreateOrderFromCartInput,
+    itemCount: number,
+    totalCents: number,
+    currencyCode: string
+  ) {
+    try {
+      const storeBrief = await this.checkoutRepository.getStoreBrief(storeId);
+
+      if (!storeBrief) {
+        return;
+      }
+
+      const totalLabel = this.formatMoney(totalCents, currencyCode);
+
+      const customerVariables = {
+        customerFullName: input.customerFullName.trim(),
+        storeName: storeBrief.name,
+        orderId,
+        totalLabel,
+        itemCount: String(itemCount)
+      };
+
+      const storeVariables = {
+        storeName: storeBrief.name,
+        orderId,
+        customerEmail: input.customerEmail.trim().toLowerCase(),
+        totalLabel,
+        itemCount: String(itemCount)
+      };
+
+      await this.notificationsService.enqueueEmailNotification({
+        to: input.customerEmail.trim().toLowerCase(),
+        subject: `Pedido confirmado — ${storeBrief.name}`,
+        templateKey: "order-created-customer",
+        variables: customerVariables,
+        metadata: {
+          storeId,
+          orderId,
+          audience: "customer"
+        }
+      });
+
+      const storeRecipients = [
+        storeBrief.ownerEmail,
+        ...(storeBrief.supportEmail ? [storeBrief.supportEmail] : [])
+      ];
+
+      for (const recipient of [...new Set(storeRecipients)]) {
+        await this.notificationsService.enqueueEmailNotification({
+          to: recipient,
+          subject: `Novo pedido — ${storeBrief.name}`,
+          templateKey: "order-created-store",
+          variables: storeVariables,
+          metadata: {
+            storeId,
+            orderId,
+            audience: "merchant"
+          }
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to enqueue order-created notification for order ${orderId}`,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
   }
 
   private async findActiveCart(
@@ -308,6 +396,13 @@ export class CheckoutService {
           ? "Retirada local sem integracao logística no MVP."
           : "Frete calculado por regra fixa simples no MVP."
     }));
+  }
+
+  private formatMoney(totalCents: number, currencyCode: string) {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: currencyCode
+    }).format(totalCents / 100);
   }
 
   private hashPublicAccessToken(token: string) {

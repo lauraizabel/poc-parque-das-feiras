@@ -70,6 +70,9 @@ describe("domain dns verification", () => {
         recordEvent: async () => null
       } as never,
       {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
+      } as never,
+      {
         resolveCname: async () => ({
           configuredTarget: `${dnsTarget}.`
         })
@@ -119,6 +122,9 @@ describe("domain dns verification", () => {
         recordEvent: async () => null
       } as never,
       {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
+      } as never,
+      {
         resolveCname: async () => ({
           configuredTarget: "wrong-target.example.com"
         })
@@ -165,6 +171,9 @@ describe("domain dns verification", () => {
       } as never,
       {
         recordEvent: async () => null
+      } as never,
+      {
+        enqueueEmailNotification: async () => ({ queued: true, queue: {} as never, jobId: "", notification: {} as never })
       } as never,
       {
         resolveCname: async () => {

@@ -3,6 +3,14 @@ import { prisma } from "@acme/database";
 import { CartStatus, OrderStatus, ProductStatus } from "@prisma/client";
 import { DomainBoundary } from "../platform/domain-boundary";
 
+export type StoreBrief = {
+  id: string;
+  name: string;
+  slug: string;
+  ownerEmail: string;
+  supportEmail: string | null;
+};
+
 @Injectable()
 export class CheckoutRepository {
   getBoundary(): DomainBoundary {
@@ -11,6 +19,25 @@ export class CheckoutRepository {
       description: "Checkout orchestration before payment authorization.",
       responsibilities: ["checkout sessions", "addresses", "shipping selection", "order draft creation"],
       dependsOn: ["database", "cart", "catalog", "payments"]
+    };
+  }
+
+  async getStoreBrief(storeId: string): Promise<StoreBrief | null> {
+    const store = await prisma.store.findUnique({
+      where: { id: storeId },
+      include: { owner: { select: { email: true } } }
+    });
+
+    if (!store) {
+      return null;
+    }
+
+    return {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      ownerEmail: store.owner.email,
+      supportEmail: store.supportEmail
     };
   }
 
