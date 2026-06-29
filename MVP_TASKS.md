@@ -506,10 +506,10 @@ Legenda de prioridade:
 ## Epic 12: Admin global
 
 ### Task 12.1 (P1): Modelar visão administrativa da plataforma
-- [ ] Definir endpoints e consultas para gestão global de lojas, usuários, pedidos e domínios.
-- [ ] Critérios de aceite: `PLATFORM_ADMIN` possui visão agregada e ações básicas controladas.
-- [ ] Notas técnicas: manter segregação clara entre operações globais e operações da loja.
-- [ ] Dependências: autenticação e domínios principais.
+- [x] Definir endpoints e consultas para gestão global de lojas, usuários, pedidos e domínios.
+- [x] Critérios de aceite: `PLATFORM_ADMIN` possui visão agregada e ações básicas controladas.
+- [x] Notas técnicas: manter segregação clara entre operações globais e operações da loja.
+- [x] Dependências: autenticação e domínios principais.
 
 ### Task 12.2 (P1): Implementar listagem e detalhe de lojas no admin
 - [ ] Criar CRUD operacional básico para visualizar lojas, status, owner e domínio.
