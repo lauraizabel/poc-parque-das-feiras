@@ -119,8 +119,14 @@ export class CatalogController {
   @StoreAccess()
   @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
   @Post("products")
-  createProduct(@Req() _request: AuthenticatedRequest, @Body() body: unknown) {
+  createProduct(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
     return this.catalogService.createProduct(
+      {
+        id: request.user.sub,
+        email: request.user.email,
+        fullName: null,
+        platformRole: request.user.platformRole
+      },
       parseCatalogBody(createProductSchema, body)
     );
   }
@@ -197,8 +203,21 @@ export class CatalogController {
   @StoreAccess()
   @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
   @Post(":storeId/products/:productId/publish")
-  publishProduct(@Param("storeId") storeId: string, @Param("productId") productId: string) {
-    return this.catalogService.publishProduct(storeId, productId);
+  publishProduct(
+    @Req() request: AuthenticatedRequest,
+    @Param("storeId") storeId: string,
+    @Param("productId") productId: string
+  ) {
+    return this.catalogService.publishProduct(
+      {
+        id: request.user.sub,
+        email: request.user.email,
+        fullName: null,
+        platformRole: request.user.platformRole
+      },
+      storeId,
+      productId
+    );
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

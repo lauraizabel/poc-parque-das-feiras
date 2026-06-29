@@ -9,10 +9,12 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { createHash, randomBytes } from "node:crypto";
 import {
+  AuditLogChannel,
   AuthFlowAuditAction,
   AuthFlowTokenPurpose,
   PlatformRole
 } from "@prisma/client";
+import { AuditService } from "../audit/audit.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { AuthRepository } from "./auth.repository";
 import {
@@ -57,7 +59,8 @@ export class AuthService {
     private readonly passwordService: PasswordService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly notificationsService: NotificationsService
+    private readonly notificationsService: NotificationsService,
+    private readonly auditService: AuditService
   ) {}
 
   getBoundary() {
@@ -147,6 +150,22 @@ export class AuthService {
       onboarding.user.emailVerifiedAt
     );
 
+    await this.auditService.recordEvent({
+      action: "store.created",
+      channel: AuditLogChannel.HTTP_API,
+      userId: onboarding.user.id,
+      storeId: onboarding.store.id,
+      entityType: "STORE",
+      entityId: onboarding.store.id,
+      payloadSummary: {
+        source: "auth.register-merchant",
+        storeName: onboarding.store.name,
+        storeSlug: onboarding.store.slug,
+        defaultSubdomain: onboarding.store.defaultSubdomain,
+        membershipRole: onboarding.membership.role
+      }
+    });
+
     return {
       ...session,
       store: onboarding.store,
@@ -160,6 +179,18 @@ export class AuthService {
     if (!user || !this.passwordService.verifySecret(input.password, user.passwordHash)) {
       throw new UnauthorizedException("Invalid email or password");
     }
+
+    await this.auditService.recordEvent({
+      action: "auth.login",
+      channel: AuditLogChannel.HTTP_API,
+      userId: user.id,
+      entityType: "USER",
+      entityId: user.id,
+      payloadSummary: {
+        email: user.email,
+        platformRole: user.platformRole
+      }
+    });
 
     return this.issueAuthSession(
       user.id,

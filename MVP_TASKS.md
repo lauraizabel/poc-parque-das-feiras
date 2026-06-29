@@ -550,10 +550,10 @@ Legenda de prioridade:
 - [x] Dependências: Prisma e módulos de domínio.
 
 ### Task 13.2 (P1): Implementar trilha de auditoria para ações críticas
-- [ ] Registrar eventos como login, criação de loja, alteração de domínio, mudança de papel, criação de produto e mudança de status de pedido.
-- [ ] Critérios de aceite: admin e backend conseguem rastrear ações críticas com autor e timestamp.
-- [ ] Notas técnicas: padronizar estrutura de evento auditável.
-- [ ] Dependências: AuditLog model.
+- [x] Registrar eventos como login, criação de loja, alteração de domínio, mudança de papel, criação de produto e mudança de status de pedido.
+- [x] Critérios de aceite: admin e backend conseguem rastrear ações críticas com autor e timestamp.
+- [x] Notas técnicas: padronizar estrutura de evento auditável.
+- [x] Dependências: AuditLog model.
 
 ### Task 13.3 (P1): Implementar notificações básicas por e-mail
 - [ ] Criar serviço de e-mail para eventos essenciais: confirmação de conta, reset de senha, pedido criado, pagamento aprovado, domínio ativado.

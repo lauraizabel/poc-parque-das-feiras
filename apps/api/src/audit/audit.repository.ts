@@ -66,4 +66,27 @@ export class AuditRepository {
       }
     });
   }
+
+  listAuditLogs(input?: {
+    storeId?: string;
+    userId?: string;
+    action?: string;
+    take?: number;
+  }) {
+    return prisma.auditLog.findMany({
+      where: {
+        ...(input?.storeId ? { storeId: input.storeId } : {}),
+        ...(input?.userId ? { userId: input.userId } : {}),
+        ...(input?.action ? { action: input.action } : {})
+      },
+      include: {
+        user: true,
+        store: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: input?.take ?? 100
+    });
+  }
 }

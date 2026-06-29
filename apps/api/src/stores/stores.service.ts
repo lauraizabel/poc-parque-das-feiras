@@ -1,5 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { StoreMemberRole } from "@prisma/client";
+import { AuditLogChannel, StoreMemberRole } from "@prisma/client";
+import { AuditService } from "../audit/audit.service";
+import { AuthenticatedUser } from "../auth/auth.types";
 import { StoresRepository } from "./stores.repository";
 import {
   CreateStoreInput,
@@ -30,7 +32,10 @@ const RESERVED_SLUGS = new Set([
 
 @Injectable()
 export class StoresService {
-  constructor(private readonly storesRepository: StoresRepository) {}
+  constructor(
+    private readonly storesRepository: StoresRepository,
+    private readonly auditService: AuditService
+  ) {}
 
   getBoundary() {
     return this.storesRepository.getBoundary();
@@ -118,7 +123,7 @@ export class StoresService {
     };
   }
 
-  async createStore(input: CreateStoreInput & { ownerId: string }) {
+  async createStore(input: CreateStoreInput & { ownerId: string; actor?: AuthenticatedUser | null }) {
     const slug = this.normalizeSlug(input.slug);
     const requestedSubdomain = input.defaultSubdomain
       ? this.normalizeSlug(input.defaultSubdomain)
@@ -139,7 +144,7 @@ export class StoresService {
       ? await this.ensureSpecificSubdomainAvailable(requestedSubdomain)
       : await this.generateUniqueDefaultSubdomain(slug);
 
-    return this.storesRepository.createStore({
+    const store = await this.storesRepository.createStore({
       ownerId: input.ownerId,
       name: input.name.trim(),
       slug,
@@ -148,6 +153,23 @@ export class StoresService {
       currencyCode: input.currencyCode?.toUpperCase() ?? "BRL",
       locale: input.locale ?? "pt-BR"
     });
+
+    await this.auditService.recordEvent({
+      action: "store.created",
+      channel: AuditLogChannel.HTTP_API,
+      userId: input.actor?.id ?? input.ownerId,
+      storeId: store.id,
+      entityType: "STORE",
+      entityId: store.id,
+      payloadSummary: {
+        source: "stores.create",
+        storeName: store.name,
+        storeSlug: store.slug,
+        defaultSubdomain: store.defaultSubdomain
+      }
+    });
+
+    return store;
   }
 
   async listMembers(storeId: string) {
@@ -260,6 +282,21 @@ export class StoresService {
     }
 
     const updatedMember = await this.storesRepository.updateMemberRole(input.memberId, input.role);
+
+    await this.auditService.recordEvent({
+      action: "store.member_role_changed",
+      channel: AuditLogChannel.HTTP_API,
+      userId: input.actorUserId,
+      storeId: input.storeId,
+      entityType: "STORE_MEMBER",
+      entityId: updatedMember.id,
+      payloadSummary: {
+        memberUserId: updatedMember.userId,
+        previousRole: member.role,
+        nextRole: updatedMember.role,
+        memberEmail: updatedMember.user.email
+      }
+    });
 
     return {
       member: {

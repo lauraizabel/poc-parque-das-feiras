@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
+import { AuditModule } from "../audit/audit.module";
 import { AuthModule } from "../auth/auth.module";
 import { DomainsModule } from "../domains/domains.module";
 import { PublicStorefrontMiddleware } from "../domains/public-storefront.middleware";
@@ -7,7 +8,7 @@ import { StoresRepository } from "./stores.repository";
 import { StoresService } from "./stores.service";
 
 @Module({
-  imports: [AuthModule, DomainsModule],
+  imports: [AuditModule, AuthModule, DomainsModule],
   controllers: [StoresController],
   providers: [StoresService, StoresRepository],
   exports: [StoresService, StoresRepository]

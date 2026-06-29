@@ -67,6 +67,9 @@ describe("domain dns verification", () => {
         getOrThrow: () => "lvh.me"
       } as never,
       {
+        recordEvent: async () => null
+      } as never,
+      {
         resolveCname: async () => ({
           configuredTarget: `${dnsTarget}.`
         })
@@ -113,6 +116,9 @@ describe("domain dns verification", () => {
         getOrThrow: () => "lvh.me"
       } as never,
       {
+        recordEvent: async () => null
+      } as never,
+      {
         resolveCname: async () => ({
           configuredTarget: "wrong-target.example.com"
         })
@@ -156,6 +162,9 @@ describe("domain dns verification", () => {
       new DomainsRepository(),
       {
         getOrThrow: () => "lvh.me"
+      } as never,
+      {
+        recordEvent: async () => null
       } as never,
       {
         resolveCname: async () => {

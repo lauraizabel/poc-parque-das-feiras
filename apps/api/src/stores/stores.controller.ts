@@ -84,7 +84,13 @@ export class StoresController {
   createStore(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
     return this.storesService.createStore({
       ...parseStoreBody(createStoreSchema, body),
-      ownerId: request.user.sub
+      ownerId: request.user.sub,
+      actor: {
+        id: request.user.sub,
+        email: request.user.email,
+        fullName: null,
+        platformRole: request.user.platformRole
+      }
     });
   }
 

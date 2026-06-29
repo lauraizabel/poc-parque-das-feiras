@@ -5,7 +5,13 @@ import {
   NotFoundException
 } from "@nestjs/common";
 import { createHash } from "node:crypto";
-import { OrderStatus, ShipmentStatus, StatusTransitionEntityType } from "@prisma/client";
+import {
+  AuditLogChannel,
+  OrderStatus,
+  ShipmentStatus,
+  StatusTransitionEntityType
+} from "@prisma/client";
+import { AuditService } from "../audit/audit.service";
 import { AuditRepository } from "../audit/audit.repository";
 import { AuthenticatedUser } from "../auth/auth.types";
 import { OrdersRepository } from "./orders.repository";
@@ -22,7 +28,8 @@ import {
 export class OrdersService {
   constructor(
     private readonly ordersRepository: OrdersRepository,
-    private readonly auditRepository: AuditRepository
+    private readonly auditRepository: AuditRepository,
+    private readonly auditService: AuditService
   ) {}
 
   getBoundary() {
@@ -262,6 +269,21 @@ export class OrdersService {
       actorType: "user",
       actorId: actor.id,
       metadata: JSON.stringify(metadata)
+    });
+
+    await this.auditService.recordEvent({
+      action: "orders.status_updated",
+      channel: AuditLogChannel.HTTP_API,
+      userId: actor.id,
+      storeId: order.storeId,
+      entityType: "ORDER",
+      entityId: order.id,
+      payloadSummary: {
+        fromStatus: order.status,
+        toStatus: input.status,
+        reason: input.reason ?? null,
+        actorEmail: actor.email
+      }
     });
 
     const refreshedOrder = await this.ordersRepository.getOrderByIdAndStore(orderId, input.storeId);

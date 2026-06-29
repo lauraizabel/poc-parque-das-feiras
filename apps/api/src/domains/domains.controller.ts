@@ -42,8 +42,14 @@ export class DomainsController {
   @StoreAccess()
   @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
   @Post()
-  createStoreDomain(@Req() _request: AuthenticatedRequest, @Body() body: unknown) {
+  createStoreDomain(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
     return this.domainsService.createStoreDomain(
+      {
+        id: request.user.sub,
+        email: request.user.email,
+        fullName: null,
+        platformRole: request.user.platformRole
+      },
       parseDomainBody(createStoreDomainSchema, body)
     );
   }
@@ -68,7 +74,15 @@ export class DomainsController {
   @StoreAccess()
   @StoreRoles(StoreMemberRole.STORE_OWNER, StoreMemberRole.STORE_MANAGER)
   @Delete(":storeId")
-  removeStoreDomain(@Param("storeId") storeId: string) {
-    return this.domainsService.removeStoreDomain(storeId);
+  removeStoreDomain(@Req() request: AuthenticatedRequest, @Param("storeId") storeId: string) {
+    return this.domainsService.removeStoreDomain(
+      {
+        id: request.user.sub,
+        email: request.user.email,
+        fullName: null,
+        platformRole: request.user.platformRole
+      },
+      storeId
+    );
   }
 }

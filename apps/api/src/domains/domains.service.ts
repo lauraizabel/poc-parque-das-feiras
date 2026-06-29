@@ -5,7 +5,9 @@ import {
   NotFoundException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { DomainStatus } from "@prisma/client";
+import { AuditLogChannel, DomainStatus } from "@prisma/client";
+import { AuditService } from "../audit/audit.service";
+import { AuthenticatedUser } from "../auth/auth.types";
 import { DomainsDnsService } from "./domains-dns.service";
 import { DomainsSslService } from "./domains-ssl.service";
 import { DomainsRepository } from "./domains.repository";
@@ -24,6 +26,7 @@ export class DomainsService {
   constructor(
     private readonly domainsRepository: DomainsRepository,
     private readonly configService: ConfigService,
+    private readonly auditService: AuditService,
     private readonly domainsDnsResolver: DomainsDnsService,
     private readonly domainsSslService: DomainsSslService
   ) {}
@@ -38,7 +41,7 @@ export class DomainsService {
     };
   }
 
-  async createStoreDomain(input: CreateStoreDomainInput) {
+  async createStoreDomain(actor: AuthenticatedUser, input: CreateStoreDomainInput) {
     const store = await this.domainsRepository.findStoreById(input.storeId);
 
     if (!store) {
@@ -89,12 +92,27 @@ export class DomainsService {
 
     await this.enqueueDnsVerification(domain.id);
 
+    await this.auditService.recordEvent({
+      action: "domain.updated",
+      channel: AuditLogChannel.HTTP_API,
+      userId: actor.id,
+      storeId: input.storeId,
+      entityType: "STORE_DOMAIN",
+      entityId: domain.id,
+      payloadSummary: {
+        source: "domains.create",
+        host: domain.host,
+        status: domain.status,
+        dnsTargetValue: domain.dnsTargetValue
+      }
+    });
+
     return {
       domain
     };
   }
 
-  async removeStoreDomain(storeId: string) {
+  async removeStoreDomain(actor: AuthenticatedUser, storeId: string) {
     const domain = await this.domainsRepository.findCustomDomainByStoreId(storeId);
 
     if (!domain) {
@@ -108,6 +126,20 @@ export class DomainsService {
     const removedDomain = await this.domainsRepository.markDomainRemoved(domain.id, {
       dnsErrorMessage: "Domain removed by store operator",
       sslErrorMessage: "SSL provisioning cleared after domain removal"
+    });
+
+    await this.auditService.recordEvent({
+      action: "domain.updated",
+      channel: AuditLogChannel.HTTP_API,
+      userId: actor.id,
+      storeId,
+      entityType: "STORE_DOMAIN",
+      entityId: removedDomain.id,
+      payloadSummary: {
+        source: "domains.remove",
+        host: removedDomain.host,
+        status: removedDomain.status
+      }
     });
 
     return {

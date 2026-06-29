@@ -125,6 +125,9 @@ describe("domain ssl provisioning", () => {
           return "";
         }
       } as never,
+      {
+        recordEvent: async () => null
+      } as never,
       new DomainsDnsService(),
       new DomainsSslService({
         get: (key: string) => {
@@ -158,6 +161,9 @@ describe("domain ssl provisioning", () => {
       new DomainsRepository(),
       {
         getOrThrow: () => "lvh.me"
+      } as never,
+      {
+        recordEvent: async () => null
       } as never,
       new DomainsDnsService(),
       new DomainsSslService({
@@ -221,6 +227,9 @@ describe("domain ssl provisioning", () => {
       {
         getOrThrow: () => "lvh.me"
       } as never,
+      {
+        recordEvent: async () => null
+      } as never,
       new DomainsDnsService(),
       new DomainsSslService({
         get: (key: string) => {
@@ -261,6 +270,9 @@ describe("domain ssl provisioning", () => {
       new DomainsRepository(),
       {
         getOrThrow: () => "lvh.me"
+      } as never,
+      {
+        recordEvent: async () => null
       } as never,
       new DomainsDnsService(),
       new DomainsSslService({

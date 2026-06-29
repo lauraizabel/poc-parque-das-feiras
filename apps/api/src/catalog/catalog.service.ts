@@ -5,9 +5,10 @@ import {
   NotFoundException
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { CategoryStatus, ProductStatus } from "@prisma/client";
+import { AuditLogChannel, CategoryStatus, ProductStatus } from "@prisma/client";
 import { createHash } from "node:crypto";
-import { PublicStorefrontContext } from "../auth/auth.types";
+import { AuditService } from "../audit/audit.service";
+import { AuthenticatedUser, PublicStorefrontContext } from "../auth/auth.types";
 import { CatalogRepository } from "./catalog.repository";
 import {
   CreateCategoryInput,
@@ -26,7 +27,8 @@ const RESERVED_PRODUCT_SLUGS = new Set(["cart", "checkout", "category", "new", "
 export class CatalogService {
   constructor(
     private readonly catalogRepository: CatalogRepository,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly auditService: AuditService
   ) {}
 
   getBoundary() {
@@ -233,7 +235,7 @@ export class CatalogService {
     };
   }
 
-  async createProduct(input: CreateProductInput) {
+  async createProduct(actor: AuthenticatedUser, input: CreateProductInput) {
     await this.assertCategoryBelongsToStore(input.storeId, input.categoryId);
 
     const slug = this.normalizeSlug(input.slug, "Product");
@@ -272,8 +274,7 @@ export class CatalogService {
       input.stockQuantity
     );
 
-    return {
-      product: await this.catalogRepository.createProduct({
+    const product = await this.catalogRepository.createProduct({
         storeId: input.storeId,
         categoryId: input.categoryId,
         name: input.name.trim(),
@@ -286,7 +287,25 @@ export class CatalogService {
         stockQuantity: input.stockQuantity,
         status,
         isFeatured: input.isFeatured
-      })
+      });
+
+    await this.auditService.recordEvent({
+      action: "catalog.product_created",
+      channel: AuditLogChannel.HTTP_API,
+      userId: actor.id,
+      storeId: input.storeId,
+      entityType: "PRODUCT",
+      entityId: product.id,
+      payloadSummary: {
+        name: product.name,
+        slug: product.slug,
+        status: product.status,
+        categoryId: product.categoryId
+      }
+    });
+
+    return {
+      product
     };
   }
 
@@ -359,15 +378,32 @@ export class CatalogService {
     };
   }
 
-  async publishProduct(storeId: string, productId: string) {
+  async publishProduct(actor: AuthenticatedUser, storeId: string, productId: string) {
     const product = await this.ensureStoreProduct(storeId, productId);
     const status =
       product.stockQuantity > 0 ? ProductStatus.ACTIVE : ProductStatus.OUT_OF_STOCK;
 
+    const updatedProduct = await this.catalogRepository.updateProduct(productId, {
+      status
+    });
+
+    await this.auditService.recordEvent({
+      action: "catalog.product_published",
+      channel: AuditLogChannel.HTTP_API,
+      userId: actor.id,
+      storeId,
+      entityType: "PRODUCT",
+      entityId: updatedProduct.id,
+      payloadSummary: {
+        previousStatus: product.status,
+        nextStatus: updatedProduct.status,
+        slug: updatedProduct.slug,
+        stockQuantity: updatedProduct.stockQuantity
+      }
+    });
+
     return {
-      product: await this.catalogRepository.updateProduct(productId, {
-        status
-      })
+      product: updatedProduct
     };
   }
 
