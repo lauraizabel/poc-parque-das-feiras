@@ -5,6 +5,7 @@ import { DomainBoundary } from "../platform/domain-boundary";
 import {
   ListAdminDomainsQuery,
   ListAdminOrdersQuery,
+  ListAdminPaymentsQuery,
   ListAdminStoresQuery,
   ListAdminUsersQuery,
   UpdateAdminStoreStatusInput
@@ -276,13 +277,100 @@ export class AdminRepository {
       where,
       include: {
         store: true,
+        customer: true,
         payment: true,
+        shippingMethod: true,
+        shipment: true,
         items: {
           orderBy: [{ createdAt: "asc" }]
         }
       },
       orderBy: [{ createdAt: "desc" }],
       take: input.limit
+    });
+  }
+
+  findOrderById(orderId: string) {
+    return prisma.order.findUnique({
+      where: {
+        id: orderId
+      },
+      include: {
+        store: true,
+        customer: true,
+        payment: true,
+        shippingMethod: true,
+        shipment: true,
+        items: {
+          orderBy: [{ createdAt: "asc" }]
+        }
+      }
+    });
+  }
+
+  listPayments(input: ListAdminPaymentsQuery) {
+    const where: Prisma.PaymentWhereInput = {
+      ...(input.storeId ? { storeId: input.storeId } : {}),
+      ...(input.customerEmail
+        ? {
+            customer: {
+              email: input.customerEmail
+            }
+          }
+        : {}),
+      ...(input.status ? { status: input.status } : {}),
+      ...(input.provider ? { provider: input.provider } : {}),
+      ...(input.orderId
+        ? {
+            orders: {
+              some: {
+                id: input.orderId
+              }
+            }
+          }
+        : {})
+    };
+
+    return prisma.payment.findMany({
+      where,
+      include: {
+        store: true,
+        customer: true,
+        orders: {
+          orderBy: [{ createdAt: "desc" }]
+        },
+        transactions: {
+          orderBy: [{ createdAt: "asc" }]
+        }
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take: input.limit
+    });
+  }
+
+  findPaymentById(paymentId: string) {
+    return prisma.payment.findUnique({
+      where: {
+        id: paymentId
+      },
+      include: {
+        store: true,
+        customer: true,
+        cart: {
+          include: {
+            items: true
+          }
+        },
+        orders: {
+          include: {
+            shipment: true
+          },
+          orderBy: [{ createdAt: "desc" }]
+        },
+        transactions: {
+          orderBy: [{ createdAt: "asc" }]
+        }
+      }
     });
   }
 

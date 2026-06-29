@@ -7,6 +7,7 @@ import { AdminService } from "./admin.service";
 import {
   listAdminDomainsQuerySchema,
   listAdminOrdersQuerySchema,
+  listAdminPaymentsQuerySchema,
   listAdminStoresQuerySchema,
   listAdminUsersQuerySchema,
   parseAdminBody,
@@ -73,6 +74,27 @@ export class AdminController {
   @Get("orders")
   listOrders(@Query() query: unknown) {
     return this.adminService.listOrders(parseAdminQuery(listAdminOrdersQuerySchema, query));
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
+  @Get("orders/:orderId")
+  getOrderDetail(@Param("orderId") orderId: string) {
+    return this.adminService.getOrderDetail(orderId);
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
+  @Get("payments")
+  listPayments(@Query() query: unknown) {
+    return this.adminService.listPayments(parseAdminQuery(listAdminPaymentsQuerySchema, query));
+  }
+
+  @UseGuards(JwtAuthGuard, AuthorizationGuard)
+  @PlatformRoles(PlatformRole.PLATFORM_ADMIN)
+  @Get("payments/:paymentId")
+  getPaymentDetail(@Param("paymentId") paymentId: string) {
+    return this.adminService.getPaymentDetail(paymentId);
   }
 
   @UseGuards(JwtAuthGuard, AuthorizationGuard)

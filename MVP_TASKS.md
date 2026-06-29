@@ -524,10 +524,10 @@ Legenda de prioridade:
 - [x] Dependências: User e StoreMember.
 
 ### Task 12.4 (P1): Implementar visão administrativa de pedidos e pagamentos
-- [ ] Criar consultas globais para pedidos e pagamentos com filtros básicos.
-- [ ] Critérios de aceite: admin consegue investigar falhas operacionais sem editar dados indevidamente.
-- [ ] Notas técnicas: priorizar leitura e poucas ações seguras no MVP.
-- [ ] Dependências: Orders e Payments.
+- [x] Criar consultas globais para pedidos e pagamentos com filtros básicos.
+- [x] Critérios de aceite: admin consegue investigar falhas operacionais sem editar dados indevidamente.
+- [x] Notas técnicas: priorizar leitura e poucas ações seguras no MVP.
+- [x] Dependências: Orders e Payments.
 
 ### Task 12.5 (P1): Implementar páginas do painel admin global
 - [ ] Construir área separada para admin com rotas e navegação próprias.

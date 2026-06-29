@@ -9,6 +9,8 @@ import {
   OrderStatus,
   PaymentProvider,
   PaymentStatus,
+  PaymentTransactionKind,
+  PaymentTransactionStatus,
   PlatformRole,
   StoreStatus
 } from "@prisma/client";
@@ -46,8 +48,10 @@ describe("admin api", () => {
   let platformAdminToken = "";
   let storeId = "";
   let activeStoreId = "";
+  let customerId = "";
   let orderId = "";
   let paymentId = "";
+  let paymentTransactionId = "";
   let domainId = "";
   let activeDomainId = "";
 
@@ -161,10 +165,20 @@ describe("admin api", () => {
       }
     });
 
+    const customer = await prisma.customer.create({
+      data: {
+        storeId,
+        email: customerEmail,
+        fullName: "Admin Customer"
+      }
+    });
+    customerId = customer.id;
+
     const payment = await prisma.payment.create({
       data: {
         storeId,
         cartId: cart.id,
+        customerId,
         provider: PaymentProvider.STRIPE_CONNECT,
         status: PaymentStatus.APPROVED,
         currencyCode: "BRL",
@@ -174,10 +188,24 @@ describe("admin api", () => {
     });
     paymentId = payment.id;
 
+    const paymentTransaction = await prisma.paymentTransaction.create({
+      data: {
+        paymentId,
+        storeId,
+        provider: PaymentProvider.STRIPE_CONNECT,
+        kind: PaymentTransactionKind.CAPTURE,
+        status: PaymentTransactionStatus.SUCCEEDED,
+        externalTransactionId: `txn-${suffix}`,
+        occurredAt: new Date("2026-06-29T12:00:05.000Z")
+      }
+    });
+    paymentTransactionId = paymentTransaction.id;
+
     const order = await prisma.order.create({
       data: {
         storeId,
         cartId: cart.id,
+        customerId,
         paymentId: payment.id,
         status: OrderStatus.PAYMENT_APPROVED,
         currencyCode: "BRL",
@@ -468,6 +496,7 @@ describe("admin api", () => {
         customerEmail: string;
         status: string;
         payment: { id: string; status: string } | null;
+        shipment: { id: string; status: string; trackingCode: string | null } | null;
         store: { id: string; slug: string };
         itemsCount: number;
       }>;
@@ -488,6 +517,131 @@ describe("admin api", () => {
     assert.equal(ordersResponse.body.orders[0]?.store.id, storeId);
     assert.equal(ordersResponse.body.orders[0]?.store.slug, storeSlug);
     assert.equal(ordersResponse.body.orders[0]?.itemsCount, 1);
+    assert.equal(ordersResponse.body.orders[0]?.shipment, null);
+
+    const orderDetailResponse = await requestJson<{
+      order: {
+        id: string;
+        status: string;
+        payment: { id: string; provider: string; status: string; amountCents: number } | null;
+        shippingMethod: { id: string; name: string; type: string } | null;
+        items: Array<{ productName: string; quantity: number; totalCents: number }>;
+        store: { id: string; slug: string };
+      };
+    }>({
+      path: `/admin/orders/${orderId}`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      }
+    });
+
+    assert.equal(orderDetailResponse.statusCode, 200);
+    assert.equal(orderDetailResponse.body.order.id, orderId);
+    assert.equal(orderDetailResponse.body.order.status, OrderStatus.PAYMENT_APPROVED);
+    assert.equal(orderDetailResponse.body.order.payment?.id, paymentId);
+    assert.equal(
+      orderDetailResponse.body.order.payment?.provider,
+      PaymentProvider.STRIPE_CONNECT
+    );
+    assert.equal(orderDetailResponse.body.order.payment?.status, PaymentStatus.APPROVED);
+    assert.equal(orderDetailResponse.body.order.payment?.amountCents, 25990);
+    assert.equal(orderDetailResponse.body.order.store.id, storeId);
+    assert.equal(orderDetailResponse.body.order.store.slug, storeSlug);
+    assert.equal(orderDetailResponse.body.order.items.length, 1);
+    assert.equal(orderDetailResponse.body.order.items[0]?.productName, "Admin seeded product");
+    assert.equal(orderDetailResponse.body.order.items[0]?.quantity, 1);
+    assert.equal(orderDetailResponse.body.order.items[0]?.totalCents, 24000);
+
+    const paymentsResponse = await requestJson<{
+      payments: Array<{
+        id: string;
+        provider: string;
+        status: string;
+        customer: { email: string } | null;
+        orders: Array<{ id: string; status: string }>;
+        transactionsCount: number;
+      }>;
+    }>({
+      path:
+        `/admin/payments?storeId=${storeId}` +
+        `&orderId=${orderId}` +
+        `&customerEmail=${encodeURIComponent(customerEmail)}` +
+        `&status=${PaymentStatus.APPROVED}` +
+        `&provider=${PaymentProvider.STRIPE_CONNECT}`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      }
+    });
+
+    assert.equal(paymentsResponse.statusCode, 200);
+    assert.equal(paymentsResponse.body.payments.length, 1);
+    assert.equal(paymentsResponse.body.payments[0]?.id, paymentId);
+    assert.equal(
+      paymentsResponse.body.payments[0]?.provider,
+      PaymentProvider.STRIPE_CONNECT
+    );
+    assert.equal(paymentsResponse.body.payments[0]?.status, PaymentStatus.APPROVED);
+    assert.equal(paymentsResponse.body.payments[0]?.customer?.email, customerEmail);
+    assert.equal(paymentsResponse.body.payments[0]?.orders[0]?.id, orderId);
+    assert.equal(paymentsResponse.body.payments[0]?.orders[0]?.status, OrderStatus.PAYMENT_APPROVED);
+    assert.equal(paymentsResponse.body.payments[0]?.transactionsCount, 1);
+
+    const paymentDetailResponse = await requestJson<{
+      payment: {
+        id: string;
+        provider: string;
+        status: string;
+        customer: { email: string } | null;
+        cart: { id: string; customerEmail: string | null; itemsCount: number } | null;
+        orders: Array<{ id: string; status: string; totalCents: number }>;
+        transactions: Array<{
+          id: string;
+          kind: string;
+          status: string;
+          externalTransactionId: string | null;
+        }>;
+      };
+    }>({
+      path: `/admin/payments/${paymentId}`,
+      headers: {
+        authorization: `Bearer ${platformAdminToken}`
+      }
+    });
+
+    assert.equal(paymentDetailResponse.statusCode, 200);
+    assert.equal(paymentDetailResponse.body.payment.id, paymentId);
+    assert.equal(
+      paymentDetailResponse.body.payment.provider,
+      PaymentProvider.STRIPE_CONNECT
+    );
+    assert.equal(paymentDetailResponse.body.payment.status, PaymentStatus.APPROVED);
+    assert.equal(paymentDetailResponse.body.payment.customer?.email, customerEmail);
+    assert.equal(paymentDetailResponse.body.payment.cart?.customerEmail, customerEmail);
+    assert.equal(paymentDetailResponse.body.payment.cart?.itemsCount, 0);
+    assert.equal(paymentDetailResponse.body.payment.orders.length, 1);
+    assert.equal(paymentDetailResponse.body.payment.orders[0]?.id, orderId);
+    assert.equal(
+      paymentDetailResponse.body.payment.orders[0]?.status,
+      OrderStatus.PAYMENT_APPROVED
+    );
+    assert.equal(paymentDetailResponse.body.payment.orders[0]?.totalCents, 25990);
+    assert.equal(paymentDetailResponse.body.payment.transactions.length, 1);
+    assert.equal(
+      paymentDetailResponse.body.payment.transactions[0]?.id,
+      paymentTransactionId
+    );
+    assert.equal(
+      paymentDetailResponse.body.payment.transactions[0]?.kind,
+      PaymentTransactionKind.CAPTURE
+    );
+    assert.equal(
+      paymentDetailResponse.body.payment.transactions[0]?.status,
+      PaymentTransactionStatus.SUCCEEDED
+    );
+    assert.equal(
+      paymentDetailResponse.body.payment.transactions[0]?.externalTransactionId,
+      `txn-${suffix}`
+    );
 
     const domainsResponse = await requestJson<{
       domains: Array<{

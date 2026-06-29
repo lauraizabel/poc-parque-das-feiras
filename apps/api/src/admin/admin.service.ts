@@ -3,6 +3,7 @@ import { AdminRepository } from "./admin.repository";
 import {
   ListAdminDomainsQuery,
   ListAdminOrdersQuery,
+  ListAdminPaymentsQuery,
   ListAdminStoresQuery,
   ListAdminUsersQuery,
   UpdateAdminStoreStatusInput
@@ -179,6 +180,13 @@ export class AdminService {
         customerFullName: order.customerFullName,
         totalCents: order.totalCents,
         currencyCode: order.currencyCode,
+        shipment: order.shipment
+          ? {
+              id: order.shipment.id,
+              status: order.shipment.status,
+              trackingCode: order.shipment.trackingCode
+            }
+          : null,
         payment: order.payment
           ? {
               id: order.payment.id,
@@ -190,6 +198,173 @@ export class AdminService {
         itemsCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
         createdAt: order.createdAt
       }))
+    };
+  }
+
+  async getOrderDetail(orderId: string) {
+    const order = await this.adminRepository.findOrderById(orderId);
+
+    if (!order) {
+      throw new NotFoundException("Order not found");
+    }
+
+    return {
+      order: {
+        id: order.id,
+        status: order.status,
+        currencyCode: order.currencyCode,
+        subtotalCents: order.subtotalCents,
+        shippingCents: order.shippingCents,
+        discountCents: order.discountCents,
+        totalCents: order.totalCents,
+        customerEmail: order.customerEmail,
+        customerFullName: order.customerFullName,
+        customerPhoneNumber: order.customerPhoneNumber,
+        store: {
+          id: order.store.id,
+          name: order.store.name,
+          slug: order.store.slug
+        },
+        payment: order.payment
+          ? {
+              id: order.payment.id,
+              provider: order.payment.provider,
+              status: order.payment.status,
+              amountCents: order.payment.amountCents,
+              paidAt: order.payment.paidAt
+            }
+          : null,
+        shippingMethod: order.shippingMethod
+          ? {
+              id: order.shippingMethod.id,
+              name: order.shippingMethod.name,
+              type: order.shippingMethod.type
+            }
+          : null,
+        shipment: order.shipment
+          ? {
+              id: order.shipment.id,
+              status: order.shipment.status,
+              carrierName: order.shipment.carrierName,
+              serviceName: order.shipment.serviceName,
+              trackingCode: order.shipment.trackingCode,
+              trackingUrl: order.shipment.trackingUrl
+            }
+          : null,
+        items: order.items.map((item) => ({
+          id: item.id,
+          productName: item.productName,
+          productSlug: item.productSlug,
+          quantity: item.quantity,
+          totalCents: item.totalCents
+        })),
+        createdAt: order.createdAt
+      }
+    };
+  }
+
+  async listPayments(input: ListAdminPaymentsQuery) {
+    const payments = await this.adminRepository.listPayments(input);
+
+    return {
+      payments: payments.map((payment) => ({
+        id: payment.id,
+        store: {
+          id: payment.store.id,
+          name: payment.store.name,
+          slug: payment.store.slug
+        },
+        customer: payment.customer
+          ? {
+              id: payment.customer.id,
+              email: payment.customer.email,
+              fullName: payment.customer.fullName
+            }
+          : null,
+        provider: payment.provider,
+        status: payment.status,
+        amountCents: payment.amountCents,
+        currencyCode: payment.currencyCode,
+        attemptCount: payment.attemptCount,
+        externalPaymentId: payment.externalPaymentId,
+        failureCode: payment.failureCode,
+        failureMessage: payment.failureMessage,
+        orders: payment.orders.map((order) => ({
+          id: order.id,
+          status: order.status,
+          customerEmail: order.customerEmail
+        })),
+        transactionsCount: payment.transactions.length,
+        createdAt: payment.createdAt
+      }))
+    };
+  }
+
+  async getPaymentDetail(paymentId: string) {
+    const payment = await this.adminRepository.findPaymentById(paymentId);
+
+    if (!payment) {
+      throw new NotFoundException("Payment not found");
+    }
+
+    return {
+      payment: {
+        id: payment.id,
+        provider: payment.provider,
+        status: payment.status,
+        currencyCode: payment.currencyCode,
+        amountCents: payment.amountCents,
+        attemptCount: payment.attemptCount,
+        externalPaymentId: payment.externalPaymentId,
+        externalReference: payment.externalReference,
+        failureCode: payment.failureCode,
+        failureMessage: payment.failureMessage,
+        paidAt: payment.paidAt,
+        expiresAt: payment.expiresAt,
+        store: {
+          id: payment.store.id,
+          name: payment.store.name,
+          slug: payment.store.slug
+        },
+        customer: payment.customer
+          ? {
+              id: payment.customer.id,
+              email: payment.customer.email,
+              fullName: payment.customer.fullName
+            }
+          : null,
+        cart: payment.cart
+          ? {
+              id: payment.cart.id,
+              sessionId: payment.cart.sessionId,
+              customerEmail: payment.cart.customerEmail,
+              itemsCount: payment.cart.items.reduce((sum, item) => sum + item.quantity, 0)
+            }
+          : null,
+        orders: payment.orders.map((order) => ({
+          id: order.id,
+          status: order.status,
+          customerEmail: order.customerEmail,
+          totalCents: order.totalCents,
+          shipment: order.shipment
+            ? {
+                id: order.shipment.id,
+                status: order.shipment.status
+              }
+            : null
+        })),
+        transactions: payment.transactions.map((transaction) => ({
+          id: transaction.id,
+          kind: transaction.kind,
+          status: transaction.status,
+          externalTransactionId: transaction.externalTransactionId,
+          errorCode: transaction.errorCode,
+          errorMessage: transaction.errorMessage,
+          occurredAt: transaction.occurredAt,
+          createdAt: transaction.createdAt
+        })),
+        createdAt: payment.createdAt
+      }
     };
   }
 

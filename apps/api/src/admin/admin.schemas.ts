@@ -2,6 +2,8 @@ import { BadRequestException } from "@nestjs/common";
 import {
   DomainStatus,
   OrderStatus,
+  PaymentProvider,
+  PaymentStatus,
   PlatformRole,
   StoreMemberRole,
   StoreStatus
@@ -40,6 +42,15 @@ export const listAdminOrdersQuerySchema = z.object({
   limit: limitSchema
 }).strict();
 
+export const listAdminPaymentsQuerySchema = z.object({
+  storeId: sanitizedOptionalString({ min: 1, max: 100 }),
+  orderId: sanitizedOptionalString({ min: 1, max: 100 }),
+  customerEmail: sanitizedEmail().optional(),
+  status: z.nativeEnum(PaymentStatus).optional(),
+  provider: z.nativeEnum(PaymentProvider).optional(),
+  limit: limitSchema
+}).strict();
+
 export const listAdminDomainsQuerySchema = z.object({
   search: sanitizedOptionalString({ min: 1, max: 255 }),
   storeId: sanitizedOptionalString({ min: 1, max: 100 }),
@@ -54,6 +65,7 @@ export const updateAdminStoreStatusSchema = z.object({
 export type ListAdminStoresQuery = z.infer<typeof listAdminStoresQuerySchema>;
 export type ListAdminUsersQuery = z.infer<typeof listAdminUsersQuerySchema>;
 export type ListAdminOrdersQuery = z.infer<typeof listAdminOrdersQuerySchema>;
+export type ListAdminPaymentsQuery = z.infer<typeof listAdminPaymentsQuerySchema>;
 export type ListAdminDomainsQuery = z.infer<typeof listAdminDomainsQuerySchema>;
 export type UpdateAdminStoreStatusInput = z.infer<typeof updateAdminStoreStatusSchema>;
 
