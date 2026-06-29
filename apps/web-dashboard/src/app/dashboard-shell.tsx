@@ -412,6 +412,7 @@ export function DashboardShell() {
         </div>
         <nav className="nav-links">
           <a href="http://localhost:3000">Storefront</a>
+          {user.platformRole === "PLATFORM_ADMIN" ? <a href="/admin">Admin global</a> : null}
           <a href={env.NEXT_PUBLIC_API_URL + "/health"}>API Health</a>
           <button className="link-button" onClick={refreshContext} type="button">
             Atualizar contexto

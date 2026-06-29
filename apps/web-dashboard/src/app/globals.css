@@ -158,6 +158,117 @@ a {
   gap: 24px;
 }
 
+.admin-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.admin-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-context-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-status-card h3 {
+  margin: 6px 0 18px;
+  font-size: 1.1rem;
+}
+
+.admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-list-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.admin-table-card {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.admin-table {
+  display: grid;
+}
+
+.admin-table-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: center;
+  padding: 16px 18px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.admin-table-row:first-child {
+  border-top: 0;
+}
+
+.admin-table-row span {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.admin-table-row small {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.admin-table-row-button {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.admin-table-row-button:hover {
+  background: var(--accent-soft);
+}
+
+.admin-detail-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 18px;
+}
+
+.admin-subcard {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.admin-subcard p {
+  margin: 8px 0 0;
+  color: var(--muted);
+}
+
+.admin-inline-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.admin-inline-item:first-of-type {
+  margin-top: 10px;
+}
+
 .sidebar-nav {
   display: grid;
   gap: 10px;
@@ -869,6 +980,10 @@ a {
   }
 
   .theme-preview-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-table-row {
     grid-template-columns: 1fr;
   }
 }

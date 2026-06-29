@@ -530,16 +530,16 @@ Legenda de prioridade:
 - [x] Dependências: Orders e Payments.
 
 ### Task 12.5 (P1): Implementar páginas do painel admin global
-- [ ] Construir área separada para admin com rotas e navegação próprias.
-- [ ] Critérios de aceite: usuários sem role global não acessam a área administrativa.
-- [ ] Notas técnicas: reusar componentes do dashboard onde fizer sentido.
-- [ ] Dependências: endpoints do admin.
+- [x] Construir área separada para admin com rotas e navegação próprias.
+- [x] Critérios de aceite: usuários sem role global não acessam a área administrativa.
+- [x] Notas técnicas: reusar componentes do dashboard onde fizer sentido.
+- [x] Dependências: endpoints do admin.
 
 ### Task 12.6 (P1): Implementar testes de permissão do admin global
-- [ ] Cobrir acesso permitido para admin e bloqueio para roles de loja.
-- [ ] Critérios de aceite: fronteira entre admin global e painel do lojista fica protegida.
-- [ ] Notas técnicas: incluir testes de UI e API.
-- [ ] Dependências: área admin global.
+- [x] Cobrir acesso permitido para admin e bloqueio para roles de loja.
+- [x] Critérios de aceite: fronteira entre admin global e painel do lojista fica protegida.
+- [x] Notas técnicas: incluir testes de UI e API.
+- [x] Dependências: área admin global.
 
 ## Epic 13: Notificações, auditoria e observabilidade
 
