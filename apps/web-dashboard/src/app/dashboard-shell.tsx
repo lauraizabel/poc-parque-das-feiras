@@ -1,19 +1,23 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { env } from "../lib/env";
+import {
+  DashboardLayout,
+  type DashboardModuleKey
+} from "../components/dashboard-layout";
+import { DashboardTopbar } from "../components/dashboard-topbar";
+import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
 import {
   clearDashboardAccessToken,
   readDashboardAccessToken,
   storeDashboardAccessToken
 } from "../lib/auth-session";
-import { MerchantOnboardingForm } from "../components/merchant-onboarding-form";
-import { DashboardTopbar } from "../components/dashboard-topbar";
+import { env } from "../lib/env";
 import { CatalogConsole } from "./catalog-console";
 import { DomainConsole } from "./domain-console";
 import { MembersConsole } from "./members-console";
-import { OverviewConsole } from "./overview-console";
 import { OrdersConsole } from "./orders-console";
+import { OverviewConsole } from "./overview-console";
 import { SettingsConsole } from "./settings-console";
 import { StorefrontThemeConsole } from "./storefront-theme-console";
 
@@ -45,14 +49,57 @@ type DashboardUser = {
   memberships: DashboardMembership[];
 };
 
-type SectionKey =
-  | "overview"
-  | "settings"
-  | "catalog"
-  | "storefront"
-  | "orders"
-  | "domains"
-  | "members";
+type SectionKey = DashboardModuleKey;
+
+const DASHBOARD_MODULES: Array<{
+  key: SectionKey;
+  label: string;
+  description: string;
+  marker: string;
+}> = [
+  {
+    key: "overview",
+    label: "Resumo",
+    description: "Visao geral da loja atual",
+    marker: "RS"
+  },
+  {
+    key: "catalog",
+    label: "Catalogo",
+    description: "Produtos, categorias e operacao",
+    marker: "CT"
+  },
+  {
+    key: "orders",
+    label: "Pedidos",
+    description: "Operacao e acompanhamento",
+    marker: "PD"
+  },
+  {
+    key: "storefront",
+    label: "Vitrine",
+    description: "Tema, banner e textos",
+    marker: "VT"
+  },
+  {
+    key: "domains",
+    label: "Dominios",
+    description: "Dominio proprio e DNS",
+    marker: "DN"
+  },
+  {
+    key: "members",
+    label: "Equipe",
+    description: "Membros e convites da loja",
+    marker: "EQ"
+  },
+  {
+    key: "settings",
+    label: "Configuracoes",
+    description: "Perfil, frete, dominio e notificacoes",
+    marker: "CF"
+  }
+];
 
 function normalizeMessage(payload: unknown, fallback: string) {
   if (typeof payload === "object" && payload !== null && "message" in payload) {
@@ -117,7 +164,7 @@ export function DashboardShell() {
           kind: "success",
           message:
             me.memberships.length > 0
-              ? "Sessão restaurada com sucesso."
+              ? "Sessao restaurada com sucesso."
               : "Login restaurado, mas sem lojas vinculadas."
         });
       })
@@ -128,7 +175,7 @@ export function DashboardShell() {
         setState({
           kind: "error",
           message:
-            error instanceof Error ? error.message : "Não foi possível restaurar a sessão."
+            error instanceof Error ? error.message : "Nao foi possivel restaurar a sessao."
         });
       })
       .finally(() => {
@@ -179,9 +226,7 @@ export function DashboardShell() {
       setState({
         kind: "error",
         message:
-          error instanceof Error
-            ? error.message
-            : "Falha de rede ao autenticar o usuario."
+          error instanceof Error ? error.message : "Falha de rede ao autenticar o usuario."
       });
     } finally {
       setIsLoading(false);
@@ -209,9 +254,7 @@ export function DashboardShell() {
       setState({
         kind: "error",
         message:
-          error instanceof Error
-            ? error.message
-            : "Falha ao atualizar o contexto do dashboard."
+          error instanceof Error ? error.message : "Falha ao atualizar o contexto do dashboard."
       });
     } finally {
       setIsLoading(false);
@@ -239,49 +282,11 @@ export function DashboardShell() {
       setSelectedStoreId("");
       setState({
         kind: "success",
-        message: "Sessão encerrada com sucesso."
+        message: "Sessao encerrada com sucesso."
       });
       setIsLoading(false);
     }
   }
-
-  const navItems: Array<{ key: SectionKey; label: string; description: string }> = [
-    {
-      key: "overview",
-      label: "Resumo",
-      description: "Visao geral da loja atual"
-    },
-    {
-      key: "settings",
-      label: "Configuracoes",
-      description: "Perfil, frete, dominio e notificacoes"
-    },
-    {
-      key: "catalog",
-      label: "Catalogo",
-      description: "Produtos, categorias e operacao"
-    },
-    {
-      key: "storefront",
-      label: "Vitrine",
-      description: "Tema, banner e textos"
-    },
-    {
-      key: "orders",
-      label: "Pedidos",
-      description: "Operacao e acompanhamento"
-    },
-    {
-      key: "domains",
-      label: "Dominios",
-      description: "Dominio proprio e DNS"
-    },
-    {
-      key: "members",
-      label: "Equipe",
-      description: "Membros e convites da loja"
-    }
-  ];
 
   if (!user || !token) {
     return (
@@ -298,10 +303,10 @@ export function DashboardShell() {
 
         <section className="hero">
           <span className="badge">Merchant control</span>
-          <h1 className="title">Operação multi-store com mais clareza, contexto e segurança.</h1>
+          <h1 className="title">Operacao multi-store com mais clareza, contexto e seguranca.</h1>
           <p className="subtitle">
-            O dashboard autentica o usuário, descobre memberships e abre a operação apenas para
-            lojas permitidas, agora com uma estrutura visual mais orientada à execução.
+            O dashboard autentica o usuario, descobre memberships e abre a operacao apenas para
+            lojas permitidas, agora com uma estrutura visual mais orientada a execucao.
           </p>
         </section>
 
@@ -374,12 +379,12 @@ export function DashboardShell() {
         />
 
         <section className="hero">
-          <span className="badge">Primeira operação</span>
-          <h1 className="title">Crie sua primeira loja antes de entrar na operação.</h1>
+          <span className="badge">Primeira operacao</span>
+          <h1 className="title">Crie sua primeira loja antes de entrar na operacao.</h1>
           <p className="subtitle">
-            Sua conta já está autenticada, mas ainda não possui memberships. Defina o nome da
-            loja, valide o slug em tempo real e configure os primeiros dados operacionais para
-            liberar o painel.
+            Sua conta ja esta autenticada, mas ainda nao possui memberships. Defina o nome da loja,
+            valide o slug em tempo real e configure os primeiros dados operacionais para liberar o
+            painel.
           </p>
         </section>
 
@@ -388,178 +393,112 @@ export function DashboardShell() {
             <div className="eyebrow">Nova loja</div>
             <h2 className="section-title">Onboarding inicial do lojista</h2>
           </div>
-          <MerchantOnboardingForm
-            mode="member"
-            onCreated={() => refreshContext()}
-            token={token}
-          />
+          <MerchantOnboardingForm mode="member" onCreated={() => refreshContext()} token={token} />
         </section>
       </main>
     );
   }
 
+  const storefrontHref = "http://localhost:3000";
+
   return (
-    <main className="shell dashboard-shell dashboard-shell-authenticated">
-      <DashboardTopbar
-        eyebrow="Dashboard"
-        links={[
-          { kind: "anchor", href: "http://localhost:3000", label: "Storefront" },
-          ...(user.platformRole === "PLATFORM_ADMIN"
-            ? [{ kind: "anchor" as const, href: "/admin", label: "Admin global" }]
-            : []),
-          { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" },
-          { kind: "button", label: "Atualizar contexto", onClick: refreshContext },
-          { kind: "button", label: "Sair", onClick: handleLogout }
-        ]}
-        meta={user.email}
-        title={selectedMembership?.store.name ?? "Sem loja selecionada"}
-      />
+    <DashboardLayout
+      activeSection={activeSection}
+      actions={[
+        { kind: "anchor", href: storefrontHref, label: "Storefront" },
+        ...(user.platformRole === "PLATFORM_ADMIN"
+          ? [{ kind: "anchor" as const, href: "/admin", label: "Admin global" }]
+          : []),
+        { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" },
+        { kind: "button", label: "Atualizar", onClick: refreshContext },
+        { kind: "button", label: "Sair", onClick: handleLogout }
+      ]}
+      modules={DASHBOARD_MODULES}
+      onSectionChange={setActiveSection}
+      onStoreChange={setSelectedStoreId}
+      selectedStoreId={selectedMembership?.storeId ?? ""}
+      store={{
+        name: selectedMembership?.store.name ?? "Sem loja",
+        role: selectedMembership?.role ?? "n/a",
+        slug: selectedMembership?.store.slug ?? "n/a",
+        defaultSubdomain: selectedMembership?.store.defaultSubdomain ?? "n/a",
+        currencyCode: selectedMembership?.store.currencyCode ?? "n/a"
+      }}
+      storeOptions={user.memberships.map((membership) => ({
+        storeId: membership.storeId,
+        label: membership.store.name,
+        role: membership.role
+      }))}
+      storefrontHref={storefrontHref}
+      userEmail={user.email}
+      userName={user.fullName ?? user.email}
+    >
+      {state.kind !== "idle" ? (
+        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
+          {state.message}
+        </p>
+      ) : null}
 
-      <section className="dashboard-frame">
-        <aside className="dashboard-sidebar card">
-          <div className="sidebar-section">
-            <div className="eyebrow">Conta</div>
-            <h2 className="sidebar-title">Operação da loja</h2>
-            <p className="sidebar-copy">{user.fullName ?? user.email}</p>
-          </div>
+      {activeSection === "overview" ? (
+        <OverviewConsole
+          currencyCode={selectedMembership?.store.currencyCode ?? "BRL"}
+          defaultSubdomain={selectedMembership?.store.defaultSubdomain ?? "loja"}
+          storeId={selectedMembership?.storeId ?? ""}
+          storeLabel={selectedMembership?.store.name ?? "Sem loja"}
+          storeRole={selectedMembership?.role ?? ""}
+          token={token}
+        />
+      ) : null}
 
-          <label className="field">
-            <span>Loja atual</span>
-            <select
-              className="field-select"
-              data-testid="dashboard-store-select"
-              onChange={(event) => setSelectedStoreId(event.target.value)}
-              value={selectedMembership?.storeId ?? ""}
-            >
-              {user.memberships.map((membership) => (
-                <option key={membership.storeId} value={membership.storeId}>
-                  {membership.store.name} • {membership.role}
-                </option>
-              ))}
-            </select>
-          </label>
+      {selectedMembership && activeSection === "settings" ? (
+        <SettingsConsole
+          storeId={selectedMembership.storeId}
+          storeLabel={selectedMembership.store.name}
+          storeRole={selectedMembership.role}
+          token={token}
+        />
+      ) : null}
 
-          <nav className="sidebar-nav">
-            {navItems.map((item) => (
-              <button
-                className={activeSection === item.key ? "sidebar-link active" : "sidebar-link"}
-                data-testid={`dashboard-nav-${item.key}`}
-                key={item.key}
-                onClick={() => setActiveSection(item.key)}
-                type="button"
-              >
-                <strong>{item.label}</strong>
-                <span>{item.description}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+      {selectedMembership && activeSection === "catalog" ? (
+        <CatalogConsole
+          storeId={selectedMembership.storeId}
+          storeLabel={selectedMembership.store.name}
+          token={token}
+        />
+      ) : null}
 
-        <section className="dashboard-main">
-          <section className="card dashboard-context-card">
-            <div className="dashboard-context-head">
-              <div>
-                <div className="eyebrow">Loja selecionada</div>
-                <h1 className="dashboard-store-title" data-testid="dashboard-selected-store">
-                  {selectedMembership?.store.name ?? "Sem loja"}
-                </h1>
-                <p className="dashboard-context-copy">
-                  Produtos, pedidos, domínios e configurações abaixo seguem a loja atualmente selecionada.
-                </p>
-              </div>
-              <a className="secondary-button auth-anchor-button" href="http://localhost:3000">
-                Ver vitrine
-              </a>
-            </div>
+      {selectedMembership && activeSection === "storefront" ? (
+        <StorefrontThemeConsole
+          storeId={selectedMembership.storeId}
+          storeLabel={selectedMembership.store.name}
+          token={token}
+        />
+      ) : null}
 
-            <div className="grid dashboard-context-grid dashboard-context-grid-compact">
-              <div className="kpi">
-                <span>Role atual</span>
-                <strong>{selectedMembership?.role ?? "n/a"}</strong>
-              </div>
-              <div className="kpi">
-                <span>Slug</span>
-                <strong>{selectedMembership?.store.slug ?? "n/a"}</strong>
-              </div>
-              <div className="kpi">
-                <span>Subdomínio</span>
-                <strong>{selectedMembership?.store.defaultSubdomain ?? "n/a"}</strong>
-              </div>
-              <div className="kpi">
-                <span>Moeda</span>
-                <strong>{selectedMembership?.store.currencyCode ?? "n/a"}</strong>
-              </div>
-            </div>
-          </section>
+      {selectedMembership && activeSection === "orders" ? (
+        <OrdersConsole
+          storeId={selectedMembership.storeId}
+          storeLabel={selectedMembership.store.name}
+          token={token}
+        />
+      ) : null}
 
-          {state.kind !== "idle" ? (
-            <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-              {state.message}
-            </p>
-          ) : null}
+      {selectedMembership && activeSection === "domains" ? (
+        <DomainConsole
+          storeId={selectedMembership.storeId}
+          storeLabel={selectedMembership.store.name}
+          token={token}
+        />
+      ) : null}
 
-          {activeSection === "overview" ? (
-            <OverviewConsole
-              currencyCode={selectedMembership?.store.currencyCode ?? "BRL"}
-              defaultSubdomain={selectedMembership?.store.defaultSubdomain ?? "loja"}
-              storeId={selectedMembership?.storeId ?? ""}
-              storeLabel={selectedMembership?.store.name ?? "Sem loja"}
-              storeRole={selectedMembership?.role ?? ""}
-              token={token}
-            />
-          ) : null}
-
-          {selectedMembership && activeSection === "settings" ? (
-            <SettingsConsole
-              storeId={selectedMembership.storeId}
-              storeLabel={selectedMembership.store.name}
-              storeRole={selectedMembership.role}
-              token={token}
-            />
-          ) : null}
-
-          {selectedMembership && activeSection === "catalog" ? (
-            <CatalogConsole
-              storeId={selectedMembership.storeId}
-              storeLabel={selectedMembership.store.name}
-              token={token}
-            />
-          ) : null}
-
-          {selectedMembership && activeSection === "storefront" ? (
-            <StorefrontThemeConsole
-              storeId={selectedMembership.storeId}
-              storeLabel={selectedMembership.store.name}
-              token={token}
-            />
-          ) : null}
-
-          {selectedMembership && activeSection === "orders" ? (
-            <OrdersConsole
-              storeId={selectedMembership.storeId}
-              storeLabel={selectedMembership.store.name}
-              token={token}
-            />
-          ) : null}
-
-          {selectedMembership && activeSection === "domains" ? (
-            <DomainConsole
-              storeId={selectedMembership.storeId}
-              storeLabel={selectedMembership.store.name}
-              token={token}
-            />
-          ) : null}
-
-          {selectedMembership && activeSection === "members" ? (
-            <MembersConsole
-              canManage={selectedMembership.role === "STORE_OWNER"}
-              storeId={selectedMembership.storeId}
-              storeLabel={selectedMembership.store.name}
-              token={token}
-            />
-          ) : null}
-        </section>
-      </section>
-    </main>
+      {selectedMembership && activeSection === "members" ? (
+        <MembersConsole
+          canManage={selectedMembership.role === "STORE_OWNER"}
+          storeId={selectedMembership.storeId}
+          storeLabel={selectedMembership.store.name}
+          token={token}
+        />
+      ) : null}
+    </DashboardLayout>
   );
 }

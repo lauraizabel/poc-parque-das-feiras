@@ -58,24 +58,22 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 1 - Base visual no Next
 
-- [ ] P0 - Migrar tokens de design do Lovable para `apps/web-dashboard/src/app/globals.css`:
+- [x] P0 - Migrar tokens de design do Lovable para `apps/web-dashboard/src/app/globals.css`:
   - cores `canvas`, `shell`, `panel`, `ember/accent`, `signal`, `warn`
   - raios, tipografia, bordas, inputs e estados de foco
   - utilitarios `animate-entrance` e `text-eyebrow`
-- [ ] P0 - Corrigir textos com encoding quebrado no dashboard atual durante a migracao:
+- [x] P0 - Corrigir textos com encoding quebrado no dashboard atual durante a migracao:
   - exemplos atuais com mojibake: `Sessao`, `Nao`, `Operacao`, `Dominios` aparecendo com caracteres corrompidos
   - padrao esperado: UTF-8 com acentos corretos
-- [ ] P0 - Criar componentes compartilhados do dashboard real:
+- [x] P0 - Criar componentes compartilhados do dashboard real:
   - `DashboardLayout`
   - `DashboardSidebar`
   - `DashboardTopbar`
   - `DashboardMobileNav`
   - `DashboardContextStrip`
-  - `DashboardCard`
-  - `DashboardBadge`
-  - `DashboardTable`
-  - `DashboardEmptyState`
-- [ ] P0 - Adaptar o shell do Lovable para receber dados reais:
+  - `DashboardEmptyState` ja existia em `dashboard-state.tsx`
+  - `DashboardCard`, `DashboardBadge` e `DashboardTable` ficam para as fases de cada console, para evitar abstracao antes do uso real
+- [x] P0 - Adaptar o shell do Lovable para receber dados reais:
   - nome da loja selecionada
   - email/nome do usuario
   - role do membro
@@ -83,10 +81,18 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
   - link da vitrine real
   - logout real
   - seletor de loja existente
-- [ ] P0 - Manter o login e o bootstrap atual antes de renderizar o novo shell autenticado.
+- [x] P0 - Manter o login e o bootstrap atual antes de renderizar o novo shell autenticado.
 - [ ] P1 - Adicionar alternancia de tema do Lovable com persistencia em local storage.
-- [ ] P1 - Garantir responsividade com sidebar desktop e mobile nav.
-- [ ] P1 - Remover textos auxiliares de demo que nao fazem sentido em producao, como `ops console v2`, nomes ficticios e dominio `curadoria-minimal`.
+- [x] P1 - Garantir responsividade com sidebar desktop e mobile nav.
+- [x] P1 - Remover textos auxiliares de demo que nao fazem sentido em producao, como `ops console v2`, nomes ficticios e dominio `curadoria-minimal`.
+
+### Resultado da Fase 1
+
+- `apps/web-dashboard/src/components/dashboard-layout.tsx` concentra sidebar, topbar, context strip e mobile nav.
+- `DashboardShell` continua responsavel por autenticacao, restauracao de sessao, logout, onboarding sem loja e passagem de dados reais para os consoles.
+- O CSS do dashboard recebeu tokens e classes do shell operacional sem adicionar dependencias.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
+- Observacao: `pnpm` nao estava disponivel no PATH do ambiente, entao a validacao usou o `tsc` local do app.
 
 ## Fase 2 - Roteamento e arquitetura de estado
 
