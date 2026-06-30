@@ -7,6 +7,10 @@ import {
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
+import {
+  formatShippingMethodStatusLabel,
+  formatShippingMethodTypeLabel
+} from "../lib/enum-labels";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -129,8 +133,8 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
         kind: "success",
         message:
           payload.shippingMethods.length > 0
-            ? "Configurações de frete carregadas."
-            : "Nenhum método de frete cadastrado ainda."
+            ? "Configura��es de frete carregadas."
+            : "Nenhum m�todo de frete cadastrado ainda."
       });
     } catch {
       setShippingMethods([]);
@@ -232,7 +236,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
       <div className="domain-head">
         <div>
           <div className="eyebrow">Frete</div>
-          <h2 className="section-title">Métodos de entrega de {storeLabel}</h2>
+          <h2 className="section-title">M�todos de entrega de {storeLabel}</h2>
         </div>
         <button className="secondary-button" onClick={loadShippingMethods} type="button">
           {isLoading ? "Atualizando..." : "Atualizar fretes"}
@@ -240,7 +244,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
       </div>
 
       <p className="subtitle">
-        Cadastre as opções que a vitrine usa no checkout e mantenha a operação logística alinhada
+        Cadastre as op��es que a vitrine usa no checkout e mantenha a opera��o log�stica alinhada
         com a loja selecionada.
       </p>
 
@@ -260,7 +264,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
               onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
               value={form.type}
             >
-              <option value="FIXED_PRICE">Preço fixo</option>
+              <option value="FIXED_PRICE">Pre�o fixo</option>
               <option value="LOCAL_PICKUP">Retirada local</option>
             </select>
           </label>
@@ -278,7 +282,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             </select>
           </label>
           <label className="field">
-            <span>Preço (centavos)</span>
+            <span>Pre�o (centavos)</span>
             <input
               min="0"
               onChange={(event) =>
@@ -289,7 +293,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             />
           </label>
           <label className="field">
-            <span>Prazo mínimo (dias)</span>
+            <span>Prazo m�nimo (dias)</span>
             <input
               min="0"
               onChange={(event) =>
@@ -300,7 +304,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             />
           </label>
           <label className="field">
-            <span>Prazo máximo (dias)</span>
+            <span>Prazo m�ximo (dias)</span>
             <input
               min="0"
               onChange={(event) =>
@@ -311,7 +315,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             />
           </label>
           <label className="field">
-            <span>Pedido mínimo (centavos)</span>
+            <span>Pedido m�nimo (centavos)</span>
             <input
               min="0"
               onChange={(event) =>
@@ -322,7 +326,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             />
           </label>
           <label className="field">
-            <span>Pedido máximo (centavos)</span>
+            <span>Pedido m�ximo (centavos)</span>
             <input
               min="0"
               onChange={(event) =>
@@ -346,7 +350,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
         </div>
 
         <label className="field">
-          <span>Descrição</span>
+          <span>Descri��o</span>
           <textarea
             onChange={(event) =>
               setForm((current) => ({ ...current, description: event.target.value }))
@@ -364,7 +368,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             }
             type="checkbox"
           />
-          <span>Usar como método padrão</span>
+          <span>Usar como m�todo padr�o</span>
         </label>
 
         <div className="button-row">
@@ -372,7 +376,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
             {isSubmitting ? "Salvando..." : form.id ? "Atualizar frete" : "Criar frete"}
           </button>
           <button className="secondary-button" onClick={resetForm} type="button">
-            Limpar formulário
+            Limpar formul�rio
           </button>
         </div>
       </form>
@@ -380,7 +384,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
       <DashboardFeedback state={state} />
 
       {isLoading && shippingMethods.length === 0 ? (
-        <DashboardLoadingState label="Carregando métodos de frete" />
+        <DashboardLoadingState label="Carregando m�todos de frete" />
       ) : null}
 
       <div className="shipping-list">
@@ -388,17 +392,17 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
           <article className="shipping-card" key={method.id}>
             <div className="catalog-item-head">
               <div>
-                <div className="eyebrow">{method.type}</div>
+                <div className="eyebrow">{formatShippingMethodTypeLabel(method.type)}</div>
                 <h3>{method.name}</h3>
               </div>
               <span className="catalog-status-badge">
-                {method.status} {method.isDefault ? "• padrão" : ""}
+                {formatShippingMethodStatusLabel(method.status)} {method.isDefault ? "� padr�o" : ""}
               </span>
             </div>
 
             <div className="catalog-meta-grid">
               <div>
-                <span>Preço</span>
+                <span>Pre�o</span>
                 <strong>{formatMoney(method.priceCents)}</strong>
               </div>
               <div>
@@ -410,7 +414,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
               <div>
                 <span>Faixa de pedido</span>
                 <strong>
-                  {method.minimumOrderCents ?? 0} até {method.maximumOrderCents ?? "sem teto"}
+                  {method.minimumOrderCents ?? 0} at� {method.maximumOrderCents ?? "sem teto"}
                 </strong>
               </div>
             </div>
@@ -419,7 +423,7 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
 
             <div className="button-row">
               <button className="secondary-button" onClick={() => startEditing(method)} type="button">
-                Editar método
+                Editar m�todo
               </button>
             </div>
           </article>
@@ -428,10 +432,11 @@ export function ShippingConsole({ token, storeId, storeLabel }: ShippingConsoleP
 
       {!isLoading && shippingMethods.length === 0 ? (
         <DashboardEmptyState
-          description="Cadastre pelo menos um método ativo para liberar uma configuração de entrega no checkout."
+          description="Cadastre pelo menos um m�todo ativo para liberar uma configura��o de entrega no checkout."
           title="Nenhum frete cadastrado"
         />
       ) : null}
     </section>
   );
 }
+

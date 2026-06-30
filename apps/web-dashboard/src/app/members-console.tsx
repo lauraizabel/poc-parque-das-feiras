@@ -7,6 +7,7 @@ import {
   DashboardLoadingState
 } from "../components/dashboard-state";
 import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
+import { formatStoreRoleLabel } from "../lib/enum-labels";
 
 type MemberRecord = {
   id: string;
@@ -40,19 +41,6 @@ type MembersConsoleProps = {
 
 const roleOptions = ["STORE_MANAGER", "STORE_SUPPORT"] as const;
 
-function formatRole(role: string) {
-  switch (role) {
-    case "STORE_OWNER":
-      return "Proprietaria";
-    case "STORE_MANAGER":
-      return "Operador";
-    case "STORE_SUPPORT":
-      return "Suporte";
-    default:
-      return role;
-  }
-}
-
 function getInitials(value: string) {
   const parts = value.trim().split(/\s+/).filter(Boolean);
 
@@ -85,19 +73,19 @@ export function MembersConsole({
     () => [
       {
         role: "STORE_OWNER",
-        label: "Proprietaria",
+        label: formatStoreRoleLabel("STORE_OWNER"),
         description: "Acesso total e gestao da loja",
         count: members.filter((member) => member.role === "STORE_OWNER").length
       },
       {
         role: "STORE_MANAGER",
-        label: "Operador",
+        label: formatStoreRoleLabel("STORE_MANAGER"),
         description: "Gerencia catalogo, pedidos e vitrine",
         count: members.filter((member) => member.role === "STORE_MANAGER").length
       },
       {
         role: "STORE_SUPPORT",
-        label: "Suporte",
+        label: formatStoreRoleLabel("STORE_SUPPORT"),
         description: "Apoio operacional e atendimento",
         count: members.filter((member) => member.role === "STORE_SUPPORT").length
       }
@@ -375,7 +363,7 @@ export function MembersConsole({
                   />
                   <div>
                     {member.role === "STORE_OWNER" ? (
-                      <span className="members-role-pill">Owner</span>
+                      <span className="members-role-pill">{formatStoreRoleLabel(member.role)}</span>
                     ) : (
                       <select
                         onChange={(event) =>
@@ -420,7 +408,7 @@ export function MembersConsole({
               {invites.map((invite) => (
                 <article className="members-row is-pending" key={invite.id}>
                   <MemberIdentity email={invite.email} name={invite.email} />
-                  <span>{formatRole(invite.role)}</span>
+                  <span>{formatStoreRoleLabel(invite.role)}</span>
                   <span className="members-status is-pending">Convite pendente</span>
                   <div className="members-actions">
                     <button

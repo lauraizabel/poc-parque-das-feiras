@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { formatStoreRoleLabel } from "../lib/enum-labels";
 
 export type DashboardModuleKey =
   | "overview"
@@ -146,7 +147,7 @@ function DashboardSidebar({
         >
           {storeOptions.map((option) => (
             <option key={option.storeId} value={option.storeId}>
-              {option.label} - {option.role}
+              {option.label} - {formatStoreRoleLabel(option.role)}
             </option>
           ))}
         </select>
@@ -185,7 +186,7 @@ function DashboardSidebar({
           <strong>{userName}</strong>
           <span>{userEmail}</span>
           <small>
-            {store.role} - {store.currencyCode}
+            {formatStoreRoleLabel(store.role)} - {store.currencyCode}
           </small>
         </div>
       </div>
@@ -268,7 +269,7 @@ function DashboardContextStrip({
       </div>
 
       <div className="dashboard-context-metrics">
-        <Metric label="Role atual" value={store.role} />
+        <Metric label="Papel atual" value={formatStoreRoleLabel(store.role)} />
         <Metric label="Slug" value={store.slug} />
         <Metric label="Subdominio" value={store.defaultSubdomain} />
         <Metric label="Moeda" value={store.currencyCode} />

@@ -36,34 +36,96 @@ const seedConfig = {
     fullName: process.env.SEED_SUPPORT_NAME ?? "Demo Store Support",
     password: process.env.SEED_SUPPORT_PASSWORD ?? DEFAULT_STAFF_PASSWORD
   },
+  customerUsers: [
+    { email: "cliente1@demo.local", fullName: "Ana Lima" },
+    { email: "cliente2@demo.local", fullName: "Bruno Souza" }
+  ],
   store: {
-    name: process.env.SEED_STORE_NAME ?? "Loja Demo",
-    slug: process.env.SEED_STORE_SLUG ?? "loja-demo",
-    defaultSubdomain: process.env.SEED_STORE_SUBDOMAIN ?? "loja-demo",
+    name: process.env.SEED_STORE_NAME ?? "Moda Demo",
+    slug: process.env.SEED_STORE_SLUG ?? "moda-demo",
+    defaultSubdomain: process.env.SEED_STORE_SUBDOMAIN ?? "moda-demo",
     supportEmail: process.env.SEED_STORE_SUPPORT_EMAIL ?? "support@demo-store.local",
     currencyCode: process.env.SEED_STORE_CURRENCY ?? "BRL",
     locale: process.env.SEED_STORE_LOCALE ?? "pt-BR"
   },
-  category: {
-    name: process.env.SEED_CATEGORY_NAME ?? "Cafe Especial",
-    slug: process.env.SEED_CATEGORY_SLUG ?? "cafe-especial"
-  },
-  product: {
-    name: process.env.SEED_PRODUCT_NAME ?? "Moedor Premium",
-    slug: process.env.SEED_PRODUCT_SLUG ?? "moedor-premium",
-    sku: process.env.SEED_PRODUCT_SKU ?? "MP-001",
-    description:
-      process.env.SEED_PRODUCT_DESCRIPTION ??
-      "Produto seedado para validar catalogo, carrinho e checkout no ambiente local.",
-    priceCents: Number(process.env.SEED_PRODUCT_PRICE_CENTS ?? 18990),
-    compareAtCents: Number(process.env.SEED_PRODUCT_COMPARE_AT_CENTS ?? 21990),
-    stockQuantity: Number(process.env.SEED_PRODUCT_STOCK_QUANTITY ?? 12)
-  },
+  categories: [
+    { name: "Feminino", slug: "feminino", sortOrder: 1 },
+    { name: "Masculino", slug: "masculino", sortOrder: 2 },
+    { name: "Acessórios", slug: "acessorios", sortOrder: 3 }
+  ],
+  products: [
+    {
+      name: "Vestido Midi Floral",
+      slug: "vestido-midi-floral",
+      sku: "VMF-001",
+      description: "Vestido midi com estampa floral, tecido leve e confortável para o dia a dia.",
+      priceCents: 18990,
+      compareAtCents: 21900,
+      stockQuantity: 15,
+      categorySlug: "feminino",
+      isFeatured: true
+    },
+    {
+      name: "Blusa Cropped Listrada",
+      slug: "blusa-cropped-listrada",
+      sku: "BCL-001",
+      description: "Blusa cropped com listras horizontais, ideal para looks casuais.",
+      priceCents: 7990,
+      compareAtCents: 9990,
+      stockQuantity: 30,
+      categorySlug: "feminino",
+      isFeatured: false
+    },
+    {
+      name: "Calça Jogger Moletom",
+      slug: "calca-jogger-moletom",
+      sku: "CJM-001",
+      description: "Calça jogger em moletom macio, perfeita para o conforto do dia a dia.",
+      priceCents: 14990,
+      compareAtCents: 17990,
+      stockQuantity: 20,
+      categorySlug: "masculino",
+      isFeatured: true
+    },
+    {
+      name: "Camiseta Básica Algodão",
+      slug: "camiseta-basica-algodao",
+      sku: "CBA-001",
+      description: "Camiseta básica 100% algodão, corte regular, disponível em várias cores.",
+      priceCents: 5990,
+      compareAtCents: 7490,
+      stockQuantity: 50,
+      categorySlug: "masculino",
+      isFeatured: false
+    },
+    {
+      name: "Cinto de Couro",
+      slug: "cinto-de-couro",
+      sku: "CC-001",
+      description: "Cinto de couro legítimo com fivela dourada, versátil para looks formais e casuais.",
+      priceCents: 8990,
+      compareAtCents: 10990,
+      stockQuantity: 12,
+      categorySlug: "acessorios",
+      isFeatured: false
+    },
+    {
+      name: "Bolsa Tote Canvas",
+      slug: "bolsa-tote-canvas",
+      sku: "BTC-001",
+      description: "Bolsa tote espaçosa em canvas resistente, com alças reforçadas.",
+      priceCents: 12990,
+      compareAtCents: 14990,
+      stockQuantity: 8,
+      categorySlug: "acessorios",
+      isFeatured: true
+    }
+  ],
   shippingMethod: {
-    name: process.env.SEED_SHIPPING_NAME ?? "Entrega Padrao",
+    name: process.env.SEED_SHIPPING_NAME ?? "Entrega Padrão",
     description:
       process.env.SEED_SHIPPING_DESCRIPTION ??
-      "Frete base seedado para validar checkout e operacao do pedido.",
+      "Frete base seedado para validar checkout e operação do pedido.",
     priceCents: Number(process.env.SEED_SHIPPING_PRICE_CENTS ?? 2400),
     estimatedDaysMin: Number(process.env.SEED_SHIPPING_DAYS_MIN ?? 2),
     estimatedDaysMax: Number(process.env.SEED_SHIPPING_DAYS_MAX ?? 5)
@@ -109,6 +171,15 @@ async function main() {
     password: seedConfig.support.password,
     platformRole: PlatformRole.CUSTOMER
   });
+
+  for (const customerCfg of seedConfig.customerUsers) {
+    await upsertUser({
+      email: customerCfg.email,
+      fullName: customerCfg.fullName,
+      password: DEFAULT_STAFF_PASSWORD,
+      platformRole: PlatformRole.CUSTOMER
+    });
+  }
 
   const store = await prisma.store.upsert({
     where: {
@@ -166,61 +237,51 @@ async function main() {
 
   await upsertMembership(ownerUser.id, showcaseStore.id, StoreMemberRole.STORE_OWNER);
 
-  const category = await prisma.category.upsert({
-    where: {
-      storeId_slug: {
-        storeId: store.id,
-        slug: seedConfig.category.slug
-      }
-    },
-    create: {
-      storeId: store.id,
-      name: seedConfig.category.name,
-      slug: seedConfig.category.slug,
-      status: CategoryStatus.ACTIVE,
-      sortOrder: 1
-    },
-    update: {
-      name: seedConfig.category.name,
-      status: CategoryStatus.ACTIVE,
-      sortOrder: 1
-    }
-  });
+  const categoryMap = {};
+  for (const catCfg of seedConfig.categories) {
+    const category = await upsertCategory(store.id, catCfg);
+    categoryMap[catCfg.slug] = category;
+  }
 
-  const product = await prisma.product.upsert({
-    where: {
-      storeId_slug: {
+  const products = [];
+  for (const productCfg of seedConfig.products) {
+    const category = categoryMap[productCfg.categorySlug];
+    const product = await prisma.product.upsert({
+      where: {
+        storeId_slug: {
+          storeId: store.id,
+          slug: productCfg.slug
+        }
+      },
+      create: {
         storeId: store.id,
-        slug: seedConfig.product.slug
+        categoryId: category.id,
+        name: productCfg.name,
+        slug: productCfg.slug,
+        description: productCfg.description,
+        sku: productCfg.sku,
+        priceCents: productCfg.priceCents,
+        compareAtCents: productCfg.compareAtCents,
+        currencyCode: seedConfig.store.currencyCode,
+        stockQuantity: productCfg.stockQuantity,
+        status: ProductStatus.ACTIVE,
+        isFeatured: productCfg.isFeatured
+      },
+      update: {
+        categoryId: category.id,
+        name: productCfg.name,
+        description: productCfg.description,
+        sku: productCfg.sku,
+        priceCents: productCfg.priceCents,
+        compareAtCents: productCfg.compareAtCents,
+        currencyCode: seedConfig.store.currencyCode,
+        stockQuantity: productCfg.stockQuantity,
+        status: ProductStatus.ACTIVE,
+        isFeatured: productCfg.isFeatured
       }
-    },
-    create: {
-      storeId: store.id,
-      categoryId: category.id,
-      name: seedConfig.product.name,
-      slug: seedConfig.product.slug,
-      description: seedConfig.product.description,
-      sku: seedConfig.product.sku,
-      priceCents: seedConfig.product.priceCents,
-      compareAtCents: seedConfig.product.compareAtCents,
-      currencyCode: seedConfig.store.currencyCode,
-      stockQuantity: seedConfig.product.stockQuantity,
-      status: ProductStatus.ACTIVE,
-      isFeatured: true
-    },
-    update: {
-      categoryId: category.id,
-      name: seedConfig.product.name,
-      description: seedConfig.product.description,
-      sku: seedConfig.product.sku,
-      priceCents: seedConfig.product.priceCents,
-      compareAtCents: seedConfig.product.compareAtCents,
-      currencyCode: seedConfig.store.currencyCode,
-      stockQuantity: seedConfig.product.stockQuantity,
-      status: ProductStatus.ACTIVE,
-      isFeatured: true
-    }
-  });
+    });
+    products.push(product);
+  }
 
   const shippingMethods = await prisma.shippingMethod.findMany({
     where: {
@@ -280,17 +341,41 @@ async function main() {
   console.log(`Owner da loja demo: ${ownerUser.email}`);
   console.log(`Manager da loja demo: ${managerUser.email}`);
   console.log(`Support da loja demo: ${supportUser.email}`);
+  console.log(`Clientes demo: ${seedConfig.customerUsers.map((c) => c.email).join(", ")}`);
   console.log(`Loja demo: ${store.slug}.${process.env.MARKETPLACE_ROOT_DOMAIN ?? "lvh.me"}`);
   console.log(
     `Loja vitrine: ${showcaseStore.slug}.${process.env.MARKETPLACE_ROOT_DOMAIN ?? "lvh.me"}`
   );
-  console.log(`Categoria demo: ${category.slug}`);
-  console.log(`Produto demo: ${product.slug}`);
+  console.log(`Categorias: ${seedConfig.categories.map((c) => c.slug).join(", ")}`);
+  console.log(`Produtos: ${products.map((p) => p.slug).join(", ")}`);
   console.log(`Frete demo: ${shippingMethod.name}`);
   console.log("");
   console.log("Passwords seedadas:");
   console.log(`- admin: ${seedConfig.admin.password}`);
-  console.log(`- owner/manager/support: ${seedConfig.owner.password}`);
+  console.log(`- owner/manager/support/clientes: ${seedConfig.owner.password}`);
+}
+
+async function upsertCategory(storeId, cfg) {
+  return prisma.category.upsert({
+    where: {
+      storeId_slug: {
+        storeId,
+        slug: cfg.slug
+      }
+    },
+    create: {
+      storeId,
+      name: cfg.name,
+      slug: cfg.slug,
+      status: CategoryStatus.ACTIVE,
+      sortOrder: cfg.sortOrder
+    },
+    update: {
+      name: cfg.name,
+      status: CategoryStatus.ACTIVE,
+      sortOrder: cfg.sortOrder
+    }
+  });
 }
 
 async function upsertUser(input) {

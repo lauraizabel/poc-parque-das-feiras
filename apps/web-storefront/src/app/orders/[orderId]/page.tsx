@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { StorefrontFooter } from "../../../components/storefront-footer";
 import { StorefrontHeader } from "../../../components/storefront-header";
+import {
+  formatPaymentStatusLabel,
+  formatShipmentStatusLabel
+} from "../../../lib/enum-labels";
 import { getStorefrontContext, getStorefrontHomepage, getStorefrontPublicOrder } from "../../../lib/storefront-context";
 import { buildStorefrontThemeStyle } from "../../../lib/storefront-theme";
 
@@ -133,11 +137,11 @@ export default async function OrderPage({ params, searchParams }: OrderPageProps
               ))}
               <div className="summary-row">
                 <span>Pagamento</span>
-                <strong>{order.payment?.status ?? "Aguardando"}</strong>
+                <strong>{order.payment ? formatPaymentStatusLabel(order.payment.status) : "Aguardando"}</strong>
               </div>
               <div className="summary-row">
                 <span>Entrega</span>
-                <strong>{order.shipment?.status ?? "PENDENTE"}</strong>
+                <strong>{order.shipment ? formatShipmentStatusLabel(order.shipment.status) : "Pendente"}</strong>
               </div>
               <div className="summary-row">
                 <span>Método de frete</span>

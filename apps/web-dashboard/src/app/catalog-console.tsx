@@ -7,6 +7,7 @@ import {
   DashboardLoadingState
 } from "../components/dashboard-state";
 import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
+import { formatProductStatusLabel } from "../lib/enum-labels";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -143,18 +144,7 @@ function inputToCents(value: string) {
 }
 
 function getStatusLabel(status: string) {
-  switch (status) {
-    case "ACTIVE":
-      return "Publicado";
-    case "INACTIVE":
-      return "Inativo";
-    case "OUT_OF_STOCK":
-      return "Sem estoque";
-    case "ARCHIVED":
-      return "Arquivado";
-    default:
-      return "Rascunho";
-  }
+  return formatProductStatusLabel(status);
 }
 
 function getProductTone(product: CatalogProduct) {

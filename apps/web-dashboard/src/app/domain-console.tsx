@@ -7,6 +7,7 @@ import {
   DashboardLoadingState
 } from "../components/dashboard-state";
 import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
+import { formatDomainStatusLabel } from "../lib/enum-labels";
 
 type DomainRecord = {
   id?: string;
@@ -31,18 +32,8 @@ type DomainConsoleProps = {
   storeLabel: string;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Cadastro recebido",
-  AWAITING_DNS: "Aguardando DNS",
-  VERIFYING: "Verificando DNS",
-  SSL_PENDING: "Emitindo SSL",
-  ACTIVE: "Ativo",
-  ERROR: "Requer atencao",
-  REMOVED: "Removido"
-};
-
 function getStatusLabel(status?: string) {
-  return status ? STATUS_LABELS[status] ?? status : "n/a";
+  return formatDomainStatusLabel(status);
 }
 
 function getStatusTone(status?: string) {

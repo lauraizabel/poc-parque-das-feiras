@@ -4,6 +4,19 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DashboardTopbar } from "../components/dashboard-topbar";
 import { DashboardEmptyState, DashboardFeedback, DashboardLoadingState } from "../components/dashboard-state";
 import { clearDashboardAccessToken, readDashboardAccessToken, storeDashboardAccessToken } from "../lib/auth-session";
+import {
+  formatDomainStatusLabel,
+  formatOrderStatusLabel,
+  formatPaymentStatusLabel,
+  formatPlatformRoleLabel,
+  formatProviderLabel,
+  formatShipmentStatusLabel,
+  formatShippingMethodTypeLabel,
+  formatStoreRoleLabel,
+  formatStoreStatusLabel,
+  formatTransactionKindLabel,
+  formatTransactionStatusLabel
+} from "../lib/enum-labels";
 import { env } from "../lib/env";
 
 type ApiState = {
@@ -565,8 +578,8 @@ export function AdminShell() {
           <div className="eyebrow">Permissão</div>
           <h1 className="section-title">Sua conta não possui acesso ao admin global.</h1>
           <p className="subtitle">
-            A área administrativa da plataforma é exclusiva para usuários com role
-            <strong> PLATFORM_ADMIN</strong>. Continue pelo painel do lojista ou encerre a sessão.
+            A área administrativa da plataforma é exclusiva para usuários com papel de
+            <strong> administrador da plataforma</strong>. Continue pelo painel do lojista ou encerre a sessão.
           </p>
           <div className="button-row">
             <a className="primary-button auth-anchor-button" href="/">
@@ -607,8 +620,8 @@ export function AdminShell() {
 
           <div className="admin-context-grid">
             <div className="kpi">
-              <span>Role</span>
-              <strong>{user.platformRole}</strong>
+              <span>Papel</span>
+              <strong>{formatPlatformRoleLabel(user.platformRole)}</strong>
             </div>
             <div className="kpi">
               <span>Memberships</span>
@@ -742,18 +755,20 @@ function AdminOverviewConsole({ token }: { token: string }) {
       </section>
 
       <section className="grid admin-grid-3">
-        <AdminStatusCard title="Lojas por status" items={overview.storesByStatus} />
-        <AdminStatusCard title="Pedidos por status" items={overview.ordersByStatus} />
-        <AdminStatusCard title="Domínios por status" items={overview.domainsByStatus} />
+        <AdminStatusCard formatLabel={formatStoreStatusLabel} title="Lojas por status" items={overview.storesByStatus} />
+        <AdminStatusCard formatLabel={formatOrderStatusLabel} title="Pedidos por status" items={overview.ordersByStatus} />
+        <AdminStatusCard formatLabel={formatDomainStatusLabel} title="Dom�nios por status" items={overview.domainsByStatus} />
       </section>
     </section>
   );
 }
 
 function AdminStatusCard({
+  formatLabel,
   title,
   items
 }: {
+  formatLabel: (status: string) => string;
   title: string;
   items: Array<{ status: string; count: number }>;
 }) {
@@ -764,7 +779,7 @@ function AdminStatusCard({
       <div className="admin-list">
         {items.map((item) => (
           <div className="admin-list-row" key={item.status}>
-            <span>{item.status}</span>
+            <span>{formatLabel(item.status)}</span>
             <strong>{item.count}</strong>
           </div>
         ))}
@@ -888,10 +903,10 @@ function AdminStoresConsole({ token }: { token: string }) {
               <span>Status</span>
               <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
                 <option value="">Todos</option>
-                <option value="TRIALING">TRIALING</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="PAST_DUE">PAST_DUE</option>
-                <option value="SUSPENDED">SUSPENDED</option>
+                <option value="TRIALING">{formatStoreStatusLabel("TRIALING")}</option>
+                <option value="ACTIVE">{formatStoreStatusLabel("ACTIVE")}</option>
+                <option value="PAST_DUE">{formatStoreStatusLabel("PAST_DUE")}</option>
+                <option value="SUSPENDED">{formatStoreStatusLabel("SUSPENDED")}</option>
               </select>
             </label>
             <label className="field">
@@ -936,7 +951,7 @@ function AdminStoresConsole({ token }: { token: string }) {
                     <strong>{store.name}</strong>
                     <small>{store.slug}</small>
                   </span>
-                  <span>{store.status}</span>
+                  <span>{formatStoreStatusLabel(store.status)}</span>
                   <span>{store.owner.email}</span>
                   <span>{store.activeDomain?.host ?? "Sem domínio ativo"}</span>
                 </button>
@@ -953,7 +968,7 @@ function AdminStoresConsole({ token }: { token: string }) {
           <div className="grid">
             <div className="kpi">
               <span>Status</span>
-              <strong>{selectedStore.status}</strong>
+              <strong>{formatStoreStatusLabel(selectedStore.status)}</strong>
             </div>
             <div className="kpi">
               <span>Owner</span>
@@ -987,7 +1002,7 @@ function AdminStoresConsole({ token }: { token: string }) {
                 selectedStore.domains.map((domain) => (
                   <div className="admin-inline-item" key={domain.id}>
                     <strong>{domain.host}</strong>
-                    <span>{domain.status}</span>
+                    <span>{formatDomainStatusLabel(domain.status)}</span>
                   </div>
                 ))
               )}
@@ -1112,8 +1127,8 @@ function AdminUsersConsole({ token }: { token: string }) {
               <span>Role global</span>
               <select onChange={(event) => setRoleFilter(event.target.value)} value={roleFilter}>
                 <option value="">Todas</option>
-                <option value="PLATFORM_ADMIN">PLATFORM_ADMIN</option>
-                <option value="CUSTOMER">CUSTOMER</option>
+                <option value="PLATFORM_ADMIN">{formatPlatformRoleLabel("PLATFORM_ADMIN")}</option>
+                <option value="CUSTOMER">{formatPlatformRoleLabel("CUSTOMER")}</option>
               </select>
             </label>
           </div>
@@ -1147,7 +1162,7 @@ function AdminUsersConsole({ token }: { token: string }) {
                     <strong>{user.fullName ?? user.email}</strong>
                     <small>{user.email}</small>
                   </span>
-                  <span>{user.platformRole}</span>
+                  <span>{formatPlatformRoleLabel(user.platformRole)}</span>
                   <span>{user.ownedStoresCount} lojas</span>
                   <span>{user.membershipsCount} memberships</span>
                 </button>
@@ -1164,7 +1179,7 @@ function AdminUsersConsole({ token }: { token: string }) {
           <div className="grid">
             <div className="kpi">
               <span>Role global</span>
-              <strong>{selectedUser.platformRole}</strong>
+              <strong>{formatPlatformRoleLabel(selectedUser.platformRole)}</strong>
             </div>
             <div className="kpi">
               <span>Memberships</span>
@@ -1182,7 +1197,7 @@ function AdminUsersConsole({ token }: { token: string }) {
               {selectedUser.memberships.map((membership) => (
                 <div className="admin-inline-item" key={`${membership.storeId}-${membership.role}`}>
                   <strong>{membership.store.slug}</strong>
-                  <span>{membership.role}</span>
+                  <span>{formatStoreRoleLabel(membership.role)}</span>
                 </div>
               ))}
             </section>
@@ -1191,7 +1206,7 @@ function AdminUsersConsole({ token }: { token: string }) {
               {selectedUser.ownedStores.map((store) => (
                 <div className="admin-inline-item" key={store.id}>
                   <strong>{store.slug}</strong>
-                  <span>{store.status}</span>
+                  <span>{formatStoreStatusLabel(store.status)}</span>
                 </div>
               ))}
             </section>
@@ -1307,13 +1322,13 @@ function AdminOrdersConsole({ token }: { token: string }) {
               <span>Status</span>
               <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
                 <option value="">Todos</option>
-                <option value="CREATED">CREATED</option>
-                <option value="PAYMENT_APPROVED">PAYMENT_APPROVED</option>
-                <option value="PROCESSING">PROCESSING</option>
-                <option value="SHIPPED">SHIPPED</option>
-                <option value="DELIVERED">DELIVERED</option>
-                <option value="CANCELED">CANCELED</option>
-                <option value="REFUNDED">REFUNDED</option>
+                <option value="CREATED">{formatOrderStatusLabel("CREATED")}</option>
+                <option value="PAYMENT_APPROVED">{formatOrderStatusLabel("PAYMENT_APPROVED")}</option>
+                <option value="PROCESSING">{formatOrderStatusLabel("PROCESSING")}</option>
+                <option value="SHIPPED">{formatOrderStatusLabel("SHIPPED")}</option>
+                <option value="DELIVERED">{formatOrderStatusLabel("DELIVERED")}</option>
+                <option value="CANCELED">{formatOrderStatusLabel("CANCELED")}</option>
+                <option value="REFUNDED">{formatOrderStatusLabel("REFUNDED")}</option>
               </select>
             </label>
             <label className="field">
@@ -1355,7 +1370,7 @@ function AdminOrdersConsole({ token }: { token: string }) {
                     <strong>{order.id.slice(0, 12)}</strong>
                     <small>{order.customerEmail}</small>
                   </span>
-                  <span>{order.status}</span>
+                  <span>{formatOrderStatusLabel(order.status)}</span>
                   <span>{order.store.slug}</span>
                   <span>{formatMoney(order.totalCents, order.currencyCode)}</span>
                 </button>
@@ -1372,7 +1387,7 @@ function AdminOrdersConsole({ token }: { token: string }) {
           <div className="grid">
             <div className="kpi">
               <span>Status</span>
-              <strong>{selectedOrder.status}</strong>
+              <strong>{formatOrderStatusLabel(selectedOrder.status)}</strong>
             </div>
             <div className="kpi">
               <span>Total</span>
@@ -1380,7 +1395,7 @@ function AdminOrdersConsole({ token }: { token: string }) {
             </div>
             <div className="kpi">
               <span>Pagamento</span>
-              <strong>{selectedOrder.payment?.status ?? "Sem pagamento"}</strong>
+              <strong>{selectedOrder.payment ? formatPaymentStatusLabel(selectedOrder.payment.status) : "Sem pagamento"}</strong>
             </div>
           </div>
           <div className="admin-detail-grid">
@@ -1515,14 +1530,14 @@ function AdminPaymentsConsole({ token }: { token: string }) {
               <span>Status</span>
               <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
                 <option value="">Todos</option>
-                <option value="CREATED">CREATED</option>
-                <option value="PENDING">PENDING</option>
-                <option value="AUTHORIZED">AUTHORIZED</option>
-                <option value="APPROVED">APPROVED</option>
-                <option value="FAILED">FAILED</option>
-                <option value="CANCELED">CANCELED</option>
-                <option value="EXPIRED">EXPIRED</option>
-                <option value="REFUNDED">REFUNDED</option>
+                <option value="CREATED">{formatPaymentStatusLabel("CREATED")}</option>
+                <option value="PENDING">{formatPaymentStatusLabel("PENDING")}</option>
+                <option value="AUTHORIZED">{formatPaymentStatusLabel("AUTHORIZED")}</option>
+                <option value="APPROVED">{formatPaymentStatusLabel("APPROVED")}</option>
+                <option value="FAILED">{formatPaymentStatusLabel("FAILED")}</option>
+                <option value="CANCELED">{formatPaymentStatusLabel("CANCELED")}</option>
+                <option value="EXPIRED">{formatPaymentStatusLabel("EXPIRED")}</option>
+                <option value="REFUNDED">{formatPaymentStatusLabel("REFUNDED")}</option>
               </select>
             </label>
             <label className="field">
@@ -1532,10 +1547,10 @@ function AdminPaymentsConsole({ token }: { token: string }) {
                 value={providerFilter}
               >
                 <option value="">Todos</option>
-                <option value="STRIPE_CONNECT">STRIPE_CONNECT</option>
-                <option value="PAGARME">PAGARME</option>
-                <option value="MERCADO_PAGO">MERCADO_PAGO</option>
-                <option value="ASAAS">ASAAS</option>
+                <option value="STRIPE_CONNECT">{formatProviderLabel("STRIPE_CONNECT")}</option>
+                <option value="PAGARME">{formatProviderLabel("PAGARME")}</option>
+                <option value="MERCADO_PAGO">{formatProviderLabel("MERCADO_PAGO")}</option>
+                <option value="ASAAS">{formatProviderLabel("ASAAS")}</option>
               </select>
             </label>
             <label className="field">
@@ -1577,8 +1592,8 @@ function AdminPaymentsConsole({ token }: { token: string }) {
                     <strong>{payment.id.slice(0, 12)}</strong>
                     <small>{payment.customer?.email ?? "Sem cliente"}</small>
                   </span>
-                  <span>{payment.provider}</span>
-                  <span>{payment.status}</span>
+                  <span>{formatProviderLabel(payment.provider)}</span>
+                  <span>{formatPaymentStatusLabel(payment.status)}</span>
                   <span>{formatMoney(payment.amountCents, payment.currencyCode)}</span>
                 </button>
               ))}
@@ -1594,11 +1609,11 @@ function AdminPaymentsConsole({ token }: { token: string }) {
           <div className="grid">
             <div className="kpi">
               <span>Status</span>
-              <strong>{selectedPayment.status}</strong>
+              <strong>{formatPaymentStatusLabel(selectedPayment.status)}</strong>
             </div>
             <div className="kpi">
               <span>Provider</span>
-              <strong>{selectedPayment.provider}</strong>
+              <strong>{formatProviderLabel(selectedPayment.provider)}</strong>
             </div>
             <div className="kpi">
               <span>Valor</span>
@@ -1620,8 +1635,8 @@ function AdminPaymentsConsole({ token }: { token: string }) {
               ) : (
                 selectedPayment.transactions.map((transaction) => (
                   <div className="admin-inline-item" key={transaction.id}>
-                    <strong>{transaction.kind}</strong>
-                    <span>{transaction.status}</span>
+                    <strong>{formatTransactionKindLabel(transaction.kind)}</strong>
+                    <span>{formatTransactionStatusLabel(transaction.status)}</span>
                   </div>
                 ))
               )}
@@ -1715,13 +1730,13 @@ function AdminDomainsConsole({ token }: { token: string }) {
             <span>Status</span>
             <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
               <option value="">Todos</option>
-              <option value="PENDING">PENDING</option>
-              <option value="AWAITING_DNS">AWAITING_DNS</option>
-              <option value="VERIFYING">VERIFYING</option>
-              <option value="SSL_PENDING">SSL_PENDING</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="ERROR">ERROR</option>
-              <option value="REMOVED">REMOVED</option>
+              <option value="PENDING">{formatDomainStatusLabel("PENDING")}</option>
+              <option value="AWAITING_DNS">{formatDomainStatusLabel("AWAITING_DNS")}</option>
+              <option value="VERIFYING">{formatDomainStatusLabel("VERIFYING")}</option>
+              <option value="SSL_PENDING">{formatDomainStatusLabel("SSL_PENDING")}</option>
+              <option value="ACTIVE">{formatDomainStatusLabel("ACTIVE")}</option>
+              <option value="ERROR">{formatDomainStatusLabel("ERROR")}</option>
+              <option value="REMOVED">{formatDomainStatusLabel("REMOVED")}</option>
             </select>
           </label>
         </div>
@@ -1750,7 +1765,7 @@ function AdminDomainsConsole({ token }: { token: string }) {
                   <strong>{domain.host}</strong>
                   <small>{domain.store.slug}</small>
                 </span>
-                <span>{domain.status}</span>
+                <span>{formatDomainStatusLabel(domain.status)}</span>
                 <span>{domain.dnsTargetValue ?? "Sem alvo DNS"}</span>
                 <span>{formatCompactDate(domain.activatedAt)}</span>
               </div>
@@ -1761,3 +1776,6 @@ function AdminDomainsConsole({ token }: { token: string }) {
     </section>
   );
 }
+
+
+

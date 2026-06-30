@@ -7,6 +7,11 @@ import {
   DashboardLoadingState
 } from "../components/dashboard-state";
 import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
+import {
+  formatOrderStatusLabel,
+  formatPaymentStatusLabel,
+  formatShipmentStatusLabel
+} from "../lib/enum-labels";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -111,11 +116,7 @@ function formatDate(value: string | null) {
 }
 
 function getStatusLabel(status: string) {
-  return status
-    .toLowerCase()
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return formatOrderStatusLabel(status);
 }
 
 function getOrderTone(order: ManagedOrder) {
@@ -282,7 +283,7 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
 
       setState({
         kind: "success",
-        message: `Pedido ${orderId} atualizado para ${payload.order.status}.`
+        message: `Pedido ${orderId} atualizado para ${formatOrderStatusLabel(payload.order.status)}.`
       });
       await loadOrders();
     } catch {
@@ -417,8 +418,14 @@ function OrderDetail({
       <div className="orders-metric-grid">
         <Metric label="Total" value={formatMoney(order.totalCents, order.currencyCode)} />
         <Metric label="Itens" value={String(order.itemCount)} />
-        <Metric label="Pagamento" value={order.payment?.status ?? "Sem pagamento"} />
-        <Metric label="Entrega" value={order.shipment?.status ?? "Sem shipment"} />
+        <Metric
+          label="Pagamento"
+          value={order.payment ? formatPaymentStatusLabel(order.payment.status) : "Sem pagamento"}
+        />
+        <Metric
+          label="Entrega"
+          value={order.shipment ? formatShipmentStatusLabel(order.shipment.status) : "Sem entrega"}
+        />
       </div>
 
       <div className="orders-item-list">
