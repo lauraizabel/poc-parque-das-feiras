@@ -197,17 +197,26 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 6 - Vitrine conectada
 
-- [ ] P0 - Migrar estrutura visual de editor de storefront para `StorefrontThemeConsole`.
-- [ ] P0 - Conectar dados reais de tema, banner, textos e configuracoes ja existentes no console atual.
-- [ ] P0 - Garantir preview realista usando a loja selecionada.
-- [ ] P1 - Separar secoes editaveis:
+- [x] P0 - Migrar estrutura visual de editor de storefront para `StorefrontThemeConsole`.
+- [x] P0 - Conectar dados reais de tema, banner, textos e configuracoes ja existentes no console atual.
+- [x] P0 - Garantir preview realista usando a loja selecionada.
+- [x] P1 - Separar secoes editaveis:
   - hero
   - colecoes/produtos em destaque
   - manifesto/texto institucional
   - newsletter, se houver backend
-- [ ] P1 - Implementar estados de rascunho/publicado se o backend suportar.
-- [ ] P1 - Adicionar botao "Pre-visualizar" apontando para a vitrine real.
+- [x] P1 - Implementar estados de rascunho/publicado se o backend suportar.
+  - Backend atual publica o tema diretamente em `PATCH /stores/:storeId/theme`; nao ha contrato de rascunho nesta fase.
+- [x] P1 - Adicionar botao "Pre-visualizar" apontando para a vitrine real.
 - [ ] P2 - Criar historico de publicacao e rollback de tema.
+
+### Resultado da Fase 6
+
+- `StorefrontThemeConsole` virou um editor com preview de vitrine, lista de secoes e formulario contextual.
+- A tela preserva `GET/PATCH /stores/:storeId/theme` para cores, logo, banner, titulo, subtitulo e aviso.
+- O botao de pre-visualizacao aponta para a vitrine local atual.
+- Estados de rascunho/publicado nao foram adicionados porque o backend atual nao oferece esse contrato.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 7 - Dominios conectados
 

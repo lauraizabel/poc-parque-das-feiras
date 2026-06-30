@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { env } from "../lib/env";
+import { FormEvent, type ReactNode, useEffect, useState } from "react";
+import { DashboardFeedback, DashboardLoadingState } from "../components/dashboard-state";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -26,6 +27,8 @@ type StorefrontThemeConsoleProps = {
   storeLabel: string;
 };
 
+type ThemeSection = "hero" | "brand" | "colors" | "announcement";
+
 const DEFAULT_THEME: StoreThemeRecord = {
   storeId: "",
   primaryColor: "#c45c2c",
@@ -38,17 +41,32 @@ const DEFAULT_THEME: StoreThemeRecord = {
   announcementText: null
 };
 
-function normalizeMessage(payload: unknown, fallback: string) {
-  if (typeof payload === "object" && payload !== null && "message" in payload) {
-    const value = (payload as { message?: unknown }).message;
-
-    if (typeof value === "string") {
-      return value;
-    }
+const SECTIONS: Array<{
+  id: ThemeSection;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "hero",
+    label: "Hero principal",
+    description: "Titulo, subtitulo e banner editorial"
+  },
+  {
+    id: "brand",
+    label: "Logo e assets",
+    description: "Logo publico e imagem de capa"
+  },
+  {
+    id: "colors",
+    label: "Tema",
+    description: "Cores da marca e superficie"
+  },
+  {
+    id: "announcement",
+    label: "Aviso",
+    description: "Mensagem curta da vitrine"
   }
-
-  return fallback;
-}
+];
 
 export function StorefrontThemeConsole({
   token,
@@ -59,6 +77,7 @@ export function StorefrontThemeConsole({
     ...DEFAULT_THEME,
     storeId
   });
+  const [activeSection, setActiveSection] = useState<ThemeSection>("hero");
   const [state, setState] = useState<ApiState>({ kind: "idle" });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -71,20 +90,17 @@ export function StorefrontThemeConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/theme`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         theme?: StoreThemeRecord;
         message?: string;
-      };
+      }>(`/stores/${storeId}/theme`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.theme) {
         setState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel carregar o tema da loja.")
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar o tema da loja.")
         });
         return;
       }
@@ -105,6 +121,8 @@ export function StorefrontThemeConsole({
       ...DEFAULT_THEME,
       storeId
     });
+    setActiveSection("hero");
+
     if (storeId) {
       void loadTheme();
     }
@@ -116,12 +134,14 @@ export function StorefrontThemeConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/theme`, {
+      const { payload, response } = await dashboardApiJson<{
+        theme?: StoreThemeRecord;
+        message?: string;
+      }>(`/stores/${storeId}/theme`, {
         method: "PATCH",
-        headers: {
-          authorization: `Bearer ${token}`,
+        headers: authHeaders(token, {
           "content-type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           primaryColor: theme.primaryColor,
           accentColor: theme.accentColor,
@@ -133,15 +153,11 @@ export function StorefrontThemeConsole({
           announcementText: theme.announcementText ?? ""
         })
       });
-      const payload = (await response.json()) as {
-        theme?: StoreThemeRecord;
-        message?: string;
-      };
 
       if (!response.ok || !payload.theme) {
         setState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel salvar o tema da loja.")
+          message: normalizeApiMessage(payload, "Nao foi possivel salvar o tema da loja.")
         });
         return;
       }
@@ -162,157 +178,210 @@ export function StorefrontThemeConsole({
   }
 
   return (
-    <section className="card domain-card">
-      <div className="domain-head">
+    <section className="storefront-console animate-entrance">
+      <header className="storefront-console-header">
         <div>
-          <div className="eyebrow">Storefront theme</div>
-          <h2 className="section-title">Visual da vitrine de {storeLabel}</h2>
+          <div className="eyebrow">Console / Vitrine</div>
+          <h2>Editor de storefront de {storeLabel}</h2>
+          <p>Personalize cores, banner, logo e textos principais da vitrine publica.</p>
         </div>
-        <button className="secondary-button" onClick={loadTheme} type="button">
-          Recarregar tema
-        </button>
-      </div>
-
-      <p className="subtitle">
-        O MVP libera uma personalização enxuta: três cores base, logo, banner e textos principais da home.
-      </p>
-
-      <form className="domain-form" onSubmit={handleSubmit}>
-        <div className="field-grid">
-          <label className="field">
-            <span>Cor principal</span>
-            <input
-              onChange={(event) =>
-                setTheme((current) => ({ ...current, primaryColor: event.target.value }))
-              }
-              type="color"
-              value={theme.primaryColor}
-            />
-          </label>
-          <label className="field">
-            <span>Cor de destaque</span>
-            <input
-              onChange={(event) =>
-                setTheme((current) => ({ ...current, accentColor: event.target.value }))
-              }
-              type="color"
-              value={theme.accentColor}
-            />
-          </label>
-          <label className="field">
-            <span>Cor de fundo</span>
-            <input
-              onChange={(event) =>
-                setTheme((current) => ({ ...current, surfaceColor: event.target.value }))
-              }
-              type="color"
-              value={theme.surfaceColor}
-            />
-          </label>
-        </div>
-
-        <div className="field-grid">
-          <label className="field">
-            <span>URL do logo</span>
-            <input
-              onChange={(event) =>
-                setTheme((current) => ({
-                  ...current,
-                  logoUrl: event.target.value || null
-                }))
-              }
-              placeholder="https://cdn.exemplo.com/logo.png"
-              value={theme.logoUrl ?? ""}
-            />
-          </label>
-          <label className="field">
-            <span>URL do banner</span>
-            <input
-              onChange={(event) =>
-                setTheme((current) => ({
-                  ...current,
-                  bannerUrl: event.target.value || null
-                }))
-              }
-              placeholder="https://cdn.exemplo.com/banner.jpg"
-              value={theme.bannerUrl ?? ""}
-            />
-          </label>
-        </div>
-
-        <label className="field">
-          <span>Título principal</span>
-          <input
-            onChange={(event) =>
-              setTheme((current) => ({
-                ...current,
-                heroTitle: event.target.value || null
-              }))
-            }
-            placeholder="Sua nova coleção chegou"
-            value={theme.heroTitle ?? ""}
-          />
-        </label>
-
-        <label className="field">
-          <span>Subtítulo</span>
-          <textarea
-            onChange={(event) =>
-              setTheme((current) => ({
-                ...current,
-                heroSubtitle: event.target.value || null
-              }))
-            }
-            rows={3}
-            value={theme.heroSubtitle ?? ""}
-          />
-        </label>
-
-        <label className="field">
-          <span>Aviso curto da vitrine</span>
-          <input
-            onChange={(event) =>
-              setTheme((current) => ({
-                ...current,
-                announcementText: event.target.value || null
-              }))
-            }
-            placeholder="Frete gratis acima de R$ 199"
-            value={theme.announcementText ?? ""}
-          />
-        </label>
-
-        <div className="button-row">
-          <button className="primary-button" disabled={isLoading} type="submit">
-            {isLoading ? "Salvando..." : "Aplicar tema"}
+        <div className="storefront-actions">
+          <button className="secondary-button" onClick={loadTheme} type="button">
+            Recarregar
           </button>
+          <a className="primary-button" href="http://localhost:3000">
+            Pre-visualizar
+          </a>
         </div>
-      </form>
+      </header>
 
-      {state.kind !== "idle" ? (
-        <p className={state.kind === "success" ? "feedback ok" : "feedback error"}>
-          {state.message}
-        </p>
-      ) : null}
+      <DashboardFeedback state={state} />
+      {isLoading && !theme.storeId ? <DashboardLoadingState label="Carregando tema da loja" /> : null}
 
-      <section className="theme-preview-card">
-        <div
-          className="theme-preview-swatch"
-          style={{
-            background: `linear-gradient(135deg, ${theme.surfaceColor} 0%, ${theme.primaryColor} 100%)`
-          }}
-        />
-        <div className="theme-preview-copy">
-          <div className="eyebrow">Preview</div>
-          <h3>{theme.heroTitle ?? storeLabel}</h3>
-          <p>{theme.heroSubtitle ?? "A vitrine publica vai refletir essas cores, logo e textos principais."}</p>
-          <div className="button-row">
-            <span className="theme-chip" style={{ background: theme.primaryColor }} />
-            <span className="theme-chip" style={{ background: theme.accentColor }} />
-            <span className="theme-chip" style={{ background: theme.surfaceColor }} />
+      <section className="storefront-workbench">
+        <div className="storefront-preview-card">
+          <div className="storefront-preview-browser">
+            <span />
+            <strong>{storeLabel}</strong>
+            <a href="http://localhost:3000">Abrir</a>
+          </div>
+          <div
+            className="storefront-preview-canvas"
+            style={{
+              background: theme.surfaceColor,
+              color: theme.primaryColor
+            }}
+          >
+            {theme.bannerUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img alt="Banner da vitrine" src={theme.bannerUrl} />
+            ) : null}
+            <div className="storefront-preview-hero">
+              {theme.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img alt={`Logo de ${storeLabel}`} src={theme.logoUrl} />
+              ) : (
+                <div style={{ background: theme.primaryColor }}>{storeLabel.slice(0, 2).toUpperCase()}</div>
+              )}
+              <span style={{ color: theme.accentColor }}>
+                {theme.announcementText ?? "Nova colecao disponivel"}
+              </span>
+              <h3>{theme.heroTitle ?? storeLabel}</h3>
+              <p>{theme.heroSubtitle ?? "A vitrine publica vai refletir essas cores, logo e textos principais."}</p>
+              <button style={{ background: theme.accentColor }} type="button">
+                Comprar agora
+              </button>
+            </div>
+            <div className="storefront-preview-grid">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <i key={index} style={{ background: theme.primaryColor }} />
+              ))}
+            </div>
           </div>
         </div>
+
+        <aside className="storefront-editor-card">
+          <div className="storefront-section-list">
+            {SECTIONS.map((section) => (
+              <button
+                className={activeSection === section.id ? "is-active" : ""}
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                type="button"
+              >
+                <strong>{section.label}</strong>
+                <span>{section.description}</span>
+              </button>
+            ))}
+          </div>
+
+          <form className="storefront-editor-form" onSubmit={handleSubmit}>
+            {activeSection === "hero" ? (
+              <>
+                <StorefrontField label="Titulo principal">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({
+                        ...current,
+                        heroTitle: event.target.value || null
+                      }))
+                    }
+                    placeholder="Sua nova colecao chegou"
+                    value={theme.heroTitle ?? ""}
+                  />
+                </StorefrontField>
+                <StorefrontField label="Subtitulo">
+                  <textarea
+                    onChange={(event) =>
+                      setTheme((current) => ({
+                        ...current,
+                        heroSubtitle: event.target.value || null
+                      }))
+                    }
+                    rows={4}
+                    value={theme.heroSubtitle ?? ""}
+                  />
+                </StorefrontField>
+              </>
+            ) : null}
+
+            {activeSection === "brand" ? (
+              <>
+                <StorefrontField label="URL do logo">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({
+                        ...current,
+                        logoUrl: event.target.value || null
+                      }))
+                    }
+                    placeholder="https://cdn.exemplo.com/logo.png"
+                    value={theme.logoUrl ?? ""}
+                  />
+                </StorefrontField>
+                <StorefrontField label="URL do banner">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({
+                        ...current,
+                        bannerUrl: event.target.value || null
+                      }))
+                    }
+                    placeholder="https://cdn.exemplo.com/banner.jpg"
+                    value={theme.bannerUrl ?? ""}
+                  />
+                </StorefrontField>
+              </>
+            ) : null}
+
+            {activeSection === "colors" ? (
+              <div className="storefront-color-grid">
+                <StorefrontField label="Cor principal">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({ ...current, primaryColor: event.target.value }))
+                    }
+                    type="color"
+                    value={theme.primaryColor}
+                  />
+                </StorefrontField>
+                <StorefrontField label="Cor de destaque">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({ ...current, accentColor: event.target.value }))
+                    }
+                    type="color"
+                    value={theme.accentColor}
+                  />
+                </StorefrontField>
+                <StorefrontField label="Cor de fundo">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({ ...current, surfaceColor: event.target.value }))
+                    }
+                    type="color"
+                    value={theme.surfaceColor}
+                  />
+                </StorefrontField>
+              </div>
+            ) : null}
+
+            {activeSection === "announcement" ? (
+              <StorefrontField label="Aviso curto da vitrine">
+                <input
+                  onChange={(event) =>
+                    setTheme((current) => ({
+                      ...current,
+                      announcementText: event.target.value || null
+                    }))
+                  }
+                  placeholder="Frete gratis acima de R$ 199"
+                  value={theme.announcementText ?? ""}
+                />
+              </StorefrontField>
+            ) : null}
+
+            <button className="primary-button" disabled={isLoading} type="submit">
+              {isLoading ? "Salvando..." : "Publicar mudancas"}
+            </button>
+          </form>
+        </aside>
       </section>
     </section>
+  );
+}
+
+function StorefrontField({
+  children,
+  label
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <label className="storefront-field">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }
