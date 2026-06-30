@@ -12,3 +12,4 @@ apps/api/dist
 packages/database/generated
 packages/*/src/*.js
 packages/*/src/*.js.map
+projeto_design_dashboard

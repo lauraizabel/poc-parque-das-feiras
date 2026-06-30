@@ -506,14 +506,14 @@ textarea {
 
 .overview-spark-bars {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 8px;
   min-height: 180px;
 }
 
 .overview-spark-item {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   flex: 1;
   height: 180px;
 }

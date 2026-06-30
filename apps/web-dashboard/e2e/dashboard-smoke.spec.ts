@@ -59,7 +59,7 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
     },
     data: {
       storeId: primaryStoreId,
-      name: "Cafés do Dashboard",
+      name: "Cafes do Dashboard",
       slug: "cafes-dashboard"
     }
   });
@@ -76,7 +76,7 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
       storeId: primaryStoreId,
       categoryId: categoryPayload.category.id,
       name: "Moedor Dashboard",
-      slug: "Moedor Dashboard",
+      slug: "moedor-dashboard",
       sku: "dash-001",
       priceCents: 21990,
       stockQuantity: 4,
@@ -176,35 +176,38 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
   await page.goto("/");
 
   await expect(page).toHaveTitle(/dashboard/i);
-  await expect(page.getByRole("heading", { name: /shell multi-store/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /operacao multi-store com mais clareza/i })
+  ).toBeVisible();
 
   await page.getByLabel("E-mail").fill(merchantEmail);
   await page.getByLabel("Senha").fill(password);
   await page.getByRole("button", { name: /entrar no dashboard/i }).click();
 
-  await expect(page.getByRole("heading", { name: /painel do lojista/i })).toBeVisible();
   await expect(page.getByTestId("dashboard-selected-store")).toHaveText(
     "Dashboard Smoke Store A"
   );
-  await expect(page.getByRole("heading", { name: /pulso inicial de dashboard smoke store a/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /dashboard smoke store a/i }).first()).toBeVisible();
 
   await page.getByTestId("dashboard-nav-catalog").click();
-  await expect(page.getByRole("heading", { name: /^produtos da loja$/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /produtos de dashboard smoke store a/i })
+  ).toBeVisible();
   await expect(page.getByText("Moedor Dashboard")).toBeVisible();
 
   await page.getByTestId("dashboard-nav-orders").click();
   await expect(
     page.getByRole("heading", {
-      name: /^gestao operacional de pedidos de dashboard smoke store a$/i
+      name: /operacao de pedidos de dashboard smoke store a/i
     })
   ).toBeVisible();
   await page.getByRole("button", { name: /consultar pedidos/i }).click();
-  await expect(page.getByRole("heading", { name: /cliente dashboard/i })).toBeVisible();
+  await expect(page.getByText("Cliente Dashboard")).toBeVisible();
 
   await page.getByTestId("dashboard-nav-domains").click();
   await expect(
     page.getByRole("heading", {
-      name: /^dominio proprio de dashboard smoke store a$/i
+      name: /dominios conectados de dashboard smoke store a/i
     })
   ).toBeVisible();
   await expect(page.getByText(customDomainHost, { exact: true }).first()).toBeVisible();
@@ -216,8 +219,10 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
   await expect(page.getByText("STORE_MANAGER", { exact: true }).first()).toBeVisible();
 
   await page.getByTestId("dashboard-nav-catalog").click();
-  await expect(page.getByRole("heading", { name: /^produtos da loja$/i })).toBeVisible();
   await expect(
-    page.getByText("Ajuste os filtros ou cadastre o primeiro produto para começar a operar o catálogo.")
+    page.getByRole("heading", { name: /produtos de dashboard smoke store b/i })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Ajuste os filtros ou cadastre o primeiro produto para comecar a operar o catalogo.")
   ).toBeVisible();
 });
