@@ -96,24 +96,32 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 2 - Roteamento e arquitetura de estado
 
-- [ ] P0 - Quebrar `DashboardShell` em rotas ou secoes modulares no Next.
-- [ ] P0 - Definir estrategia de navegacao:
+- [x] P0 - Quebrar `DashboardShell` em rotas ou secoes modulares no Next.
+- [x] P0 - Definir estrategia de navegacao:
   - opcao recomendada: manter Next App Router com rotas reais (`/dashboard/catalogo`, `/dashboard/pedidos`, etc.)
   - opcao temporaria: preservar navegacao por `activeSection` ate a migracao visual estabilizar
-- [ ] P0 - Centralizar contexto autenticado em um provider:
+- [x] P0 - Centralizar contexto autenticado em um provider:
   - token
   - usuario
   - memberships
   - loja selecionada
   - permissoes
   - funcoes `refreshContext` e `logout`
-- [ ] P0 - Criar client API unico em `apps/web-dashboard/src/lib` para evitar fetch duplicado.
-- [ ] P1 - Padronizar estados de loading, empty, error e success.
+- [x] P0 - Criar client API unico em `apps/web-dashboard/src/lib` para evitar fetch duplicado.
+- [x] P1 - Padronizar estados de loading, empty, error e success.
 - [ ] P1 - Adicionar protecao visual por role:
   - owner/manager ve resumo completo
   - operador ve pedidos/catalogo quando permitido
   - leitor ve modulos em modo leitura
 - [ ] P2 - Considerar React Query para cache, invalidacao e refetch coordenado.
+
+### Resultado da Fase 2
+
+- `apps/web-dashboard/src/components/dashboard-session.tsx` centraliza token, usuario, memberships, loja selecionada, login, logout e refresh de contexto.
+- `apps/web-dashboard/src/lib/dashboard-api.ts` concentra base URL, headers de autenticacao e normalizacao de mensagens.
+- `DashboardShell` ficou dividido entre provider, experiencia autenticada, login, onboarding e renderizacao do modulo ativo.
+- A navegacao continua por `activeSection` como caminho temporario; rotas reais do Next ficam para a etapa de estabilizacao depois que os consoles migrados estiverem prontos.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 3 - Resumo conectado
 
