@@ -1,0 +1,314 @@
+# Plano de migracao do dashboard do lojista
+
+Este documento organiza a migracao do prototipo em `projeto_design_dashboard` para o dashboard real em `apps/web-dashboard`, mantendo as integracoes ja existentes com `apps/api`.
+
+## Objetivo
+
+Migrar a experiencia visual e operacional criada no Lovable para o dashboard Next.js do lojista, sem perder autenticacao, selecao de loja, permissoes, chamadas reais de API, testes smoke e fluxo multi-store.
+
+## Contexto tecnico atual
+
+- `projeto_design_dashboard`: app Vite/TanStack Router gerado no Lovable, com Tailwind v4, componentes Radix/shadcn, lucide icons, shell lateral, topbar, mobile nav, dark/light theme e telas mockadas.
+- `apps/web-dashboard`: app Next.js 15 com React 19, hoje concentrado em uma pagina principal com estado client-side, login, onboarding e consoles conectados a API.
+- `apps/api`: NestJS com endpoints ja existentes para autenticacao, lojas, catalogo, pedidos, dominios, membros, tema, frete, pagamentos e integracoes.
+- O ponto mais importante da migracao e separar o visual do Lovable dos dados mockados, usando os contratos reais ja implementados.
+
+## Prioridades
+
+- P0: necessario para liberar a migracao sem quebrar login, autorizacao ou operacao principal.
+- P1: necessario para chegar no dashboard completo e conectado.
+- P2: melhoria, refinamento ou item que pode vir depois do primeiro corte funcional.
+
+## Fase 0 - Auditoria e preparacao
+
+- [x] P0 - Inventariar componentes do Lovable que serao migrados:
+  - `src/components/shell/Sidebar.tsx`
+  - `src/components/shell/Topbar.tsx`
+  - `src/components/shell/ContextStrip.tsx`
+  - `src/components/shell/MobileNav.tsx`
+  - `src/components/shell/EmptyState.tsx`
+  - componentes `src/components/ui/*` somente quando forem necessarios para drawer, dialog, select, tabs, tooltip e table
+- [x] P0 - Mapear telas Lovable para consoles atuais:
+  - `/dashboard` -> `OverviewConsole`
+  - `/dashboard/catalogo` -> `CatalogConsole`
+  - `/dashboard/pedidos` -> `OrdersConsole`
+  - `/dashboard/vitrine` -> `StorefrontThemeConsole`
+  - `/dashboard/dominios` -> `DomainConsole`
+  - `/dashboard/equipe` -> `MembersConsole`
+  - `/dashboard/configuracoes` -> `SettingsConsole`, `ShippingConsole`, integracoes e modulos futuros
+- [x] P0 - Confirmar dependencias que precisam entrar em `apps/web-dashboard`:
+  - `lucide-react`
+  - `@radix-ui/react-*` usados de fato, com prioridade para dialog, dropdown-menu, select, tabs e tooltip
+  - `class-variance-authority`
+  - `clsx`
+  - `tailwind-merge`
+  - `sonner` fica P2 ate existir fluxo de toast real
+  - `recharts` fica P2; a primeira entrega usa grafico leve em CSS para evitar dependencia prematura
+- [x] P0 - Decidir se o dashboard Next vai adotar Tailwind v4 ou se os estilos do Lovable serao traduzidos para CSS atual.
+  - Decisao: traduzir o design system do Lovable para CSS do `apps/web-dashboard` primeiro. Migrar para Tailwind v4 so depois de estabilizar a experiencia, porque o app real ainda nao usa Tailwind.
+- [x] P1 - Criar checklist visual de paridade com screenshots do Lovable por tela.
+  - Checklist base: shell autenticado, resumo, catalogo, pedidos, vitrine, dominios, equipe, configuracoes e onboarding.
+
+### Resultado da Fase 0
+
+- O dashboard real continuara em Next App Router.
+- O prototipo Lovable sera usado como referencia de layout e componentes, nao como app a ser copiado integralmente.
+- Dados mockados do Lovable nao entram no app real; cada tela deve receber dados via API ou via props derivadas do contexto autenticado.
+- As primeiras fases evitam dependencias novas quando CSS e componentes locais resolvem o problema com menos risco.
+
+## Fase 1 - Base visual no Next
+
+- [ ] P0 - Migrar tokens de design do Lovable para `apps/web-dashboard/src/app/globals.css`:
+  - cores `canvas`, `shell`, `panel`, `ember/accent`, `signal`, `warn`
+  - raios, tipografia, bordas, inputs e estados de foco
+  - utilitarios `animate-entrance` e `text-eyebrow`
+- [ ] P0 - Corrigir textos com encoding quebrado no dashboard atual durante a migracao:
+  - exemplos atuais com mojibake: `Sessao`, `Nao`, `Operacao`, `Dominios` aparecendo com caracteres corrompidos
+  - padrao esperado: UTF-8 com acentos corretos
+- [ ] P0 - Criar componentes compartilhados do dashboard real:
+  - `DashboardLayout`
+  - `DashboardSidebar`
+  - `DashboardTopbar`
+  - `DashboardMobileNav`
+  - `DashboardContextStrip`
+  - `DashboardCard`
+  - `DashboardBadge`
+  - `DashboardTable`
+  - `DashboardEmptyState`
+- [ ] P0 - Adaptar o shell do Lovable para receber dados reais:
+  - nome da loja selecionada
+  - email/nome do usuario
+  - role do membro
+  - moeda da loja
+  - link da vitrine real
+  - logout real
+  - seletor de loja existente
+- [ ] P0 - Manter o login e o bootstrap atual antes de renderizar o novo shell autenticado.
+- [ ] P1 - Adicionar alternancia de tema do Lovable com persistencia em local storage.
+- [ ] P1 - Garantir responsividade com sidebar desktop e mobile nav.
+- [ ] P1 - Remover textos auxiliares de demo que nao fazem sentido em producao, como `ops console v2`, nomes ficticios e dominio `curadoria-minimal`.
+
+## Fase 2 - Roteamento e arquitetura de estado
+
+- [ ] P0 - Quebrar `DashboardShell` em rotas ou secoes modulares no Next.
+- [ ] P0 - Definir estrategia de navegacao:
+  - opcao recomendada: manter Next App Router com rotas reais (`/dashboard/catalogo`, `/dashboard/pedidos`, etc.)
+  - opcao temporaria: preservar navegacao por `activeSection` ate a migracao visual estabilizar
+- [ ] P0 - Centralizar contexto autenticado em um provider:
+  - token
+  - usuario
+  - memberships
+  - loja selecionada
+  - permissoes
+  - funcoes `refreshContext` e `logout`
+- [ ] P0 - Criar client API unico em `apps/web-dashboard/src/lib` para evitar fetch duplicado.
+- [ ] P1 - Padronizar estados de loading, empty, error e success.
+- [ ] P1 - Adicionar protecao visual por role:
+  - owner/manager ve resumo completo
+  - operador ve pedidos/catalogo quando permitido
+  - leitor ve modulos em modo leitura
+- [ ] P2 - Considerar React Query para cache, invalidacao e refetch coordenado.
+
+## Fase 3 - Resumo conectado
+
+- [ ] P0 - Migrar layout de KPIs do Lovable para `OverviewConsole`.
+- [ ] P0 - Substituir valores mockados por dados reais ja carregados:
+  - pedidos totais
+  - faturamento basico
+  - pedidos com atencao
+  - produtos publicados
+  - baixo estoque
+  - sem estoque
+  - saude do dominio
+- [ ] P1 - Adicionar bloco "Fluxo operacional" com serie real dos ultimos dias.
+- [ ] P1 - Adicionar lista de catalogo recente com produtos reais.
+- [ ] P1 - Adicionar card de storefront com dominio/subdominio real e status de publicacao quando existir.
+- [ ] P2 - Criar endpoint agregado no backend para resumo do dashboard, evitando tres chamadas paralelas em cada carregamento.
+
+## Fase 4 - Catalogo conectado
+
+- [ ] P0 - Migrar tabela/lista visual do Lovable para produtos reais de `CatalogConsole`.
+- [ ] P0 - Preservar operacoes existentes:
+  - criar/editar categoria
+  - desativar categoria
+  - criar/editar produto
+  - publicar, desativar e arquivar produto
+  - filtros por status, estoque e categoria
+- [ ] P0 - Trocar formulario longo inline por drawer/modal ou painel lateral para o fluxo "Novo produto".
+- [ ] P1 - Implementar busca por nome/SKU no client e preparar query no backend se o volume crescer.
+- [ ] P1 - Exibir imagem principal do produto quando `images` existir, mantendo fallback visual.
+- [ ] P1 - Ajustar campos de preco para entrada em reais, convertendo para centavos no submit.
+- [ ] P1 - Adicionar acoes por linha com menu, seguindo o design de console.
+- [ ] P2 - Adicionar upload/gestao de imagens se o backend ainda nao tiver fluxo completo.
+
+## Fase 5 - Pedidos conectados
+
+- [ ] P0 - Migrar visual de abas/status do Lovable para `OrdersConsole`.
+- [ ] P0 - Usar pedidos reais de `/orders/:storeId/management`.
+- [ ] P0 - Preservar atualizacao de status com os `allowedActions` retornados pela API.
+- [ ] P0 - Manter campos operacionais reais:
+  - motivo/contexto
+  - transportadora
+  - servico
+  - codigo e URL de rastreio
+  - notas
+- [ ] P1 - Converter status tecnicos para labels amigaveis sem perder o valor tecnico no payload.
+- [ ] P1 - Criar detalhe expansivel do pedido, evitando que a lista fique pesada.
+- [ ] P1 - Adicionar contadores por aba com base nos pedidos carregados.
+- [ ] P1 - Destacar pedidos que exigem atencao.
+- [ ] P2 - Adicionar endpoint de metrica operacional para tempo medio de fulfillment.
+
+## Fase 6 - Vitrine conectada
+
+- [ ] P0 - Migrar estrutura visual de editor de storefront para `StorefrontThemeConsole`.
+- [ ] P0 - Conectar dados reais de tema, banner, textos e configuracoes ja existentes no console atual.
+- [ ] P0 - Garantir preview realista usando a loja selecionada.
+- [ ] P1 - Separar secoes editaveis:
+  - hero
+  - colecoes/produtos em destaque
+  - manifesto/texto institucional
+  - newsletter, se houver backend
+- [ ] P1 - Implementar estados de rascunho/publicado se o backend suportar.
+- [ ] P1 - Adicionar botao "Pre-visualizar" apontando para a vitrine real.
+- [ ] P2 - Criar historico de publicacao e rollback de tema.
+
+## Fase 7 - Dominios conectados
+
+- [ ] P0 - Migrar visual de tabela de dominios para `DomainConsole`.
+- [ ] P0 - Usar status reais de DNS e SSL:
+  - `ACTIVE`
+  - `SSL_PENDING`
+  - `VERIFYING`
+  - `AWAITING_DNS`
+  - `ERROR`
+  - `REMOVED`
+- [ ] P0 - Preservar criacao/adicao de dominio existente.
+- [ ] P1 - Exibir registros DNS reais retornados pela API, com acao de copiar.
+- [ ] P1 - Adicionar CTA de verificar DNS/SSL quando permitido.
+- [ ] P1 - Mostrar mensagens de erro de DNS/SSL de forma clara.
+- [ ] P2 - Adicionar timeline de provisionamento.
+
+## Fase 8 - Equipe e permissoes
+
+- [ ] P0 - Migrar visual de membros e roles para `MembersConsole`.
+- [ ] P0 - Preservar restricao `canManage` para owner.
+- [ ] P0 - Conectar lista real de membros e convites.
+- [ ] P1 - Criar resumo por role com dados reais.
+- [ ] P1 - Adicionar modal/drawer de convite.
+- [ ] P1 - Permitir alteracao de role quando a API suportar.
+- [ ] P2 - Adicionar matriz granular de permissoes por modulo.
+
+## Fase 9 - Configuracoes e modulos pendentes
+
+- [ ] P0 - Migrar navegacao lateral interna de configuracoes do Lovable.
+- [ ] P0 - Conectar paineis ja existentes:
+  - identidade da loja
+  - frete/logistica
+  - tema/regiao
+  - membros quando fizer sentido
+- [ ] P1 - Separar configuracoes em submodulos:
+  - loja
+  - fiscal
+  - pagamentos
+  - frete
+  - notificacoes
+  - integracoes
+  - regiao/idiomas
+  - API/webhooks
+- [ ] P1 - Marcar modulos sem backend como "em producao" ou ocultar ate estarem prontos.
+- [ ] P1 - Conectar pagamentos e integracoes aos endpoints existentes, quando disponiveis.
+- [ ] P2 - Implementar webhooks/API keys caso ainda sejam apenas mock.
+
+## Fase 10 - Onboarding e estados sem loja
+
+- [ ] P0 - Migrar visual do onboarding do Lovable para o fluxo real de `MerchantOnboardingForm`.
+- [ ] P0 - Preservar validacao de slug e criacao de loja conectada a API.
+- [ ] P0 - Manter estado autenticado sem memberships levando ao onboarding.
+- [ ] P1 - Adicionar progresso visual por etapa:
+  - identidade
+  - operacao
+  - dominio
+- [ ] P1 - Permitir continuar configuracao depois da criacao inicial da loja.
+- [ ] P2 - Adicionar checklist inicial dentro do dashboard apos primeira loja criada.
+
+## Fase 11 - Testes, QA e entrega
+
+- [ ] P0 - Rodar typecheck do monorepo.
+- [ ] P0 - Rodar build do dashboard.
+- [ ] P0 - Atualizar testes Playwright existentes:
+  - login
+  - selecao de loja
+  - navegacao entre modulos
+  - permissoes de admin/lojista
+  - smoke do dashboard autenticado
+- [ ] P0 - Testar responsividade em desktop e mobile.
+- [ ] P1 - Validar estados reais:
+  - sem token
+  - token expirado
+  - usuario sem loja
+  - loja sem produtos
+  - loja sem pedidos
+  - dominio com erro
+  - usuario sem permissao
+- [ ] P1 - Comparar visual com o Lovable por screenshots.
+- [ ] P1 - Fazer revisao de acessibilidade basica:
+  - labels
+  - foco visivel
+  - contraste
+  - botoes icon-only com `aria-label`
+- [ ] P2 - Adicionar testes visuais ou screenshots baseline.
+
+## Alteracoes recomendadas antes ou durante a migracao
+
+- [ ] P0 - Remover dados mockados do Lovable e transformar cada tela em componente parametrizado.
+- [ ] P0 - Corrigir encoding dos textos existentes no dashboard atual para evitar regressao visual.
+- [ ] P0 - Evitar portar TanStack Router para o app real; usar o App Router do Next para reduzir complexidade.
+- [ ] P0 - Evitar importar todos os componentes `ui/*`; migrar apenas o que for usado.
+- [ ] P0 - Padronizar labels de status em uma camada unica para catalogo, pedidos, dominios e membros.
+- [ ] P1 - Criar helpers compartilhados:
+  - `formatMoney`
+  - `formatDate`
+  - `normalizeMessage`
+  - `slugify`
+  - `statusToLabel`
+  - `statusToTone`
+- [ ] P1 - Substituir botoes de texto por botoes com icones onde o design pede acao compacta.
+- [ ] P1 - Trocar cards longos de formulario por drawers/modals para manter a densidade operacional do design.
+- [ ] P1 - Criar endpoint agregado de overview no backend.
+- [ ] P1 - Criar endpoints de contadores por modulo se o volume de dados aumentar.
+- [ ] P2 - Adicionar feature flags para liberar modulos migrados gradualmente.
+- [ ] P2 - Criar documentacao curta de design tokens e padroes de componentes.
+
+## Ordem sugerida de execucao
+
+1. Base visual e shell autenticado.
+2. Roteamento/context provider.
+3. Resumo conectado.
+4. Catalogo conectado.
+5. Pedidos conectado.
+6. Dominios conectado.
+7. Vitrine conectada.
+8. Equipe conectada.
+9. Configuracoes/onboarding.
+10. QA final, screenshots, Playwright e limpeza dos mocks.
+
+## Criterios de aceite
+
+- O usuario consegue logar no dashboard real.
+- O usuario sem loja cai no onboarding real.
+- O usuario com lojas consegue alternar a loja selecionada.
+- Todos os modulos do Lovable aparecem no dashboard real com visual equivalente.
+- Nenhum modulo usa dados mockados quando houver endpoint real disponivel.
+- Catalogo, pedidos, dominios, equipe, vitrine e configuracoes continuam enviando alteracoes para a API.
+- Permissoes por role continuam respeitadas.
+- Mobile e desktop funcionam sem sobreposicao ou quebra de layout.
+- `pnpm typecheck`, build relevante e smoke tests passam.
+
+## Riscos e mitigacoes
+
+- Diferenca de stack visual: Lovable usa Vite/Tailwind v4 e o dashboard usa Next. Mitigar migrando tokens e componentes aos poucos, validando build a cada modulo.
+- Regressao em permissoes: o shell novo pode esconder contexto importante. Mitigar mantendo provider unico e testes por role.
+- Dados mockados escaparem para producao: cada tela deve ter uma task explicita de substituicao por API real.
+- Formulario ficar pesado no layout novo: mover criacao/edicao para drawers/modals.
+- Dependencias demais no dashboard: importar apenas Radix/shadcn usados.
+- Encoding quebrado: corrigir textos em UTF-8 antes de comparar screenshots.
