@@ -1504,6 +1504,239 @@ textarea {
   gap: 10px;
 }
 
+.domains-console {
+  display: grid;
+  gap: 18px;
+}
+
+.domains-console-header,
+.domains-actions,
+.domains-row-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.domains-console-header {
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.domains-console-header h2,
+.domains-console-header p,
+.domains-dns-card h3,
+.domains-dns-card p {
+  margin: 0;
+}
+
+.domains-console-header h2 {
+  margin-top: 6px;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.domains-console-header p,
+.domains-dns-card p {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.domains-actions {
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.domains-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 18px;
+  align-items: start;
+}
+
+.domains-main-panel,
+.domains-side-panel,
+.domains-dns-card {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.domains-main-panel,
+.domains-side-panel {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.domains-register-form {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.domains-register-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.domains-register-form span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.domains-register-form input {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text);
+  padding: 0 12px;
+}
+
+.domains-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.domains-table-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(90px, 0.4fr) minmax(100px, 0.4fr) minmax(120px, 0.5fr) minmax(180px, 0.8fr);
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.domains-table-row:first-child {
+  border-top: 0;
+}
+
+.domains-table-row.is-heading {
+  background: rgba(22, 32, 51, 0.035);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.domains-table-row strong,
+.domains-table-row span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.domains-table-row div > span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.domains-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.domains-status.is-signal {
+  background: var(--signal-soft);
+  color: var(--signal);
+}
+
+.domains-status.is-warn {
+  background: var(--warning-soft);
+  color: var(--warn);
+}
+
+.domains-status.is-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.domains-row-actions {
+  flex-wrap: wrap;
+}
+
+.domains-row-actions button,
+.domains-record-row button {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--panel-soft);
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.domains-side-panel {
+  position: sticky;
+  top: 74px;
+}
+
+.domains-autorefresh {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+}
+
+.domains-dns-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  box-shadow: none;
+}
+
+.domains-records {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.domains-record-row {
+  display: grid;
+  grid-template-columns: 70px 70px minmax(0, 1fr) 60px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.domains-record-row:first-child {
+  border-top: 0;
+}
+
+.domains-record-row span {
+  width: fit-content;
+  border-radius: var(--radius-xs);
+  background: var(--shell);
+  color: var(--shell-text);
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.domains-record-row code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+.domains-record-row em {
+  color: var(--muted);
+  font-style: normal;
+}
+
 .nav,
 .dashboard-topbar {
   display: flex;
@@ -2495,6 +2728,27 @@ textarea {
   .storefront-preview-grid,
   .storefront-color-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .domains-console-header,
+  .domains-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .domains-workbench,
+  .domains-register-form,
+  .domains-table-row,
+  .domains-record-row {
+    grid-template-columns: 1fr;
+  }
+
+  .domains-side-panel {
+    position: static;
+  }
+
+  .domains-table-row.is-heading {
+    display: none;
   }
 
   .dashboard-frame {

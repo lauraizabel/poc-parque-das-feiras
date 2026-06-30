@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   DashboardEmptyState,
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
-import { env } from "../lib/env";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 
 type DomainRecord = {
   id?: string;
@@ -31,107 +31,54 @@ type DomainConsoleProps = {
   storeLabel: string;
 };
 
-type ActivationStep = {
-  key: "registered" | "dns" | "ssl" | "active";
-  title: string;
-  description: string;
-  state: "done" | "current" | "pending" | "error";
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Cadastro recebido",
+  AWAITING_DNS: "Aguardando DNS",
+  VERIFYING: "Verificando DNS",
+  SSL_PENDING: "Emitindo SSL",
+  ACTIVE: "Ativo",
+  ERROR: "Requer atencao",
+  REMOVED: "Removido"
 };
 
 function getStatusLabel(status?: string) {
-  switch (status) {
-    case "PENDING":
-      return "Cadastro recebido";
-    case "AWAITING_DNS":
-      return "Aguardando DNS correto";
-    case "VERIFYING":
-      return "Verificando DNS";
-    case "SSL_PENDING":
-      return "Emitindo SSL";
-    case "ACTIVE":
-      return "Domínio ativo";
-    case "ERROR":
-      return "Atenção necessária";
-    case "REMOVED":
-      return "Domínio removido";
-    default:
-      return status ?? "n/a";
+  return status ? STATUS_LABELS[status] ?? status : "n/a";
+}
+
+function getStatusTone(status?: string) {
+  if (status === "ACTIVE") {
+    return "signal";
   }
+
+  if (status === "ERROR" || status === "REMOVED") {
+    return "accent";
+  }
+
+  return "warn";
 }
 
 function getDnsGuidance(domain: DomainRecord | null) {
   if (!domain) {
-    return null;
+    return "Cadastre um host www para gerar os registros esperados.";
   }
 
   if (domain.dnsErrorMessage?.includes("No CNAME record found")) {
-    return "Nenhum CNAME foi encontrado ainda. Crie um registro CNAME para `www` apontando para o destino esperado.";
+    return "Nenhum CNAME foi encontrado. Crie um registro CNAME para www apontando para o destino esperado.";
   }
 
   if (domain.dnsErrorMessage?.includes("CNAME mismatch")) {
-    return "O domínio já tem um CNAME configurado, mas ele ainda aponta para outro destino. Ajuste o valor para o alvo esperado exibido abaixo.";
+    return "O CNAME atual aponta para outro destino. Ajuste o valor para o alvo esperado exibido abaixo.";
   }
 
   if (domain.status === "SSL_PENDING") {
-    return "O DNS já está correto. Agora basta aguardar a emissão e propagação do certificado SSL.";
+    return "O DNS esta correto. Aguarde a emissao e propagacao do certificado SSL.";
   }
 
   if (domain.status === "ACTIVE") {
-    return "O domínio já está ativo e pronto para servir a vitrine pública da loja.";
+    return "Dominio ativo e pronto para servir a vitrine publica da loja.";
   }
 
-  return "Depois de salvar o CNAME no provedor DNS, aguarde a propagação e use o botão de verificação para atualizar o status.";
-}
-
-function getActivationSteps(domain: DomainRecord | null): ActivationStep[] {
-  const status = domain?.status;
-
-  return [
-    {
-      key: "registered",
-      title: "Cadastro do host",
-      description: domain ? `Host ${domain.host} salvo na plataforma.` : "Domínio ainda não cadastrado.",
-      state: domain ? "done" : "pending"
-    },
-    {
-      key: "dns",
-      title: "Apontamento DNS",
-      description: domain?.dnsTargetValue
-        ? `Crie o CNAME de www para ${domain.dnsTargetValue}.`
-        : "Aguardando definição do destino DNS.",
-      state:
-        status === "ERROR" && domain?.dnsErrorMessage
-          ? "error"
-          : status === "SSL_PENDING" || status === "ACTIVE"
-            ? "done"
-            : status === "VERIFYING" || status === "AWAITING_DNS"
-              ? "current"
-              : domain
-                ? "pending"
-                : "pending"
-    },
-    {
-      key: "ssl",
-      title: "Emissão de SSL",
-      description: "Após o DNS correto, a plataforma solicita e acompanha o certificado.",
-      state:
-        status === "ERROR" && domain?.sslErrorMessage
-          ? "error"
-          : status === "ACTIVE"
-            ? "done"
-            : status === "SSL_PENDING"
-              ? "current"
-              : domain
-                ? "pending"
-                : "pending"
-    },
-    {
-      key: "active",
-      title: "Domínio ativo",
-      description: "Quando ativo, a vitrine responde pelo domínio customizado com SSL válido.",
-      state: status === "ACTIVE" ? "done" : status === "ERROR" ? "pending" : "pending"
-    }
-  ];
+  return "Depois de salvar o CNAME no provedor DNS, aguarde a propagacao e use Verificar DNS.";
 }
 
 export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps) {
@@ -141,6 +88,18 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedField, setCopiedField] = useState<"host" | "target" | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
+
+  const dnsRecords = useMemo(
+    () => [
+      {
+        type: "CNAME",
+        name: "www",
+        value: domain?.dnsTargetValue ?? "Aguardando destino",
+        ttl: "3600"
+      }
+    ],
+    [domain]
+  );
 
   async function loadCurrentDomain() {
     if (!storeId) {
@@ -155,21 +114,18 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/domains/${storeId}`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         domain?: DomainRecord | null;
         message?: string;
-      };
+      }>(`/domains/${storeId}`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok) {
         setDomain(null);
         setState({
           kind: "error",
-          message: payload.message ?? "Nao foi possivel consultar o dominio."
+          message: normalizeApiMessage(payload, "Nao foi possivel consultar o dominio.")
         });
         return;
       }
@@ -227,7 +183,7 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
     } catch {
       setState({
         kind: "error",
-        message: "Não foi possível copiar o valor automaticamente."
+        message: "Nao foi possivel copiar o valor automaticamente."
       });
     }
   }
@@ -238,26 +194,24 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/domains`, {
+      const { payload, response } = await dashboardApiJson<{
+        domain?: DomainRecord;
+        message?: string;
+      }>("/domains", {
         method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
+        headers: authHeaders(token, {
           "content-type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           storeId,
           host
         })
       });
-      const payload = (await response.json()) as {
-        domain?: DomainRecord;
-        message?: string;
-      };
 
       if (!response.ok || !payload.domain) {
         setState({
           kind: "error",
-          message: payload.message ?? "Nao foi possivel cadastrar o dominio."
+          message: normalizeApiMessage(payload, "Nao foi possivel cadastrar o dominio.")
         });
         return;
       }
@@ -277,318 +231,179 @@ export function DomainConsole({ token, storeId, storeLabel }: DomainConsoleProps
     }
   }
 
-  const activationSteps = getActivationSteps(domain);
+  async function queueDomainAction(action: "verify-dns" | "sync-ssl" | "remove") {
+    setIsSubmitting(true);
+    setState({ kind: "idle" });
+
+    try {
+      const path = action === "remove" ? `/domains/${storeId}` : `/domains/${storeId}/${action}`;
+      const { payload, response } = await dashboardApiJson<{
+        queued?: boolean;
+        removed?: boolean;
+        message?: string;
+      }>(path, {
+        method: action === "remove" ? "DELETE" : "POST",
+        headers: authHeaders(token)
+      });
+
+      if (!response.ok) {
+        setState({
+          kind: "error",
+          message: normalizeApiMessage(payload, "Nao foi possivel executar a acao solicitada.")
+        });
+        return;
+      }
+
+      if (action === "remove") {
+        setDomain(null);
+        setState({
+          kind: "success",
+          message: "Dominio removido com sucesso."
+        });
+        return;
+      }
+
+      setState({
+        kind: "success",
+        message:
+          action === "verify-dns"
+            ? "Verificacao de DNS agendada com sucesso."
+            : "Atualizacao de SSL agendada com sucesso."
+      });
+      await loadCurrentDomain();
+    } catch {
+      setState({
+        kind: "error",
+        message: "Falha de rede ao executar a acao solicitada."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
-    <section className="card domain-card">
-      <div className="domain-head">
+    <section className="domains-console animate-entrance">
+      <header className="domains-console-header">
         <div>
-          <div className="eyebrow">Custom domain</div>
-          <h2 className="section-title">Dominio proprio de {storeLabel}</h2>
+          <div className="eyebrow">Console / Dominios</div>
+          <h2>Dominios conectados de {storeLabel}</h2>
+          <p>SSL gerenciado automaticamente e DNS monitorado pelo console.</p>
         </div>
-        <button className="secondary-button" onClick={loadCurrentDomain} type="button">
-          Consultar atual
-        </button>
-      </div>
-
-      <p className="subtitle">
-        O fluxo oficial do MVP aceita apenas hosts `www`. Exemplo: `www.sualoja.com`.
-      </p>
-
-      <form className="domain-form" onSubmit={handleSubmit}>
-        <div className="field-grid">
-          <label className="field">
-            <span>Store ID</span>
-            <input
-              disabled
-              value={storeId}
-              placeholder="cm..."
-            />
-          </label>
-
-          <label className="field">
-            <span>Host oficial</span>
-            <input
-              value={host}
-              onChange={(event) => setHost(event.target.value)}
-              placeholder="www.sualoja.com"
-            />
-          </label>
-        </div>
-
-        <div className="button-row">
-          <button className="primary-button" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "Salvando..." : "Cadastrar dominio"}
-          </button>
-        </div>
-      </form>
-
-      <DashboardFeedback state={state} />
-
-      {isSubmitting && !domain ? (
-        <DashboardLoadingState label="Carregando status do domínio" />
-      ) : null}
-
-      {!isSubmitting && !domain ? (
-        <DashboardEmptyState
-          description="Cadastre um host próprio quando quiser operar a vitrine fora do subdomínio padrão do marketplace."
-          title="Nenhum domínio próprio cadastrado"
-        />
-      ) : null}
-
-      {domain ? (
-        <div className="domain-result">
-          <div>
-            <span>Host</span>
-            <strong>{domain.host}</strong>
-          </div>
-          <div>
-            <span>Status</span>
-            <strong>{getStatusLabel(domain.status)}</strong>
-          </div>
-          <div>
-            <span>CNAME esperado</span>
-            <strong>{domain.dnsTargetValue ?? "n/a"}</strong>
-          </div>
-          <div>
-            <span>Ultima checagem SSL</span>
-            <strong>{domain.sslLastCheckedAt ?? "n/a"}</strong>
-          </div>
-        </div>
-      ) : null}
-
-      {domain ? (
-        <section className="activation-timeline">
-          <div className="domain-head">
-            <div>
-              <div className="eyebrow">Ativação</div>
-              <h3 className="section-title dns-guide-title">Timeline do domínio</h3>
-            </div>
-            <label className="timeline-toggle">
-              <input
-                checked={autoRefresh}
-                onChange={(event) => setAutoRefresh(event.target.checked)}
-                type="checkbox"
-              />
-              <span>Atualizar a cada 15s</span>
-            </label>
-          </div>
-
-          <div className="timeline-list">
-            {activationSteps.map((step) => (
-              <article className={`timeline-step ${step.state}`} key={step.key}>
-                <div className="timeline-marker" />
-                <div>
-                  <strong>{step.title}</strong>
-                  <p className="order-meta">{step.description}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {domain ? (
-        <section className="dns-guide">
-          <div className="domain-head">
-            <div>
-              <div className="eyebrow">Instruções DNS</div>
-              <h3 className="section-title dns-guide-title">Configure o CNAME no seu provedor</h3>
-            </div>
-          </div>
-
-          <div className="dns-guide-grid">
-            <div className="dns-guide-card">
-              <span>Tipo</span>
-              <strong>CNAME</strong>
-            </div>
-            <div className="dns-guide-card">
-              <span>Nome / Host</span>
-              <strong>www</strong>
-              <button
-                className="secondary-button"
-                onClick={() => void copyValue("host", "www")}
-                type="button"
-              >
-                {copiedField === "host" ? "Copiado" : "Copiar host"}
-              </button>
-            </div>
-            <div className="dns-guide-card dns-guide-card-wide">
-              <span>Destino esperado</span>
-              <strong>{domain.dnsTargetValue ?? "n/a"}</strong>
-              <button
-                className="secondary-button"
-                onClick={() => void copyValue("target", domain.dnsTargetValue)}
-                type="button"
-              >
-                {copiedField === "target" ? "Copiado" : "Copiar destino"}
-              </button>
-            </div>
-          </div>
-
-          <p className="subtitle">{getDnsGuidance(domain)}</p>
-        </section>
-      ) : null}
-
-      {domain ? (
-        <p className="subtitle">
-          Enquanto o status nao virar `ACTIVE`, a loja continua disponivel pelo subdominio
-          padrao e o dominio proprio ainda nao participa da resolucao publica.
-        </p>
-      ) : null}
-
-      {domain?.dnsErrorMessage || domain?.sslErrorMessage ? (
-        <p className="feedback error">
-          {domain.sslErrorMessage ?? domain.dnsErrorMessage}
-        </p>
-      ) : null}
-
-      {domain ? (
-        <div className="button-row">
-          <button
-            className="secondary-button"
-            disabled={isSubmitting}
-            onClick={async () => {
-              setIsSubmitting(true);
-              setState({ kind: "idle" });
-
-              try {
-                const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/domains/${storeId}`, {
-                  method: "DELETE",
-                  headers: {
-                    authorization: `Bearer ${token}`
-                  }
-                });
-                const payload = (await response.json()) as {
-                  removed?: boolean;
-                  message?: string;
-                };
-
-                if (!response.ok) {
-                  setState({
-                    kind: "error",
-                    message: payload.message ?? "Nao foi possivel remover o dominio."
-                  });
-                  return;
-                }
-
-                setDomain(null);
-                setState({
-                  kind: "success",
-                  message:
-                    "Dominio removido com sucesso. Agora voce pode cadastrar um novo host para substituir o anterior."
-                });
-              } catch {
-                setState({
-                  kind: "error",
-                  message: "Falha de rede ao remover o dominio."
-                });
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-            type="button"
-          >
-            Remover dominio
+        <div className="domains-actions">
+          <button className="secondary-button" onClick={loadCurrentDomain} type="button">
+            Consultar atual
           </button>
           <button
-            className="secondary-button"
-            disabled={isSubmitting}
-            onClick={async () => {
-              setIsSubmitting(true);
-              setState({ kind: "idle" });
-
-              try {
-                const response = await fetch(
-                  `${env.NEXT_PUBLIC_API_URL}/domains/${storeId}/verify-dns`,
-                  {
-                    method: "POST",
-                    headers: {
-                      authorization: `Bearer ${token}`
-                    }
-                  }
-                );
-                const payload = (await response.json()) as {
-                  queued?: boolean;
-                  message?: string;
-                };
-
-                if (!response.ok) {
-                  setState({
-                    kind: "error",
-                    message: payload.message ?? "Nao foi possivel agendar a verificacao."
-                  });
-                  return;
-                }
-
-                setState({
-                  kind: "success",
-                  message: "Verificacao de DNS agendada com sucesso."
-                });
-                await loadCurrentDomain();
-              } catch {
-                setState({
-                  kind: "error",
-                  message: "Falha de rede ao agendar a verificacao."
-                });
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
+            className="primary-button"
+            disabled={!domain || isSubmitting}
+            onClick={() => void queueDomainAction("verify-dns")}
             type="button"
           >
             Verificar DNS
           </button>
-          <button
-            className="secondary-button"
-            disabled={isSubmitting}
-            onClick={async () => {
-              setIsSubmitting(true);
-              setState({ kind: "idle" });
-
-              try {
-                const response = await fetch(
-                  `${env.NEXT_PUBLIC_API_URL}/domains/${storeId}/sync-ssl`,
-                  {
-                    method: "POST",
-                    headers: {
-                      authorization: `Bearer ${token}`
-                    }
-                  }
-                );
-                const payload = (await response.json()) as {
-                  queued?: boolean;
-                  message?: string;
-                };
-
-                if (!response.ok) {
-                  setState({
-                    kind: "error",
-                    message: payload.message ?? "Nao foi possivel atualizar o status do SSL."
-                  });
-                  return;
-                }
-
-                setState({
-                  kind: "success",
-                  message: "Atualizacao de SSL agendada com sucesso."
-                });
-                await loadCurrentDomain();
-              } catch {
-                setState({
-                  kind: "error",
-                  message: "Falha de rede ao atualizar o SSL."
-                });
-              } finally {
-                setIsSubmitting(false);
-              }
-            }}
-            type="button"
-          >
-            Atualizar SSL
-          </button>
         </div>
-      ) : null}
+      </header>
+
+      <DashboardFeedback state={state} />
+
+      <section className="domains-workbench">
+        <div className="domains-main-panel">
+          <form className="domains-register-form" onSubmit={handleSubmit}>
+            <label>
+              <span>Host oficial</span>
+              <input
+                onChange={(event) => setHost(event.target.value)}
+                placeholder="www.sualoja.com"
+                value={host}
+              />
+            </label>
+            <button className="primary-button" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "Salvando..." : "Adicionar dominio"}
+            </button>
+          </form>
+
+          {isSubmitting && !domain ? (
+            <DashboardLoadingState label="Carregando status do dominio" />
+          ) : null}
+
+          {!isSubmitting && !domain ? (
+            <DashboardEmptyState
+              description="Cadastre um host proprio quando quiser operar a vitrine fora do subdominio padrao."
+              title="Nenhum dominio proprio cadastrado"
+            />
+          ) : null}
+
+          {domain ? (
+            <div className="domains-table">
+              <div className="domains-table-row is-heading">
+                <span>Host</span>
+                <span>Funcao</span>
+                <span>SSL</span>
+                <span>DNS</span>
+                <span>Acoes</span>
+              </div>
+              <article className="domains-table-row">
+                <div>
+                  <strong>{domain.host}</strong>
+                  <span>https://{domain.host}</span>
+                </div>
+                <span>Primario</span>
+                <span className={`domains-status is-${getStatusTone(domain.status)}`}>
+                  {domain.status === "ACTIVE" ? "Ativo" : getStatusLabel(domain.status)}
+                </span>
+                <span className={`domains-status is-${getStatusTone(domain.status)}`}>
+                  {getStatusLabel(domain.status)}
+                </span>
+                <div className="domains-row-actions">
+                  <button onClick={() => void queueDomainAction("sync-ssl")} type="button">
+                    Atualizar SSL
+                  </button>
+                  <button onClick={() => void queueDomainAction("remove")} type="button">
+                    Remover
+                  </button>
+                </div>
+              </article>
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="domains-side-panel">
+          <label className="domains-autorefresh">
+            <input
+              checked={autoRefresh}
+              onChange={(event) => setAutoRefresh(event.target.checked)}
+              type="checkbox"
+            />
+            <span>Atualizar a cada 15s</span>
+          </label>
+
+          <div className="domains-dns-card">
+            <div className="eyebrow">Registros necessarios</div>
+            <h3>DNS / {domain?.host ?? "novo dominio"}</h3>
+            <p>{getDnsGuidance(domain)}</p>
+            <div className="domains-records">
+              {dnsRecords.map((record) => (
+                <div className="domains-record-row" key={`${record.type}-${record.name}`}>
+                  <span>{record.type}</span>
+                  <strong>{record.name}</strong>
+                  <code>{record.value}</code>
+                  <em>{record.ttl}</em>
+                  <button
+                    onClick={() => void copyValue("target", record.value)}
+                    type="button"
+                  >
+                    {copiedField === "target" ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {domain?.dnsErrorMessage || domain?.sslErrorMessage ? (
+            <p className="feedback error">{domain.sslErrorMessage ?? domain.dnsErrorMessage}</p>
+          ) : null}
+        </aside>
+      </section>
     </section>
   );
 }

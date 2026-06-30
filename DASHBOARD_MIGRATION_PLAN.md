@@ -220,19 +220,27 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 7 - Dominios conectados
 
-- [ ] P0 - Migrar visual de tabela de dominios para `DomainConsole`.
-- [ ] P0 - Usar status reais de DNS e SSL:
+- [x] P0 - Migrar visual de tabela de dominios para `DomainConsole`.
+- [x] P0 - Usar status reais de DNS e SSL:
   - `ACTIVE`
   - `SSL_PENDING`
   - `VERIFYING`
   - `AWAITING_DNS`
   - `ERROR`
   - `REMOVED`
-- [ ] P0 - Preservar criacao/adicao de dominio existente.
-- [ ] P1 - Exibir registros DNS reais retornados pela API, com acao de copiar.
-- [ ] P1 - Adicionar CTA de verificar DNS/SSL quando permitido.
-- [ ] P1 - Mostrar mensagens de erro de DNS/SSL de forma clara.
+- [x] P0 - Preservar criacao/adicao de dominio existente.
+- [x] P1 - Exibir registros DNS reais retornados pela API, com acao de copiar.
+- [x] P1 - Adicionar CTA de verificar DNS/SSL quando permitido.
+- [x] P1 - Mostrar mensagens de erro de DNS/SSL de forma clara.
 - [ ] P2 - Adicionar timeline de provisionamento.
+
+### Resultado da Fase 7
+
+- `DomainConsole` agora usa tabela operacional de host, status de DNS/SSL, registros CNAME e painel lateral de DNS.
+- Foram preservadas as operacoes de consultar, cadastrar, verificar DNS, sincronizar SSL e remover dominio.
+- Erros de DNS/SSL aparecem em feedback dedicado e os registros DNS podem ser copiados.
+- A timeline detalhada foi substituida por tabela + registros nesta fase; timeline historica segue como P2.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 8 - Equipe e permissoes
 
