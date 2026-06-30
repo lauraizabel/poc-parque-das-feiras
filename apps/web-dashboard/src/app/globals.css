@@ -1737,6 +1737,224 @@ textarea {
   font-style: normal;
 }
 
+.members-console {
+  display: grid;
+  gap: 18px;
+}
+
+.members-console-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.members-console-header h2,
+.members-console-header p,
+.members-role-card p,
+.members-invite-panel h3,
+.members-invite-panel p,
+.members-readonly-card h2,
+.members-readonly-card p {
+  margin: 0;
+}
+
+.members-console-header h2 {
+  margin-top: 6px;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.members-console-header p,
+.members-role-card p,
+.members-invite-panel p,
+.members-readonly-card p {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.members-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--line);
+}
+
+.members-role-card {
+  min-width: 0;
+  background: var(--panel);
+  padding: 18px;
+}
+
+.members-role-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 2.3rem;
+  line-height: 1;
+}
+
+.members-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+
+.members-list-panel,
+.members-invite-panel,
+.members-readonly-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.members-table {
+  display: grid;
+}
+
+.members-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(130px, 0.45fr) minmax(130px, 0.45fr) minmax(160px, 0.7fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.members-row:first-child {
+  border-top: 0;
+}
+
+.members-row.is-heading {
+  background: rgba(22, 32, 51, 0.035);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.members-row.is-pending {
+  background: rgba(201, 150, 38, 0.06);
+}
+
+.members-identity {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.members-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--shell);
+  color: var(--shell-text);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.members-identity strong,
+.members-identity span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.members-identity span,
+.members-muted {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.members-row select,
+.members-invite-form input,
+.members-invite-form select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--text);
+  padding: 0 11px;
+}
+
+.members-role-pill,
+.members-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.members-role-pill,
+.members-status.is-active {
+  background: var(--signal-soft);
+  color: var(--signal);
+}
+
+.members-status.is-pending {
+  background: var(--warning-soft);
+  color: var(--warn);
+}
+
+.members-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.members-actions button {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: var(--panel-soft);
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.members-invite-panel,
+.members-readonly-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.members-invite-panel {
+  position: sticky;
+  top: 74px;
+}
+
+.members-invite-form {
+  display: grid;
+  gap: 12px;
+}
+
+.members-invite-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.members-invite-form label span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .nav,
 .dashboard-topbar {
   display: flex;
@@ -2748,6 +2966,25 @@ textarea {
   }
 
   .domains-table-row.is-heading {
+    display: none;
+  }
+
+  .members-console-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .members-role-grid,
+  .members-workbench,
+  .members-row {
+    grid-template-columns: 1fr;
+  }
+
+  .members-invite-panel {
+    position: static;
+  }
+
+  .members-row.is-heading {
     display: none;
   }
 

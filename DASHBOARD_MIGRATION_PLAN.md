@@ -244,13 +244,21 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 8 - Equipe e permissoes
 
-- [ ] P0 - Migrar visual de membros e roles para `MembersConsole`.
-- [ ] P0 - Preservar restricao `canManage` para owner.
-- [ ] P0 - Conectar lista real de membros e convites.
-- [ ] P1 - Criar resumo por role com dados reais.
-- [ ] P1 - Adicionar modal/drawer de convite.
-- [ ] P1 - Permitir alteracao de role quando a API suportar.
+- [x] P0 - Migrar visual de membros e roles para `MembersConsole`.
+- [x] P0 - Preservar restricao `canManage` para owner.
+- [x] P0 - Conectar lista real de membros e convites.
+- [x] P1 - Criar resumo por role com dados reais.
+- [x] P1 - Adicionar modal/drawer de convite.
+- [x] P1 - Permitir alteracao de role quando a API suportar.
 - [ ] P2 - Adicionar matriz granular de permissoes por modulo.
+
+### Resultado da Fase 8
+
+- `MembersConsole` agora tem resumo por role, lista operacional de membros/convites e painel lateral de convite.
+- Restricao `canManage` foi preservada: apenas owner gerencia equipe.
+- Foram preservadas as operacoes de listar, convidar, alterar role, remover membro e cancelar convite.
+- A matriz granular de permissoes segue como P2 porque o backend atual trabalha com roles gerenciaveis.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 9 - Configuracoes e modulos pendentes
 

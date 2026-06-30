@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { env } from "../lib/env";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   DashboardEmptyState,
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 
 type MemberRecord = {
   id: string;
@@ -40,6 +40,33 @@ type MembersConsoleProps = {
 
 const roleOptions = ["STORE_MANAGER", "STORE_SUPPORT"] as const;
 
+function formatRole(role: string) {
+  switch (role) {
+    case "STORE_OWNER":
+      return "Proprietaria";
+    case "STORE_MANAGER":
+      return "Operador";
+    case "STORE_SUPPORT":
+      return "Suporte";
+    default:
+      return role;
+  }
+}
+
+function getInitials(value: string) {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "U";
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
 export function MembersConsole({
   token,
   storeId,
@@ -54,6 +81,30 @@ export function MembersConsole({
   const [state, setState] = useState<ApiState>({ kind: "idle" });
   const [isLoading, setIsLoading] = useState(false);
 
+  const roleSummary = useMemo(
+    () => [
+      {
+        role: "STORE_OWNER",
+        label: "Proprietaria",
+        description: "Acesso total e gestao da loja",
+        count: members.filter((member) => member.role === "STORE_OWNER").length
+      },
+      {
+        role: "STORE_MANAGER",
+        label: "Operador",
+        description: "Gerencia catalogo, pedidos e vitrine",
+        count: members.filter((member) => member.role === "STORE_MANAGER").length
+      },
+      {
+        role: "STORE_SUPPORT",
+        label: "Suporte",
+        description: "Apoio operacional e atendimento",
+        count: members.filter((member) => member.role === "STORE_SUPPORT").length
+      }
+    ],
+    [members]
+  );
+
   async function loadMembers() {
     if (!storeId || !canManage) {
       return;
@@ -63,21 +114,18 @@ export function MembersConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/members`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         members?: MemberRecord[];
         invites?: InviteRecord[];
         message?: string;
-      };
+      }>(`/stores/${storeId}/members`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok) {
         setState({
           kind: "error",
-          message: payload.message ?? "Não foi possível carregar os membros."
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar os membros.")
         });
         return;
       }
@@ -111,23 +159,24 @@ export function MembersConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/members/invite`, {
+      const { payload, response } = await dashboardApiJson<{
+        status?: string;
+        message?: string;
+      }>(`/stores/${storeId}/members/invite`, {
         method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
+        headers: authHeaders(token, {
           "content-type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           email,
           role
         })
       });
-      const payload = (await response.json()) as { status?: string; message?: string };
 
       if (!response.ok) {
         setState({
           kind: "error",
-          message: payload.message ?? "Não foi possível convidar o membro."
+          message: normalizeApiMessage(payload, "Nao foi possivel convidar o membro.")
         });
         return;
       }
@@ -139,7 +188,7 @@ export function MembersConsole({
         message:
           payload.status === "PENDING"
             ? "Convite pendente criado com sucesso."
-            : "Membro adicionado à loja com sucesso."
+            : "Membro adicionado a loja com sucesso."
       });
       await loadMembers();
     } catch {
@@ -157,22 +206,23 @@ export function MembersConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/members/${memberId}`, {
-        method: "PATCH",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json"
-        },
-        body: JSON.stringify({
-          role: draftRoles[memberId]
-        })
-      });
-      const payload = (await response.json()) as { message?: string };
+      const { payload, response } = await dashboardApiJson<{ message?: string }>(
+        `/stores/${storeId}/members/${memberId}`,
+        {
+          method: "PATCH",
+          headers: authHeaders(token, {
+            "content-type": "application/json"
+          }),
+          body: JSON.stringify({
+            role: draftRoles[memberId]
+          })
+        }
+      );
 
       if (!response.ok) {
         setState({
           kind: "error",
-          message: payload.message ?? "Não foi possível atualizar o papel."
+          message: normalizeApiMessage(payload, "Nao foi possivel atualizar o papel.")
         });
         return;
       }
@@ -197,18 +247,18 @@ export function MembersConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/members/${memberId}`, {
-        method: "DELETE",
-        headers: {
-          authorization: `Bearer ${token}`
+      const { payload, response } = await dashboardApiJson<{ message?: string }>(
+        `/stores/${storeId}/members/${memberId}`,
+        {
+          method: "DELETE",
+          headers: authHeaders(token)
         }
-      });
-      const payload = (await response.json()) as { message?: string };
+      );
 
       if (!response.ok) {
         setState({
           kind: "error",
-          message: payload.message ?? "Não foi possível remover o membro."
+          message: normalizeApiMessage(payload, "Nao foi possivel remover o membro.")
         });
         return;
       }
@@ -233,21 +283,18 @@ export function MembersConsole({
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/member-invites/${inviteId}`,
+      const { payload, response } = await dashboardApiJson<{ message?: string }>(
+        `/stores/${storeId}/member-invites/${inviteId}`,
         {
           method: "DELETE",
-          headers: {
-            authorization: `Bearer ${token}`
-          }
+          headers: authHeaders(token)
         }
       );
-      const payload = (await response.json()) as { message?: string };
 
       if (!response.ok) {
         setState({
           kind: "error",
-          message: payload.message ?? "Não foi possível cancelar o convite."
+          message: normalizeApiMessage(payload, "Nao foi possivel cancelar o convite.")
         });
         return;
       }
@@ -269,143 +316,179 @@ export function MembersConsole({
 
   if (!canManage) {
     return (
-      <section className="card">
-        <div className="eyebrow">Equipe</div>
-        <h2 className="section-title">Gestão de membros</h2>
-        <p className="subtitle">
-          Apenas o owner da loja pode convidar, alterar papel e remover membros neste MVP.
-        </p>
+      <section className="members-console">
+        <div className="members-readonly-card">
+          <div className="eyebrow">Equipe</div>
+          <h2>Gestao de membros</h2>
+          <p>Apenas o owner da loja pode convidar, alterar papel e remover membros neste MVP.</p>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="card orders-card">
-      <div className="domain-head">
+    <section className="members-console animate-entrance">
+      <header className="members-console-header">
         <div>
-          <div className="eyebrow">Equipe</div>
-          <h2 className="section-title">Membros de {storeLabel}</h2>
+          <div className="eyebrow">Console / Equipe</div>
+          <h2>Operadores e permissoes de {storeLabel}</h2>
+          <p>
+            {members.length} membros ativos / {invites.length} convites pendentes
+          </p>
         </div>
         <button className="secondary-button" onClick={() => void loadMembers()} type="button">
           Atualizar lista
         </button>
-      </div>
+      </header>
 
-      <p className="subtitle">
-        Convide managers e support por e-mail. Se a conta já existir, a membership entra ativa; se
-        não, o convite fica pendente no MVP.
-      </p>
-
-      <form className="domain-form" onSubmit={handleInvite}>
-        <div className="field-grid">
-          <label className="field">
-            <span>E-mail do membro</span>
-            <input
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="operacao@sualoja.com"
-              type="email"
-              value={email}
-            />
-          </label>
-          <label className="field">
-            <span>Papel</span>
-            <select
-              className="field-select"
-              onChange={(event) => setRole(event.target.value as (typeof roleOptions)[number])}
-              value={role}
-            >
-              <option value="STORE_MANAGER">STORE_MANAGER</option>
-              <option value="STORE_SUPPORT">STORE_SUPPORT</option>
-            </select>
-          </label>
-        </div>
-
-        <div className="button-row">
-          <button className="primary-button" disabled={isLoading} type="submit">
-            {isLoading ? "Salvando..." : "Convidar membro"}
-          </button>
-        </div>
-      </form>
+      <section className="members-role-grid">
+        {roleSummary.map((item) => (
+          <article className="members-role-card" key={item.role}>
+            <div className="eyebrow">{item.label}</div>
+            <strong>{item.count}</strong>
+            <p>{item.description}</p>
+          </article>
+        ))}
+      </section>
 
       <DashboardFeedback state={state} />
 
-      {isLoading && members.length === 0 && invites.length === 0 ? (
-        <DashboardLoadingState label="Carregando equipe da loja" />
-      ) : null}
+      <section className="members-workbench">
+        <div className="members-list-panel">
+          {isLoading && members.length === 0 && invites.length === 0 ? (
+            <DashboardLoadingState label="Carregando equipe da loja" />
+          ) : null}
 
-      <div className="members-stack">
-        {members.map((member) => (
-          <article className="member-card" key={member.id}>
-            <div>
-              <strong>{member.fullName ?? member.email}</strong>
-              <p className="order-meta">{member.email}</p>
-            </div>
-            <div className="member-actions">
-              {member.role === "STORE_OWNER" ? (
-                <div className="host-badge">Owner da loja</div>
-              ) : (
-                <>
-                  <select
-                    className="field-select compact-select"
-                    onChange={(event) =>
-                      setDraftRoles((current) => ({
-                        ...current,
-                        [member.id]: event.target.value
-                      }))
-                    }
-                    value={draftRoles[member.id] ?? member.role}
-                  >
-                    <option value="STORE_MANAGER">STORE_MANAGER</option>
-                    <option value="STORE_SUPPORT">STORE_SUPPORT</option>
-                  </select>
-                  <button
-                    className="secondary-button"
-                    disabled={isLoading}
-                    onClick={() => void saveRole(member.id)}
-                    type="button"
-                  >
-                    Salvar papel
-                  </button>
-                  <button
-                    className="secondary-button"
-                    disabled={isLoading}
-                    onClick={() => void removeMember(member.id)}
-                    type="button"
-                  >
-                    Remover
-                  </button>
-                </>
-              )}
-            </div>
-          </article>
-        ))}
+          {[...members, ...invites].length > 0 ? (
+            <div className="members-table">
+              <div className="members-row is-heading">
+                <span>Membro</span>
+                <span>Papel</span>
+                <span>Status</span>
+                <span>Acoes</span>
+              </div>
+              {members.map((member) => (
+                <article className="members-row" key={member.id}>
+                  <MemberIdentity
+                    email={member.email}
+                    name={member.fullName ?? member.email}
+                  />
+                  <div>
+                    {member.role === "STORE_OWNER" ? (
+                      <span className="members-role-pill">Owner</span>
+                    ) : (
+                      <select
+                        onChange={(event) =>
+                          setDraftRoles((current) => ({
+                            ...current,
+                            [member.id]: event.target.value
+                          }))
+                        }
+                        value={draftRoles[member.id] ?? member.role}
+                      >
+                        <option value="STORE_MANAGER">Operador</option>
+                        <option value="STORE_SUPPORT">Suporte</option>
+                      </select>
+                    )}
+                  </div>
+                  <span className="members-status is-active">Ativo</span>
+                  <div className="members-actions">
+                    {member.role !== "STORE_OWNER" ? (
+                      <>
+                        <button
+                          disabled={isLoading}
+                          onClick={() => void saveRole(member.id)}
+                          type="button"
+                        >
+                          Salvar
+                        </button>
+                        <button
+                          disabled={isLoading}
+                          onClick={() => void removeMember(member.id)}
+                          type="button"
+                        >
+                          Remover
+                        </button>
+                      </>
+                    ) : (
+                      <span className="members-muted">Acesso total</span>
+                    )}
+                  </div>
+                </article>
+              ))}
 
-        {invites.map((invite) => (
-          <article className="member-card pending" key={invite.id}>
-            <div>
-              <strong>{invite.email}</strong>
-              <p className="order-meta">Convite pendente • {invite.role}</p>
+              {invites.map((invite) => (
+                <article className="members-row is-pending" key={invite.id}>
+                  <MemberIdentity email={invite.email} name={invite.email} />
+                  <span>{formatRole(invite.role)}</span>
+                  <span className="members-status is-pending">Convite pendente</span>
+                  <div className="members-actions">
+                    <button
+                      disabled={isLoading}
+                      onClick={() => void removeInvite(invite.id)}
+                      type="button"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
-            <div className="member-actions">
-              <button
-                className="secondary-button"
-                disabled={isLoading}
-                onClick={() => void removeInvite(invite.id)}
-                type="button"
+          ) : null}
+
+          {!isLoading && members.length === 0 && invites.length === 0 ? (
+            <DashboardEmptyState
+              description="Convide managers e suporte quando a operacao da loja comecar a crescer."
+              title="Nenhum membro extra convidado"
+            />
+          ) : null}
+        </div>
+
+        <aside className="members-invite-panel">
+          <div>
+            <div className="eyebrow">Convite</div>
+            <h3>Convidar operador</h3>
+            <p>Se a conta ja existir, a membership entra ativa. Caso contrario, o convite fica pendente.</p>
+          </div>
+          <form className="members-invite-form" onSubmit={handleInvite}>
+            <label>
+              <span>E-mail</span>
+              <input
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="operacao@sualoja.com"
+                required
+                type="email"
+                value={email}
+              />
+            </label>
+            <label>
+              <span>Papel</span>
+              <select
+                onChange={(event) => setRole(event.target.value as (typeof roleOptions)[number])}
+                value={role}
               >
-                Cancelar convite
-              </button>
-            </div>
-          </article>
-        ))}
-
-        {!isLoading && members.length === 0 && invites.length === 0 ? (
-          <DashboardEmptyState
-            description="Convide managers e suporte quando a operação da loja começar a crescer."
-            title="Nenhum membro extra convidado"
-          />
-        ) : null}
-      </div>
+                <option value="STORE_MANAGER">Operador</option>
+                <option value="STORE_SUPPORT">Suporte</option>
+              </select>
+            </label>
+            <button className="primary-button" disabled={isLoading} type="submit">
+              {isLoading ? "Salvando..." : "Convidar membro"}
+            </button>
+          </form>
+        </aside>
+      </section>
     </section>
+  );
+}
+
+function MemberIdentity({ email, name }: { email: string; name: string }) {
+  return (
+    <div className="members-identity">
+      <div className="members-avatar">{getInitials(name || email)}</div>
+      <div>
+        <strong>{name}</strong>
+        <span>{email}</span>
+      </div>
+    </div>
   );
 }
