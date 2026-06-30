@@ -14,6 +14,9 @@ type StoreThemeRecord = {
   primaryColor: string;
   accentColor: string;
   surfaceColor: string;
+  darkColor: string;
+  fontPairing: string;
+  shapeStyle: string;
   logoUrl: string | null;
   bannerUrl: string | null;
   heroTitle: string | null;
@@ -27,13 +30,16 @@ type StorefrontThemeConsoleProps = {
   storeLabel: string;
 };
 
-type ThemeSection = "hero" | "brand" | "colors" | "announcement";
+type ThemeSection = "hero" | "brand" | "colors" | "announcement" | "personalidade";
 
 const DEFAULT_THEME: StoreThemeRecord = {
   storeId: "",
   primaryColor: "#c45c2c",
   accentColor: "#8f3610",
   surfaceColor: "#f5f1e8",
+  darkColor: "#241f1b",
+  fontPairing: "editorial",
+  shapeStyle: "rounded",
   logoUrl: null,
   bannerUrl: null,
   heroTitle: null,
@@ -65,6 +71,11 @@ const SECTIONS: Array<{
     id: "announcement",
     label: "Aviso",
     description: "Mensagem curta da vitrine"
+  },
+  {
+    id: "personalidade",
+    label: "Personalidade",
+    description: "Tipografia, forma e cor escura"
   }
 ];
 
@@ -146,6 +157,9 @@ export function StorefrontThemeConsole({
           primaryColor: theme.primaryColor,
           accentColor: theme.accentColor,
           surfaceColor: theme.surfaceColor,
+          darkColor: theme.darkColor,
+          fontPairing: theme.fontPairing,
+          shapeStyle: theme.shapeStyle,
           logoUrl: theme.logoUrl ?? "",
           bannerUrl: theme.bannerUrl ?? "",
           heroTitle: theme.heroTitle ?? "",
@@ -359,6 +373,45 @@ export function StorefrontThemeConsole({
                   value={theme.announcementText ?? ""}
                 />
               </StorefrontField>
+            ) : null}
+
+            {activeSection === "personalidade" ? (
+              <>
+                <StorefrontField label="Tipografia">
+                  <select
+                    onChange={(event) =>
+                      setTheme((current) => ({ ...current, fontPairing: event.target.value }))
+                    }
+                    value={theme.fontPairing}
+                  >
+                    <option value="editorial">Editorial — Cormorant + Manrope (atual)</option>
+                    <option value="modern">Moderno — Space Grotesk + Inter</option>
+                    <option value="organic">Orgânico — Playfair Display + Lato</option>
+                    <option value="minimal">Minimal — DM Sans</option>
+                  </select>
+                </StorefrontField>
+                <StorefrontField label="Forma dos elementos">
+                  <select
+                    onChange={(event) =>
+                      setTheme((current) => ({ ...current, shapeStyle: event.target.value }))
+                    }
+                    value={theme.shapeStyle}
+                  >
+                    <option value="rounded">Arredondado (16px)</option>
+                    <option value="soft">Suave (26px)</option>
+                    <option value="sharp">Angular (4px)</option>
+                  </select>
+                </StorefrontField>
+                <StorefrontField label="Cor escura (rodapé, botão, anuncio)">
+                  <input
+                    onChange={(event) =>
+                      setTheme((current) => ({ ...current, darkColor: event.target.value }))
+                    }
+                    type="color"
+                    value={theme.darkColor}
+                  />
+                </StorefrontField>
+              </>
             ) : null}
 
             <button className="primary-button" disabled={isLoading} type="submit">

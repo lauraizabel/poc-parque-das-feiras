@@ -319,6 +319,9 @@ model StoreTheme {
   primaryColor       String   @default("#c45c2c")
   accentColor        String   @default("#8f3610")
   surfaceColor       String   @default("#f5f1e8")
+  darkColor          String   @default("#241f1b")
+  fontPairing        String   @default("editorial")
+  shapeStyle         String   @default("rounded")
   logoUrl            String?
   bannerUrl          String?
   heroTitle          String?

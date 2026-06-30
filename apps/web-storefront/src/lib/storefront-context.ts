@@ -32,6 +32,9 @@ export type PublicStorefrontStore = {
     primaryColor: string;
     accentColor: string;
     surfaceColor: string;
+    darkColor: string;
+    fontPairing: string;
+    shapeStyle: string;
     logoUrl: string | null;
     bannerUrl: string | null;
     heroTitle: string | null;
