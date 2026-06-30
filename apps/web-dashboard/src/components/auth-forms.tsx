@@ -178,8 +178,7 @@ export function LoginForm(props: { initialMessage?: string | null }) {
     } catch (error) {
       setState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Falha de rede ao autenticar o usuário."
+        message: error instanceof Error ? error.message : "Falha de rede ao autenticar o usuário."
       });
     } finally {
       setIsLoading(false);
@@ -187,36 +186,38 @@ export function LoginForm(props: { initialMessage?: string | null }) {
   }
 
   return (
-    <form className="domain-form" onSubmit={handleSubmit}>
-      <div className="field-grid">
-        <label className="field">
-          <span>E-mail</span>
-          <input
-            autoComplete="email"
-            onChange={(event) => setEmail(event.target.value)}
-            type="email"
-            value={email}
-          />
-          <FieldError message={state.fieldErrors?.email} />
-        </label>
-        <label className="field">
-          <span>Senha</span>
-          <input
-            autoComplete="current-password"
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
-            value={password}
-          />
-          <FieldError message={state.fieldErrors?.password} />
-        </label>
-      </div>
+    <form className="auth-modern-form" onSubmit={handleSubmit}>
+      <label className="field">
+        <span>E-mail</span>
+        <input
+          autoComplete="email"
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="voce@loja.com.br"
+          type="email"
+          value={email}
+        />
+        <FieldError message={state.fieldErrors?.email} />
+      </label>
 
-      <div className="button-row">
-        <button className="primary-button" disabled={isLoading} type="submit">
-          {isLoading ? "Entrando..." : "Entrar"}
+      <label className="field">
+        <span>Senha</span>
+        <input
+          autoComplete="current-password"
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="********"
+          type="password"
+          value={password}
+        />
+        <FieldError message={state.fieldErrors?.password} />
+      </label>
+
+      <div className="auth-action-row">
+        <button className="auth-submit-button" disabled={isLoading} type="submit">
+          {isLoading ? "Entrando..." : "Entrar no cockpit"}
+          <span aria-hidden="true">→</span>
         </button>
-        <a className="secondary-button auth-anchor-button" href="/forgot-password">
-          Esqueci minha senha
+        <a className="auth-text-link" href="/forgot-password">
+          Recuperar senha
         </a>
       </div>
 
@@ -278,8 +279,7 @@ export function RegisterForm() {
     } catch (error) {
       setState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Falha de rede ao criar a conta."
+        message: error instanceof Error ? error.message : "Falha de rede ao criar a conta."
       });
     } finally {
       setIsLoading(false);
@@ -373,14 +373,12 @@ export function ForgotPasswordForm() {
 
       setState({
         kind: "success",
-        message:
-          "Se o e-mail existir na plataforma, enviaremos um link para redefinir a senha."
+        message: "Se o e-mail existir na plataforma, enviaremos um link para redefinir a senha."
       });
     } catch (error) {
       setState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Falha de rede ao solicitar a redefinição."
+        message: error instanceof Error ? error.message : "Falha de rede ao solicitar a redefinição."
       });
     } finally {
       setIsLoading(false);
@@ -469,8 +467,7 @@ export function ResetPasswordForm(props: { initialToken?: string | null }) {
     } catch (error) {
       setState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Falha de rede ao redefinir a senha."
+        message: error instanceof Error ? error.message : "Falha de rede ao redefinir a senha."
       });
     } finally {
       setIsLoading(false);
@@ -559,8 +556,7 @@ export function VerifyEmailForm(props: { initialToken?: string | null }) {
     } catch (error) {
       setState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Falha de rede ao confirmar o e-mail."
+        message: error instanceof Error ? error.message : "Falha de rede ao confirmar o e-mail."
       });
     } finally {
       setIsLoading(false);

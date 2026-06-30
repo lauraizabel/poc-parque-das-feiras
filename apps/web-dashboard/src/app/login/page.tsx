@@ -1,4 +1,4 @@
-import { AuthPageShell } from "../../components/auth-page-shell";
+import { AuthFormLayout } from "../../components/auth-page-shell";
 import { LoginForm } from "../../components/auth-forms";
 
 export default async function LoginPage(props: {
@@ -13,20 +13,24 @@ export default async function LoginPage(props: {
         : null;
 
   return (
-    <AuthPageShell
-      eyebrow="Acesso"
-      title="Entre no painel e recupere seu contexto de loja."
-      subtitle="Faça login com seu e-mail e senha para abrir o dashboard, trocar de loja e seguir com a operação."
-      links={[
-        { href: "/register", label: "Criar conta" },
-        { href: "/forgot-password", label: "Esqueci minha senha" }
-      ]}
+    <AuthFormLayout
+      eyebrow="Entrar"
+      title="Acesse seu cockpit"
+      subtitle="Use o e-mail vinculado à sua conta para abrir o dashboard, trocar de loja e seguir com a operação."
     >
-      <div>
-        <div className="eyebrow">Entrar</div>
-        <h2 className="section-title">Acesso do lojista</h2>
-      </div>
       <LoginForm initialMessage={initialMessage} />
-    </AuthPageShell>
+      <div className="auth-divider">
+        <span />
+        <strong>ou</strong>
+        <span />
+      </div>
+      <a className="auth-next-link" href="/register-merchant">
+        <span>
+          <strong>Criar conta no Resumo</strong>
+          Abra sua operação em menos de dois minutos.
+        </span>
+        <em aria-hidden="true">→</em>
+      </a>
+    </AuthFormLayout>
   );
 }
