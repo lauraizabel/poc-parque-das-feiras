@@ -287,13 +287,14 @@ export function RegisterForm() {
   }
 
   return (
-    <form className="domain-form" onSubmit={handleSubmit}>
+    <form className="auth-modern-form" onSubmit={handleSubmit}>
       <div className="field-grid">
         <label className="field">
           <span>Nome completo</span>
           <input
             autoComplete="name"
             onChange={(event) => setFullName(event.target.value)}
+            placeholder="Ana Souza"
             type="text"
             value={fullName}
           />
@@ -304,6 +305,7 @@ export function RegisterForm() {
           <input
             autoComplete="email"
             onChange={(event) => setEmail(event.target.value)}
+            placeholder="voce@suamarca.com"
             type="email"
             value={email}
           />
@@ -316,17 +318,26 @@ export function RegisterForm() {
         <input
           autoComplete="new-password"
           onChange={(event) => setPassword(event.target.value)}
+          placeholder="Mínimo 8 caracteres"
           type="password"
           value={password}
         />
         <FieldError message={state.fieldErrors?.password} />
       </label>
 
-      <div className="button-row">
-        <button className="primary-button" disabled={isLoading} type="submit">
+      <label className="auth-check-row">
+        <input type="checkbox" />
+        <span>
+          Concordo com os termos e a política de privacidade.
+        </span>
+      </label>
+
+      <div className="auth-action-row">
+        <button className="auth-submit-button" disabled={isLoading} type="submit">
           {isLoading ? "Criando conta..." : "Criar conta"}
+          <span aria-hidden="true">→</span>
         </button>
-        <a className="secondary-button auth-anchor-button" href="/login">
+        <a className="auth-text-link" href="/login">
           Já tenho acesso
         </a>
       </div>

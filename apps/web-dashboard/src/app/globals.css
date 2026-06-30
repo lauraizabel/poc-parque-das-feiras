@@ -2494,6 +2494,10 @@ textarea {
   gap: 18px;
 }
 
+.auth-modern-form .field-grid {
+  gap: 14px;
+}
+
 .auth-modern-form .field {
   gap: 7px;
 }
@@ -2571,6 +2575,23 @@ textarea {
 
 .auth-text-link:hover {
   text-decoration: underline;
+}
+
+.auth-check-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.auth-check-row input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
 }
 
 .auth-divider {
