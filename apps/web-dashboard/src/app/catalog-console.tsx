@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   DashboardEmptyState,
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
-import { env } from "../lib/env";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -72,12 +72,14 @@ type ProductFormState = {
   description: string;
   sku: string;
   categoryId: string;
-  priceCents: string;
-  compareAtCents: string;
+  price: string;
+  compareAt: string;
   stockQuantity: string;
   status: string;
   isFeatured: boolean;
 };
+
+type EditorMode = "product" | "category" | null;
 
 const EMPTY_CATEGORY_FORM: CategoryFormState = {
   id: null,
@@ -94,24 +96,12 @@ const EMPTY_PRODUCT_FORM: ProductFormState = {
   description: "",
   sku: "",
   categoryId: "",
-  priceCents: "",
-  compareAtCents: "",
+  price: "",
+  compareAt: "",
   stockQuantity: "0",
   status: "DRAFT",
   isFeatured: false
 };
-
-function normalizeMessage(payload: unknown, fallback: string) {
-  if (typeof payload === "object" && payload !== null && "message" in payload) {
-    const value = (payload as { message?: unknown }).message;
-
-    if (typeof value === "string") {
-      return value;
-    }
-  }
-
-  return fallback;
-}
 
 function slugify(value: string) {
   return value
@@ -130,10 +120,32 @@ function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR
   }).format(valueInCents / 100);
 }
 
-function getProductActionLabel(status: string) {
+function centsToInput(valueInCents: number | null) {
+  if (valueInCents === null) {
+    return "";
+  }
+
+  return (valueInCents / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function inputToCents(value: string) {
+  const normalized = value.replace(/\./g, "").replace(",", ".");
+  const parsed = Number(normalized);
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.round(parsed * 100);
+}
+
+function getStatusLabel(status: string) {
   switch (status) {
     case "ACTIVE":
-      return "Ativo";
+      return "Publicado";
     case "INACTIVE":
       return "Inativo";
     case "OUT_OF_STOCK":
@@ -143,6 +155,18 @@ function getProductActionLabel(status: string) {
     default:
       return "Rascunho";
   }
+}
+
+function getProductTone(product: CatalogProduct) {
+  if (product.status === "OUT_OF_STOCK" || product.stockQuantity <= 0) {
+    return "accent";
+  }
+
+  if (product.stockQuantity <= 3) {
+    return "warn";
+  }
+
+  return "signal";
 }
 
 export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsoleProps) {
@@ -157,8 +181,12 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
   const [statusFilter, setStatusFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [query, setQuery] = useState("");
+  const [editorMode, setEditorMode] = useState<EditorMode>(null);
 
   const filteredProducts = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
     return products.filter((product) => {
       if (statusFilter && product.status !== statusFilter) {
         return false;
@@ -176,9 +204,15 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
         return false;
       }
 
-      return true;
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return [product.name, product.sku, product.slug]
+        .filter(Boolean)
+        .some((value) => value?.toLowerCase().includes(normalizedQuery));
     });
-  }, [categoryFilter, products, statusFilter, stockFilter]);
+  }, [categoryFilter, products, query, statusFilter, stockFilter]);
 
   async function loadCategories() {
     if (!storeId) {
@@ -188,21 +222,18 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     setIsLoadingCategories(true);
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/catalog/${storeId}/categories`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         categories?: CatalogCategory[];
         message?: string;
-      };
+      }>(`/catalog/${storeId}/categories`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.categories) {
         setCategories([]);
         setCategoryState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel carregar as categorias.")
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar as categorias.")
         });
         return;
       }
@@ -227,21 +258,18 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     setIsLoadingProducts(true);
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/catalog/${storeId}/products`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         products?: CatalogProduct[];
         message?: string;
-      };
+      }>(`/catalog/${storeId}/products`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.products) {
         setProducts([]);
         setProductState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel carregar os produtos.")
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar os produtos.")
         });
         return;
       }
@@ -264,6 +292,8 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     setCategoryFilter("");
     setStatusFilter("");
     setStockFilter("");
+    setQuery("");
+    setEditorMode(null);
     setCategoryState({ kind: "idle" });
     setProductState({ kind: "idle" });
 
@@ -275,12 +305,14 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     void loadProducts();
   }, [storeId, token]);
 
-  function resetCategoryForm() {
-    setCategoryForm(EMPTY_CATEGORY_FORM);
+  function openNewProduct() {
+    setProductForm(EMPTY_PRODUCT_FORM);
+    setEditorMode("product");
   }
 
-  function resetProductForm() {
-    setProductForm(EMPTY_PRODUCT_FORM);
+  function openNewCategory() {
+    setCategoryForm(EMPTY_CATEGORY_FORM);
+    setEditorMode("category");
   }
 
   function editCategory(category: CatalogCategory) {
@@ -291,6 +323,7 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
       description: category.description ?? "",
       sortOrder: String(category.sortOrder)
     });
+    setEditorMode("category");
   }
 
   function editProduct(product: CatalogProduct) {
@@ -301,12 +334,13 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
       description: product.description ?? "",
       sku: product.sku ?? "",
       categoryId: product.categoryId ?? "",
-      priceCents: String(product.priceCents),
-      compareAtCents: product.compareAtCents === null ? "" : String(product.compareAtCents),
+      price: centsToInput(product.priceCents),
+      compareAt: centsToInput(product.compareAtCents),
       stockQuantity: String(product.stockQuantity),
       status: product.status,
       isFeatured: product.isFeatured
     });
+    setEditorMode("product");
   }
 
   async function handleCategorySubmit(event: FormEvent<HTMLFormElement>) {
@@ -323,34 +357,31 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     };
 
     try {
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_API_URL}/catalog/${categoryForm.id ? `categories/${categoryForm.id}` : "categories"}`,
-        {
-          method: categoryForm.id ? "PATCH" : "POST",
-          headers: {
-            authorization: `Bearer ${token}`,
-            "content-type": "application/json"
-          },
-          body: JSON.stringify(body)
-        }
-      );
-      const payload = (await response.json()) as { category?: CatalogCategory; message?: string };
+      const { payload, response } = await dashboardApiJson<{
+        category?: CatalogCategory;
+        message?: string;
+      }>(`/catalog/${categoryForm.id ? `categories/${categoryForm.id}` : "categories"}`, {
+        method: categoryForm.id ? "PATCH" : "POST",
+        headers: authHeaders(token, {
+          "content-type": "application/json"
+        }),
+        body: JSON.stringify(body)
+      });
 
       if (!response.ok || !payload.category) {
         setCategoryState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel salvar a categoria.")
+          message: normalizeApiMessage(payload, "Nao foi possivel salvar a categoria.")
         });
         return;
       }
 
       setCategoryState({
         kind: "success",
-        message: categoryForm.id
-          ? "Categoria atualizada com sucesso."
-          : "Categoria criada com sucesso."
+        message: categoryForm.id ? "Categoria atualizada com sucesso." : "Categoria criada com sucesso."
       });
-      resetCategoryForm();
+      setCategoryForm(EMPTY_CATEGORY_FORM);
+      setEditorMode(null);
       await loadCategories();
     } catch {
       setCategoryState({
@@ -367,21 +398,18 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     setCategoryState({ kind: "idle" });
 
     try {
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_API_URL}/catalog/${storeId}/categories/${categoryId}/deactivate`,
+      const { payload, response } = await dashboardApiJson<{ message?: string }>(
+        `/catalog/${storeId}/categories/${categoryId}/deactivate`,
         {
           method: "POST",
-          headers: {
-            authorization: `Bearer ${token}`
-          }
+          headers: authHeaders(token)
         }
       );
-      const payload = (await response.json()) as { message?: string };
 
       if (!response.ok) {
         setCategoryState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel desativar a categoria.")
+          message: normalizeApiMessage(payload, "Nao foi possivel desativar a categoria.")
         });
         return;
       }
@@ -414,42 +442,39 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
       description: productForm.description || undefined,
       sku: productForm.sku || undefined,
       categoryId: productForm.categoryId || undefined,
-      priceCents: Number(productForm.priceCents || "0"),
-      compareAtCents: productForm.compareAtCents ? Number(productForm.compareAtCents) : null,
+      priceCents: inputToCents(productForm.price),
+      compareAtCents: productForm.compareAt ? inputToCents(productForm.compareAt) : null,
       stockQuantity: Number(productForm.stockQuantity || "0"),
       status: productForm.status,
       isFeatured: productForm.isFeatured
     };
 
     try {
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_API_URL}/catalog/${productForm.id ? `products/${productForm.id}` : "products"}`,
-        {
-          method: productForm.id ? "PATCH" : "POST",
-          headers: {
-            authorization: `Bearer ${token}`,
-            "content-type": "application/json"
-          },
-          body: JSON.stringify(body)
-        }
-      );
-      const payload = (await response.json()) as { product?: CatalogProduct; message?: string };
+      const { payload, response } = await dashboardApiJson<{
+        product?: CatalogProduct;
+        message?: string;
+      }>(`/catalog/${productForm.id ? `products/${productForm.id}` : "products"}`, {
+        method: productForm.id ? "PATCH" : "POST",
+        headers: authHeaders(token, {
+          "content-type": "application/json"
+        }),
+        body: JSON.stringify(body)
+      });
 
       if (!response.ok || !payload.product) {
         setProductState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel salvar o produto.")
+          message: normalizeApiMessage(payload, "Nao foi possivel salvar o produto.")
         });
         return;
       }
 
       setProductState({
         kind: "success",
-        message: productForm.id
-          ? "Produto atualizado com sucesso."
-          : "Produto criado com sucesso."
+        message: productForm.id ? "Produto atualizado com sucesso." : "Produto criado com sucesso."
       });
-      resetProductForm();
+      setProductForm(EMPTY_PRODUCT_FORM);
+      setEditorMode(null);
       await loadProducts();
     } catch {
       setProductState({
@@ -461,26 +486,26 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
     }
   }
 
-  async function performProductAction(productId: string, action: "publish" | "deactivate" | "archive") {
+  async function performProductAction(
+    productId: string,
+    action: "publish" | "deactivate" | "archive"
+  ) {
     setIsLoadingProducts(true);
     setProductState({ kind: "idle" });
 
     try {
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_API_URL}/catalog/${storeId}/products/${productId}/${action}`,
-        {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${token}`
-          }
-        }
-      );
-      const payload = (await response.json()) as { product?: CatalogProduct; message?: string };
+      const { payload, response } = await dashboardApiJson<{
+        product?: CatalogProduct;
+        message?: string;
+      }>(`/catalog/${storeId}/products/${productId}/${action}`, {
+        method: "POST",
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.product) {
         setProductState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel atualizar o status do produto.")
+          message: normalizeApiMessage(payload, "Nao foi possivel atualizar o status do produto.")
         });
         return;
       }
@@ -507,192 +532,94 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
   }
 
   return (
-    <section className="catalog-stack">
-      <section className="card catalog-card">
-        <div className="domain-head">
-          <div>
-            <div className="eyebrow">Catalog</div>
-            <h2 className="section-title">Categorias de {storeLabel}</h2>
-          </div>
-          <button className="secondary-button" onClick={() => void loadCategories()} type="button">
-            Atualizar categorias
+    <section className="catalog-console animate-entrance">
+      <header className="catalog-console-header">
+        <div>
+          <div className="eyebrow">Console / Catalogo</div>
+          <h2>Produtos de {storeLabel}</h2>
+          <p>
+            {products.length} produtos / {categories.length} categorias /{" "}
+            {products.filter((product) => product.stockQuantity <= 3).length} com estoque critico
+          </p>
+        </div>
+        <div className="catalog-console-actions">
+          <button className="secondary-button" onClick={() => void loadProducts()} type="button">
+            Atualizar
+          </button>
+          <button className="secondary-button" onClick={openNewCategory} type="button">
+            Nova categoria
+          </button>
+          <button className="primary-button" onClick={openNewProduct} type="button">
+            Novo produto
           </button>
         </div>
+      </header>
 
-        <p className="subtitle">
-          Organize a navegação da loja com categorias ativas, slugs consistentes e ordem manual de exibição.
-        </p>
+      <DashboardFeedback state={productState} />
+      <DashboardFeedback state={categoryState} />
 
-        <form className="domain-form" onSubmit={handleCategorySubmit}>
-          <div className="field-grid">
-            <label className="field">
-              <span>Nome</span>
-              <input
-                onChange={(event) =>
-                  setCategoryForm((current) => {
-                    const nextName = event.target.value;
-                    return {
-                      ...current,
-                      name: nextName,
-                      slug: current.id ? current.slug : slugify(nextName)
-                    };
-                  })
-                }
-                value={categoryForm.name}
-              />
-            </label>
-            <label className="field">
-              <span>Slug</span>
-              <input
-                onChange={(event) =>
-                  setCategoryForm((current) => ({ ...current, slug: slugify(event.target.value) }))
-                }
-                value={categoryForm.slug}
-              />
-            </label>
-            <label className="field">
-              <span>Ordem</span>
-              <input
-                min="0"
-                onChange={(event) =>
-                  setCategoryForm((current) => ({ ...current, sortOrder: event.target.value }))
-                }
-                type="number"
-                value={categoryForm.sortOrder}
-              />
-            </label>
-          </div>
-          <label className="field">
-            <span>Descrição</span>
-            <textarea
-              onChange={(event) =>
-                setCategoryForm((current) => ({ ...current, description: event.target.value }))
-              }
-              rows={3}
-              value={categoryForm.description}
-            />
-          </label>
-          <div className="button-row">
-            <button className="primary-button" disabled={isLoadingCategories} type="submit">
-              {isLoadingCategories
-                ? "Salvando..."
-                : categoryForm.id
-                  ? "Atualizar categoria"
-                  : "Criar categoria"}
-            </button>
-            {categoryForm.id ? (
-              <button className="secondary-button" onClick={resetCategoryForm} type="button">
-                Nova categoria
-              </button>
-            ) : null}
-          </div>
-        </form>
-
-        <DashboardFeedback state={categoryState} />
-
-        <div className="catalog-list">
-          {categories.map((category) => (
-            <article className="catalog-item-card" key={category.id}>
-              <div className="catalog-item-head">
-                <div>
-                  <div className="eyebrow">Categoria</div>
-                  <h3>{category.name}</h3>
-                </div>
-                <div className="catalog-status-badge">{category.status}</div>
-              </div>
-              <div className="catalog-meta-grid">
-                <div>
-                  <span>Slug</span>
-                  <strong>{category.slug}</strong>
-                </div>
-                <div>
-                  <span>Ordem</span>
-                  <strong>{category.sortOrder}</strong>
-                </div>
-              </div>
-              <p className="catalog-description">
-                {category.description ?? "Sem descrição ainda."}
-              </p>
-              <div className="button-row">
-                <button className="secondary-button" onClick={() => editCategory(category)} type="button">
-                  Editar
-                </button>
-                {category.status !== "INACTIVE" ? (
-                  <button
-                    className="secondary-button"
-                    onClick={() => void deactivateCategory(category.id)}
-                    type="button"
-                  >
-                    Desativar
-                  </button>
-                ) : null}
-              </div>
-            </article>
-          ))}
-          {isLoadingCategories && categories.length === 0 ? (
-            <DashboardLoadingState label="Carregando categorias da loja" />
-          ) : null}
-          {!isLoadingCategories && categories.length === 0 ? (
-            <DashboardEmptyState
-              description="Crie categorias para organizar a navegação da vitrine e a operação do catálogo."
-              title="Nenhuma categoria cadastrada"
-            />
-          ) : null}
+      <section className="catalog-category-strip">
+        <div className="catalog-category-card is-summary">
+          <span>Categorias ativas</span>
+          <strong>{categories.filter((category) => category.status !== "INACTIVE").length}</strong>
         </div>
+        {categories.slice(0, 5).map((category) => (
+          <article className="catalog-category-card" key={category.id}>
+            <div>
+              <strong>{category.name}</strong>
+              <span>{category.slug}</span>
+            </div>
+            <div className="catalog-mini-actions">
+              <button onClick={() => editCategory(category)} type="button">
+                Editar
+              </button>
+              {category.status !== "INACTIVE" ? (
+                <button onClick={() => void deactivateCategory(category.id)} type="button">
+                  Desativar
+                </button>
+              ) : null}
+            </div>
+          </article>
+        ))}
       </section>
 
-      <section className="card catalog-card">
-        <div className="domain-head">
-          <div>
-            <div className="eyebrow">Catalog</div>
-            <h2 className="section-title">Produtos da loja</h2>
-          </div>
-          <button className="secondary-button" onClick={() => void loadProducts()} type="button">
-            Atualizar produtos
-          </button>
-        </div>
-
-        <p className="subtitle">
-          Cadastre, revise e publique o catálogo com filtros rápidos por status, estoque e categoria.
-        </p>
-
-        <form className="domain-form" onSubmit={handleProductSubmit}>
-          <div className="field-grid">
-            <label className="field">
-              <span>Nome</span>
+      <section className={editorMode ? "catalog-workbench has-editor" : "catalog-workbench"}>
+        <div className="catalog-table-card">
+          <div className="catalog-toolbar">
+            <label className="catalog-search">
+              <span>Buscar</span>
               <input
-                onChange={(event) =>
-                  setProductForm((current) => {
-                    const nextName = event.target.value;
-                    return {
-                      ...current,
-                      name: nextName,
-                      slug: current.id ? current.slug : slugify(nextName)
-                    };
-                  })
-                }
-                value={productForm.name}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Nome, SKU ou slug"
+                value={query}
               />
             </label>
-            <label className="field">
-              <span>Slug</span>
-              <input
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, slug: slugify(event.target.value) }))
-                }
-                value={productForm.slug}
-              />
+            <label>
+              <span>Status</span>
+              <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
+                <option value="">Todos</option>
+                <option value="DRAFT">Rascunho</option>
+                <option value="ACTIVE">Publicado</option>
+                <option value="INACTIVE">Inativo</option>
+                <option value="OUT_OF_STOCK">Sem estoque</option>
+                <option value="ARCHIVED">Arquivado</option>
+              </select>
             </label>
-            <label className="field">
+            <label>
+              <span>Estoque</span>
+              <select onChange={(event) => setStockFilter(event.target.value)} value={stockFilter}>
+                <option value="">Todos</option>
+                <option value="in-stock">Com estoque</option>
+                <option value="out-of-stock">Sem estoque</option>
+              </select>
+            </label>
+            <label>
               <span>Categoria</span>
               <select
-                className="field-select"
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, categoryId: event.target.value }))
-                }
-                value={productForm.categoryId}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                value={categoryFilter}
               >
-                <option value="">Sem categoria</option>
+                <option value="">Todas</option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
                     {category.name}
@@ -700,231 +627,319 @@ export function CatalogConsole({ token, storeId, storeLabel }: CatalogConsolePro
                 ))}
               </select>
             </label>
-            <label className="field">
-              <span>SKU</span>
-              <input
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, sku: event.target.value }))
-                }
-                value={productForm.sku}
-              />
-            </label>
-            <label className="field">
-              <span>Preço (centavos)</span>
-              <input
-                min="0"
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, priceCents: event.target.value }))
-                }
-                type="number"
-                value={productForm.priceCents}
-              />
-            </label>
-            <label className="field">
-              <span>Preço comparativo</span>
-              <input
-                min="0"
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, compareAtCents: event.target.value }))
-                }
-                type="number"
-                value={productForm.compareAtCents}
-              />
-            </label>
-            <label className="field">
-              <span>Estoque</span>
-              <input
-                min="0"
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, stockQuantity: event.target.value }))
-                }
-                type="number"
-                value={productForm.stockQuantity}
-              />
-            </label>
-            <label className="field">
-              <span>Status inicial</span>
-              <select
-                className="field-select"
-                onChange={(event) =>
-                  setProductForm((current) => ({ ...current, status: event.target.value }))
-                }
-                value={productForm.status}
-              >
-                <option value="DRAFT">DRAFT</option>
-                <option value="ACTIVE">ACTIVE</option>
-                <option value="INACTIVE">INACTIVE</option>
-              </select>
-            </label>
           </div>
-          <label className="field">
-            <span>Descrição</span>
-            <textarea
-              onChange={(event) =>
-                setProductForm((current) => ({ ...current, description: event.target.value }))
-              }
-              rows={4}
-              value={productForm.description}
-            />
-          </label>
-          <label className="feature-toggle">
-            <input
-              checked={productForm.isFeatured}
-              onChange={(event) =>
-                setProductForm((current) => ({ ...current, isFeatured: event.target.checked }))
-              }
-              type="checkbox"
-            />
-            <span>Destacar este produto na vitrine</span>
-          </label>
-          <div className="button-row">
-            <button className="primary-button" disabled={isLoadingProducts} type="submit">
-              {isLoadingProducts
-                ? "Salvando..."
-                : productForm.id
-                  ? "Atualizar produto"
-                  : "Criar produto"}
-            </button>
-            {productForm.id ? (
-              <button className="secondary-button" onClick={resetProductForm} type="button">
-                Novo produto
-              </button>
-            ) : null}
-          </div>
-        </form>
 
-        <DashboardFeedback state={productState} />
-
-        <div className="catalog-filters">
-          <label className="field">
-            <span>Status</span>
-            <select
-              className="field-select"
-              onChange={(event) => setStatusFilter(event.target.value)}
-              value={statusFilter}
-            >
-              <option value="">Todos</option>
-              <option value="DRAFT">DRAFT</option>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-              <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
-              <option value="ARCHIVED">ARCHIVED</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>Estoque</span>
-            <select
-              className="field-select"
-              onChange={(event) => setStockFilter(event.target.value)}
-              value={stockFilter}
-            >
-              <option value="">Todos</option>
-              <option value="in-stock">Com estoque</option>
-              <option value="out-of-stock">Sem estoque</option>
-            </select>
-          </label>
-          <label className="field">
-            <span>Categoria</span>
-            <select
-              className="field-select"
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              value={categoryFilter}
-            >
-              <option value="">Todas</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="catalog-list">
-          {filteredProducts.map((product) => (
-            <article className="catalog-item-card" key={product.id}>
-              <div className="catalog-item-head">
-                <div>
-                  <div className="eyebrow">Produto</div>
-                  <h3>{product.name}</h3>
-                </div>
-                <div className="catalog-status-badge">{getProductActionLabel(product.status)}</div>
-              </div>
-
-              <div className="catalog-meta-grid">
-                <div>
-                  <span>Preço</span>
-                  <strong>{formatMoney(product.priceCents, product.currencyCode)}</strong>
-                </div>
-                <div>
-                  <span>Estoque</span>
-                  <strong>{product.stockQuantity}</strong>
-                </div>
-                <div>
-                  <span>Categoria</span>
-                  <strong>{product.category?.name ?? "Sem categoria"}</strong>
-                </div>
-                <div>
-                  <span>Imagens</span>
-                  <strong>{product.images.length}</strong>
-                </div>
-              </div>
-
-              <p className="catalog-description">
-                {product.description ?? "Sem descrição ainda."}
-              </p>
-
-              <div className="catalog-inline-note">
-                <strong>Slug:</strong> {product.slug}
-                {product.sku ? ` • SKU: ${product.sku}` : ""}
-                {product.isFeatured ? " • Destaque na vitrine" : ""}
-              </div>
-
-              <div className="button-row">
-                <button className="secondary-button" onClick={() => editProduct(product)} type="button">
-                  Editar
-                </button>
-                {product.status !== "ACTIVE" ? (
-                  <button
-                    className="secondary-button"
-                    onClick={() => void performProductAction(product.id, "publish")}
-                    type="button"
-                  >
-                    Publicar
-                  </button>
-                ) : null}
-                {product.status !== "INACTIVE" && product.status !== "ARCHIVED" ? (
-                  <button
-                    className="secondary-button"
-                    onClick={() => void performProductAction(product.id, "deactivate")}
-                    type="button"
-                  >
-                    Desativar
-                  </button>
-                ) : null}
-                {product.status !== "ARCHIVED" ? (
-                  <button
-                    className="secondary-button"
-                    onClick={() => void performProductAction(product.id, "archive")}
-                    type="button"
-                  >
-                    Arquivar
-                  </button>
-                ) : null}
-              </div>
-            </article>
-          ))}
           {isLoadingProducts && products.length === 0 ? (
             <DashboardLoadingState label="Carregando produtos da loja" />
           ) : null}
+
           {!isLoadingProducts && filteredProducts.length === 0 ? (
             <DashboardEmptyState
-              description="Ajuste os filtros ou cadastre o primeiro produto para começar a operar o catálogo."
+              description="Ajuste os filtros ou cadastre o primeiro produto para comecar a operar o catalogo."
               title="Nenhum produto encontrado"
             />
           ) : null}
+
+          {filteredProducts.length > 0 ? (
+            <div className="catalog-product-table">
+              <div className="catalog-product-row is-heading">
+                <span>Produto</span>
+                <span>Categoria</span>
+                <span>Preco</span>
+                <span>Estoque</span>
+                <span>Status</span>
+                <span>Acoes</span>
+              </div>
+              {filteredProducts.map((product) => (
+                <ProductRow
+                  key={product.id}
+                  onAction={performProductAction}
+                  onEdit={editProduct}
+                  product={product}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
+
+        {editorMode ? (
+          <aside className="catalog-editor-panel">
+            <div className="catalog-editor-head">
+              <div>
+                <div className="eyebrow">
+                  {editorMode === "product" ? "Produto" : "Categoria"}
+                </div>
+                <h3>
+                  {editorMode === "product"
+                    ? productForm.id
+                      ? "Editar produto"
+                      : "Novo produto"
+                    : categoryForm.id
+                      ? "Editar categoria"
+                      : "Nova categoria"}
+                </h3>
+              </div>
+              <button onClick={() => setEditorMode(null)} type="button">
+                Fechar
+              </button>
+            </div>
+
+            {editorMode === "product" ? (
+              <ProductForm
+                categories={categories}
+                form={productForm}
+                isLoading={isLoadingProducts}
+                onChange={setProductForm}
+                onSubmit={handleProductSubmit}
+              />
+            ) : (
+              <CategoryForm
+                form={categoryForm}
+                isLoading={isLoadingCategories}
+                onChange={setCategoryForm}
+                onSubmit={handleCategorySubmit}
+              />
+            )}
+          </aside>
+        ) : null}
       </section>
     </section>
+  );
+}
+
+function ProductRow({
+  onAction,
+  onEdit,
+  product
+}: {
+  onAction: (productId: string, action: "publish" | "deactivate" | "archive") => Promise<void>;
+  onEdit: (product: CatalogProduct) => void;
+  product: CatalogProduct;
+}) {
+  const primaryImage = product.images.find((image) => image.isPrimary) ?? product.images[0];
+  const tone = getProductTone(product);
+
+  return (
+    <article className="catalog-product-row">
+      <div className="catalog-product-cell-main">
+        <div className="catalog-product-thumb">
+          {primaryImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={primaryImage.altText ?? product.name} src={primaryImage.imageUrl} />
+          ) : (
+            <span>IMG</span>
+          )}
+        </div>
+        <div>
+          <strong>{product.name}</strong>
+          <span>{product.sku ?? product.slug}</span>
+        </div>
+      </div>
+      <span>{product.category?.name ?? "Sem categoria"}</span>
+      <span>{formatMoney(product.priceCents, product.currencyCode)}</span>
+      <span className={`catalog-stock is-${tone}`}>{product.stockQuantity}</span>
+      <span className={`catalog-status is-${tone}`}>{getStatusLabel(product.status)}</span>
+      <div className="catalog-row-actions">
+        <button onClick={() => onEdit(product)} type="button">
+          Editar
+        </button>
+        {product.status !== "ACTIVE" ? (
+          <button onClick={() => void onAction(product.id, "publish")} type="button">
+            Publicar
+          </button>
+        ) : null}
+        {product.status !== "INACTIVE" && product.status !== "ARCHIVED" ? (
+          <button onClick={() => void onAction(product.id, "deactivate")} type="button">
+            Inativar
+          </button>
+        ) : null}
+        {product.status !== "ARCHIVED" ? (
+          <button onClick={() => void onAction(product.id, "archive")} type="button">
+            Arquivar
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function ProductForm({
+  categories,
+  form,
+  isLoading,
+  onChange,
+  onSubmit
+}: {
+  categories: CatalogCategory[];
+  form: ProductFormState;
+  isLoading: boolean;
+  onChange: (form: ProductFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form className="catalog-editor-form" onSubmit={onSubmit}>
+      <EditorField label="Nome">
+        <input
+          onChange={(event) => {
+            const name = event.target.value;
+            onChange({
+              ...form,
+              name,
+              slug: form.id ? form.slug : slugify(name)
+            });
+          }}
+          required
+          value={form.name}
+        />
+      </EditorField>
+      <EditorField label="Slug">
+        <input
+          onChange={(event) => onChange({ ...form, slug: slugify(event.target.value) })}
+          required
+          value={form.slug}
+        />
+      </EditorField>
+      <EditorField label="Categoria">
+        <select
+          onChange={(event) => onChange({ ...form, categoryId: event.target.value })}
+          value={form.categoryId}
+        >
+          <option value="">Sem categoria</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </EditorField>
+      <EditorField label="SKU">
+        <input onChange={(event) => onChange({ ...form, sku: event.target.value })} value={form.sku} />
+      </EditorField>
+      <div className="catalog-editor-grid">
+        <EditorField label="Preco">
+          <input
+            inputMode="decimal"
+            onChange={(event) => onChange({ ...form, price: event.target.value })}
+            placeholder="0,00"
+            required
+            value={form.price}
+          />
+        </EditorField>
+        <EditorField label="Comparativo">
+          <input
+            inputMode="decimal"
+            onChange={(event) => onChange({ ...form, compareAt: event.target.value })}
+            placeholder="0,00"
+            value={form.compareAt}
+          />
+        </EditorField>
+      </div>
+      <div className="catalog-editor-grid">
+        <EditorField label="Estoque">
+          <input
+            min="0"
+            onChange={(event) => onChange({ ...form, stockQuantity: event.target.value })}
+            type="number"
+            value={form.stockQuantity}
+          />
+        </EditorField>
+        <EditorField label="Status">
+          <select onChange={(event) => onChange({ ...form, status: event.target.value })} value={form.status}>
+            <option value="DRAFT">Rascunho</option>
+            <option value="ACTIVE">Publicado</option>
+            <option value="INACTIVE">Inativo</option>
+          </select>
+        </EditorField>
+      </div>
+      <EditorField label="Descricao">
+        <textarea
+          onChange={(event) => onChange({ ...form, description: event.target.value })}
+          rows={4}
+          value={form.description}
+        />
+      </EditorField>
+      <label className="catalog-checkbox">
+        <input
+          checked={form.isFeatured}
+          onChange={(event) => onChange({ ...form, isFeatured: event.target.checked })}
+          type="checkbox"
+        />
+        <span>Destacar este produto na vitrine</span>
+      </label>
+      <button className="primary-button" disabled={isLoading} type="submit">
+        {isLoading ? "Salvando..." : form.id ? "Atualizar produto" : "Criar produto"}
+      </button>
+    </form>
+  );
+}
+
+function CategoryForm({
+  form,
+  isLoading,
+  onChange,
+  onSubmit
+}: {
+  form: CategoryFormState;
+  isLoading: boolean;
+  onChange: (form: CategoryFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form className="catalog-editor-form" onSubmit={onSubmit}>
+      <EditorField label="Nome">
+        <input
+          onChange={(event) => {
+            const name = event.target.value;
+            onChange({
+              ...form,
+              name,
+              slug: form.id ? form.slug : slugify(name)
+            });
+          }}
+          required
+          value={form.name}
+        />
+      </EditorField>
+      <EditorField label="Slug">
+        <input
+          onChange={(event) => onChange({ ...form, slug: slugify(event.target.value) })}
+          required
+          value={form.slug}
+        />
+      </EditorField>
+      <EditorField label="Ordem">
+        <input
+          min="0"
+          onChange={(event) => onChange({ ...form, sortOrder: event.target.value })}
+          type="number"
+          value={form.sortOrder}
+        />
+      </EditorField>
+      <EditorField label="Descricao">
+        <textarea
+          onChange={(event) => onChange({ ...form, description: event.target.value })}
+          rows={4}
+          value={form.description}
+        />
+      </EditorField>
+      <button className="primary-button" disabled={isLoading} type="submit">
+        {isLoading ? "Salvando..." : form.id ? "Atualizar categoria" : "Criar categoria"}
+      </button>
+    </form>
+  );
+}
+
+function EditorField({
+  children,
+  label
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <label className="catalog-editor-field">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

@@ -148,19 +148,27 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 4 - Catalogo conectado
 
-- [ ] P0 - Migrar tabela/lista visual do Lovable para produtos reais de `CatalogConsole`.
-- [ ] P0 - Preservar operacoes existentes:
+- [x] P0 - Migrar tabela/lista visual do Lovable para produtos reais de `CatalogConsole`.
+- [x] P0 - Preservar operacoes existentes:
   - criar/editar categoria
   - desativar categoria
   - criar/editar produto
   - publicar, desativar e arquivar produto
   - filtros por status, estoque e categoria
-- [ ] P0 - Trocar formulario longo inline por drawer/modal ou painel lateral para o fluxo "Novo produto".
-- [ ] P1 - Implementar busca por nome/SKU no client e preparar query no backend se o volume crescer.
-- [ ] P1 - Exibir imagem principal do produto quando `images` existir, mantendo fallback visual.
-- [ ] P1 - Ajustar campos de preco para entrada em reais, convertendo para centavos no submit.
-- [ ] P1 - Adicionar acoes por linha com menu, seguindo o design de console.
+- [x] P0 - Trocar formulario longo inline por drawer/modal ou painel lateral para o fluxo "Novo produto".
+- [x] P1 - Implementar busca por nome/SKU no client e preparar query no backend se o volume crescer.
+- [x] P1 - Exibir imagem principal do produto quando `images` existir, mantendo fallback visual.
+- [x] P1 - Ajustar campos de preco para entrada em reais, convertendo para centavos no submit.
+- [x] P1 - Adicionar acoes por linha com menu, seguindo o design de console.
 - [ ] P2 - Adicionar upload/gestao de imagens se o backend ainda nao tiver fluxo completo.
+
+### Resultado da Fase 4
+
+- `CatalogConsole` agora usa toolbar, filtros, busca, tabela operacional e painel lateral para criar/editar produtos ou categorias.
+- Operacoes existentes foram preservadas: criar/editar categoria, desativar categoria, criar/editar produto, publicar, inativar e arquivar produto.
+- O preco passou a ser digitado em reais no painel e convertido para centavos no payload.
+- Imagem principal do produto e fallback visual sao exibidos na lista.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 5 - Pedidos conectados
 
