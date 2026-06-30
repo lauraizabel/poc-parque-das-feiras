@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { env } from "../lib/env";
 import {
   DashboardEmptyState,
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -72,6 +72,12 @@ type OrderDraft = {
   notes: string;
 };
 
+type OrdersConsoleProps = {
+  token: string;
+  storeId: string;
+  storeLabel: string;
+};
+
 const EMPTY_DRAFT: OrderDraft = {
   status: "",
   reason: "",
@@ -82,6 +88,10 @@ const EMPTY_DRAFT: OrderDraft = {
   notes: ""
 };
 
+const ATTENTION_STATUSES = new Set(["PAYMENT_FAILED", "CANCELED", "REFUNDED"]);
+const PENDING_STATUSES = new Set(["PENDING_PAYMENT", "PAYMENT_PENDING", "PROCESSING"]);
+const SHIPPED_STATUSES = new Set(["SHIPPED", "DELIVERED"]);
+
 function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR") {
   return new Intl.NumberFormat(locale, {
     style: "currency",
@@ -89,45 +99,83 @@ function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR
   }).format(valueInCents / 100);
 }
 
-function normalizeMessage(payload: unknown, fallback: string) {
-  if (typeof payload === "object" && payload !== null && "message" in payload) {
-    const value = (payload as { message?: unknown }).message;
-
-    if (typeof value === "string") {
-      return value;
-    }
+function formatDate(value: string | null) {
+  if (!value) {
+    return "Sem data";
   }
 
-  return fallback;
+  return new Date(value).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  });
 }
 
-type OrdersConsoleProps = {
-  token: string;
-  storeId: string;
-  storeLabel: string;
-};
+function getStatusLabel(status: string) {
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getOrderTone(order: ManagedOrder) {
+  if (ATTENTION_STATUSES.has(order.status)) {
+    return "accent";
+  }
+
+  if (PENDING_STATUSES.has(order.status)) {
+    return "warn";
+  }
+
+  return "signal";
+}
 
 export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps) {
-  const [statusFilter, setStatusFilter] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
   const [orders, setOrders] = useState<ManagedOrder[]>([]);
   const [state, setState] = useState<ApiState>({ kind: "idle" });
   const [isLoading, setIsLoading] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, OrderDraft>>({});
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
 
-  const ordersById = useMemo(
-    () =>
-      new Map(
-        orders.map((order) => [
-          order.id,
-          drafts[order.id] ?? {
-            ...EMPTY_DRAFT,
-            status: order.allowedActions[0] ?? ""
-          }
-        ])
-      ),
-    [drafts, orders]
-  );
+  const filteredOrders = useMemo(() => {
+    if (activeTab === "attention") {
+      return orders.filter((order) => ATTENTION_STATUSES.has(order.status));
+    }
+
+    if (activeTab === "pending") {
+      return orders.filter((order) => PENDING_STATUSES.has(order.status));
+    }
+
+    if (activeTab === "shipped") {
+      return orders.filter((order) => SHIPPED_STATUSES.has(order.status));
+    }
+
+    return orders;
+  }, [activeTab, orders]);
+
+  const selectedOrder =
+    filteredOrders.find((order) => order.id === selectedOrderId) ?? filteredOrders[0] ?? null;
+
+  const tabs = [
+    { key: "all", label: "Todos", count: orders.length },
+    {
+      key: "attention",
+      label: "Atencao",
+      count: orders.filter((order) => ATTENTION_STATUSES.has(order.status)).length
+    },
+    {
+      key: "pending",
+      label: "Pendentes",
+      count: orders.filter((order) => PENDING_STATUSES.has(order.status)).length
+    },
+    {
+      key: "shipped",
+      label: "Enviados",
+      count: orders.filter((order) => SHIPPED_STATUSES.has(order.status)).length
+    }
+  ];
 
   async function loadOrders() {
     if (!token || !storeId) {
@@ -142,30 +190,18 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
     setState({ kind: "idle" });
 
     try {
-      const search = new URLSearchParams();
-
-      if (statusFilter) {
-        search.set("status", statusFilter);
-      }
-
-      const response = await fetch(
-        `${env.NEXT_PUBLIC_API_URL}/orders/${storeId}/management${search.size > 0 ? `?${search}` : ""}`,
-        {
-          headers: {
-            authorization: `Bearer ${token}`
-          }
-        }
-      );
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         orders?: ManagedOrder[];
         message?: string;
-      };
+      }>(`/orders/${storeId}/management`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.orders) {
         setOrders([]);
         setState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel carregar os pedidos.")
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar os pedidos.")
         });
         return;
       }
@@ -183,6 +219,7 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
 
         return next;
       });
+      setSelectedOrderId((current) => current ?? payload.orders?.[0]?.id ?? null);
       setState({
         kind: "success",
         message:
@@ -201,9 +238,9 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
   }
 
   async function updateOrder(orderId: string) {
-    const draft = ordersById.get(orderId);
+    const draft = drafts[orderId] ?? EMPTY_DRAFT;
 
-    if (!draft?.status) {
+    if (!draft.status) {
       setState({
         kind: "error",
         message: "Escolha um proximo status antes de atualizar o pedido."
@@ -215,12 +252,14 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
     setState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/orders/${storeId}/${orderId}/status`, {
+      const { payload, response } = await dashboardApiJson<{
+        order?: { status: string };
+        message?: string;
+      }>(`/orders/${storeId}/${orderId}/status`, {
         method: "PATCH",
-        headers: {
-          authorization: `Bearer ${token}`,
+        headers: authHeaders(token, {
           "content-type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           storeId,
           status: draft.status,
@@ -232,15 +271,11 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
           notes: draft.notes || undefined
         })
       });
-      const payload = (await response.json()) as {
-        order?: { status: string };
-        message?: string;
-      };
 
       if (!response.ok || !payload.order) {
         setState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel atualizar o pedido.")
+          message: normalizeApiMessage(payload, "Nao foi possivel atualizar o pedido.")
         });
         return;
       }
@@ -271,200 +306,217 @@ export function OrdersConsole({ token, storeId, storeLabel }: OrdersConsoleProps
   }
 
   return (
-    <section className="card orders-card">
-      <div className="domain-head">
+    <section className="orders-console animate-entrance">
+      <header className="orders-console-header">
         <div>
-          <div className="eyebrow">Orders ops</div>
-          <h2 className="section-title">Gestao operacional de pedidos de {storeLabel}</h2>
+          <div className="eyebrow">Console / Pedidos</div>
+          <h2>Operacao de pedidos de {storeLabel}</h2>
+          <p>
+            {tabs[1].count} pedidos pedem acao / {tabs[2].count} pendentes / {tabs[3].count} enviados
+          </p>
         </div>
-        <button className="secondary-button" onClick={loadOrders} type="button">
-          Atualizar lista
-        </button>
-      </div>
-
-      <p className="subtitle">
-        Os pedidos abaixo respeitam a loja selecionada no shell e so usam o token do usuario
-        autenticado no dashboard.
-      </p>
-
-      <div className="field-grid">
-        <div className="orders-filter-stack">
-          <label className="field">
-            <span>Store ID</span>
-            <input
-              disabled
-              placeholder="cm..."
-              value={storeId}
-            />
-          </label>
-          <label className="field">
-            <span>Filtro de status</span>
-            <select
-              className="field-select"
-              onChange={(event) => setStatusFilter(event.target.value)}
-              value={statusFilter}
-            >
-              <option value="">Todos</option>
-              <option value="PAYMENT_APPROVED">PAYMENT_APPROVED</option>
-              <option value="PROCESSING">PROCESSING</option>
-              <option value="SHIPPED">SHIPPED</option>
-              <option value="DELIVERED">DELIVERED</option>
-              <option value="CANCELED">CANCELED</option>
-            </select>
-          </label>
-        </div>
-      </div>
-
-      <div className="button-row">
         <button className="primary-button" disabled={isLoading} onClick={loadOrders} type="button">
           {isLoading ? "Carregando..." : "Consultar pedidos"}
         </button>
-      </div>
+      </header>
 
       <DashboardFeedback state={state} />
+
+      <nav className="orders-tabs" aria-label="Filtros de pedidos">
+        {tabs.map((tab) => (
+          <button
+            className={activeTab === tab.key ? "is-active" : ""}
+            key={tab.key}
+            onClick={() => {
+              setActiveTab(tab.key);
+              setSelectedOrderId(null);
+            }}
+            type="button"
+          >
+            {tab.label}
+            <span>{tab.count}</span>
+          </button>
+        ))}
+      </nav>
 
       {isLoading && orders.length === 0 ? (
         <DashboardLoadingState label="Carregando pedidos da loja" />
       ) : null}
 
-      {!isLoading && orders.length === 0 ? (
+      {!isLoading && filteredOrders.length === 0 ? (
         <DashboardEmptyState
-          description="Ajuste o filtro ou aguarde os primeiros pedidos para iniciar a operação por aqui."
+          description="Ajuste os filtros ou aguarde os primeiros pedidos para iniciar a operacao por aqui."
           title="Nenhum pedido encontrado"
         />
       ) : null}
 
-      <div className="orders-list">
-        {orders.map((order) => {
-          const draft = ordersById.get(order.id) ?? {
-            ...EMPTY_DRAFT,
-            status: order.allowedActions[0] ?? ""
-          };
+      {filteredOrders.length > 0 ? (
+        <section className="orders-workbench">
+          <div className="orders-list-panel">
+            {filteredOrders.map((order) => (
+              <button
+                className={selectedOrder?.id === order.id ? "orders-row is-active" : "orders-row"}
+                key={order.id}
+                onClick={() => setSelectedOrderId(order.id)}
+                type="button"
+              >
+                <span className="orders-row-id">{order.id}</span>
+                <span className="orders-row-customer">
+                  <strong>{order.customerFullName ?? order.customerEmail}</strong>
+                  <small>{formatDate(order.createdAt)}</small>
+                </span>
+                <span>{formatMoney(order.totalCents, order.currencyCode)}</span>
+                <span className={`orders-status is-${getOrderTone(order)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+              </button>
+            ))}
+          </div>
 
-          return (
-            <article className="order-card" key={order.id}>
-              <div className="order-head">
-                <div>
-                  <div className="eyebrow">Pedido {order.id}</div>
-                  <h3>{order.customerFullName ?? order.customerEmail}</h3>
-                </div>
-                <div className="order-status-badge">{order.status}</div>
-              </div>
-
-              <div className="order-grid">
-                <div>
-                  <span className="order-label">Resumo</span>
-                  <strong>{formatMoney(order.totalCents, order.currencyCode)}</strong>
-                  <p className="order-meta">
-                    {order.itemCount} item(ns) • frete {formatMoney(order.shippingCents, order.currencyCode)}
-                  </p>
-                </div>
-                <div>
-                  <span className="order-label">Pagamento</span>
-                  <strong>{order.payment?.status ?? "Sem pagamento"}</strong>
-                  <p className="order-meta">{order.payment?.paidAt ?? "Aguardando conciliacao"}</p>
-                </div>
-                <div>
-                  <span className="order-label">Entrega</span>
-                  <strong>{order.shipment?.status ?? "Sem shipment"}</strong>
-                  <p className="order-meta">
-                    {order.shipment?.carrierName ?? order.shipment?.shippingMethodName ?? "Fluxo interno"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="order-items">
-                {order.items.map((item) => (
-                  <div className="order-item-row" key={item.id}>
-                    <span>
-                      {item.productName} x{item.quantity}
-                    </span>
-                    <strong>{formatMoney(item.totalCents, order.currencyCode)}</strong>
-                  </div>
-                ))}
-              </div>
-
-              <div className="field-grid compact-grid">
-                <label className="field">
-                  <span>Proximo status</span>
-                  <select
-                    className="field-select"
-                    onChange={(event) => setDraft(order.id, { status: event.target.value })}
-                    value={draft.status}
-                  >
-                    <option value="">Selecione</option>
-                    {order.allowedActions.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>Motivo / contexto</span>
-                  <input
-                    onChange={(event) => setDraft(order.id, { reason: event.target.value })}
-                    placeholder="Opcional"
-                    value={draft.reason}
-                  />
-                </label>
-                <label className="field">
-                  <span>Transportadora</span>
-                  <input
-                    onChange={(event) => setDraft(order.id, { carrierName: event.target.value })}
-                    placeholder="Correios"
-                    value={draft.carrierName}
-                  />
-                </label>
-                <label className="field">
-                  <span>Servico</span>
-                  <input
-                    onChange={(event) => setDraft(order.id, { serviceName: event.target.value })}
-                    placeholder="PAC / SEDEX"
-                    value={draft.serviceName}
-                  />
-                </label>
-                <label className="field">
-                  <span>Codigo de rastreio</span>
-                  <input
-                    onChange={(event) => setDraft(order.id, { trackingCode: event.target.value })}
-                    placeholder="AA123456789BR"
-                    value={draft.trackingCode}
-                  />
-                </label>
-                <label className="field">
-                  <span>URL de rastreio</span>
-                  <input
-                    onChange={(event) => setDraft(order.id, { trackingUrl: event.target.value })}
-                    placeholder="https://..."
-                    value={draft.trackingUrl}
-                  />
-                </label>
-              </div>
-
-              <label className="field">
-                <span>Notas operacionais</span>
-                <textarea
-                  onChange={(event) => setDraft(order.id, { notes: event.target.value })}
-                  rows={2}
-                  value={draft.notes}
-                />
-              </label>
-
-              <div className="button-row">
-                <button
-                  className="primary-button"
-                  disabled={updatingOrderId === order.id || order.allowedActions.length === 0}
-                  onClick={() => updateOrder(order.id)}
-                  type="button"
-                >
-                  {updatingOrderId === order.id ? "Atualizando..." : "Atualizar pedido"}
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+          {selectedOrder ? (
+            <OrderDetail
+              draft={drafts[selectedOrder.id] ?? {
+                ...EMPTY_DRAFT,
+                status: selectedOrder.allowedActions[0] ?? ""
+              }}
+              isUpdating={updatingOrderId === selectedOrder.id}
+              onDraftChange={(patch) => setDraft(selectedOrder.id, patch)}
+              onUpdate={() => updateOrder(selectedOrder.id)}
+              order={selectedOrder}
+            />
+          ) : null}
+        </section>
+      ) : null}
     </section>
+  );
+}
+
+function OrderDetail({
+  draft,
+  isUpdating,
+  onDraftChange,
+  onUpdate,
+  order
+}: {
+  draft: OrderDraft;
+  isUpdating: boolean;
+  onDraftChange: (patch: Partial<OrderDraft>) => void;
+  onUpdate: () => Promise<void>;
+  order: ManagedOrder;
+}) {
+  return (
+    <aside className="orders-detail-panel">
+      <header>
+        <div>
+          <div className="eyebrow">Pedido {order.id}</div>
+          <h3>{order.customerFullName ?? order.customerEmail}</h3>
+        </div>
+        <span className={`orders-status is-${getOrderTone(order)}`}>{getStatusLabel(order.status)}</span>
+      </header>
+
+      <div className="orders-metric-grid">
+        <Metric label="Total" value={formatMoney(order.totalCents, order.currencyCode)} />
+        <Metric label="Itens" value={String(order.itemCount)} />
+        <Metric label="Pagamento" value={order.payment?.status ?? "Sem pagamento"} />
+        <Metric label="Entrega" value={order.shipment?.status ?? "Sem shipment"} />
+      </div>
+
+      <div className="orders-item-list">
+        {order.items.map((item) => (
+          <div className="orders-item-row" key={item.id}>
+            <span>
+              {item.productName} x{item.quantity}
+            </span>
+            <strong>{formatMoney(item.totalCents, order.currencyCode)}</strong>
+          </div>
+        ))}
+      </div>
+
+      <section className="orders-update-form">
+        <label>
+          <span>Proximo status</span>
+          <select
+            onChange={(event) => onDraftChange({ status: event.target.value })}
+            value={draft.status}
+          >
+            <option value="">Selecione</option>
+            {order.allowedActions.map((status) => (
+              <option key={status} value={status}>
+                {getStatusLabel(status)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Motivo / contexto</span>
+          <input
+            onChange={(event) => onDraftChange({ reason: event.target.value })}
+            placeholder="Opcional"
+            value={draft.reason}
+          />
+        </label>
+        <div className="orders-update-grid">
+          <label>
+            <span>Transportadora</span>
+            <input
+              onChange={(event) => onDraftChange({ carrierName: event.target.value })}
+              placeholder="Correios"
+              value={draft.carrierName}
+            />
+          </label>
+          <label>
+            <span>Servico</span>
+            <input
+              onChange={(event) => onDraftChange({ serviceName: event.target.value })}
+              placeholder="PAC / SEDEX"
+              value={draft.serviceName}
+            />
+          </label>
+        </div>
+        <div className="orders-update-grid">
+          <label>
+            <span>Codigo de rastreio</span>
+            <input
+              onChange={(event) => onDraftChange({ trackingCode: event.target.value })}
+              placeholder="AA123456789BR"
+              value={draft.trackingCode}
+            />
+          </label>
+          <label>
+            <span>URL de rastreio</span>
+            <input
+              onChange={(event) => onDraftChange({ trackingUrl: event.target.value })}
+              placeholder="https://..."
+              value={draft.trackingUrl}
+            />
+          </label>
+        </div>
+        <label>
+          <span>Notas operacionais</span>
+          <textarea
+            onChange={(event) => onDraftChange({ notes: event.target.value })}
+            rows={3}
+            value={draft.notes}
+          />
+        </label>
+        <button
+          className="primary-button"
+          disabled={isUpdating || order.allowedActions.length === 0}
+          onClick={() => void onUpdate()}
+          type="button"
+        >
+          {isUpdating ? "Atualizando..." : "Atualizar pedido"}
+        </button>
+      </section>
+    </aside>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="orders-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }

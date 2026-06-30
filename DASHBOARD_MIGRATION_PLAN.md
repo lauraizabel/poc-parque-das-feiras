@@ -172,20 +172,28 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 5 - Pedidos conectados
 
-- [ ] P0 - Migrar visual de abas/status do Lovable para `OrdersConsole`.
-- [ ] P0 - Usar pedidos reais de `/orders/:storeId/management`.
-- [ ] P0 - Preservar atualizacao de status com os `allowedActions` retornados pela API.
-- [ ] P0 - Manter campos operacionais reais:
+- [x] P0 - Migrar visual de abas/status do Lovable para `OrdersConsole`.
+- [x] P0 - Usar pedidos reais de `/orders/:storeId/management`.
+- [x] P0 - Preservar atualizacao de status com os `allowedActions` retornados pela API.
+- [x] P0 - Manter campos operacionais reais:
   - motivo/contexto
   - transportadora
   - servico
   - codigo e URL de rastreio
   - notas
-- [ ] P1 - Converter status tecnicos para labels amigaveis sem perder o valor tecnico no payload.
-- [ ] P1 - Criar detalhe expansivel do pedido, evitando que a lista fique pesada.
-- [ ] P1 - Adicionar contadores por aba com base nos pedidos carregados.
-- [ ] P1 - Destacar pedidos que exigem atencao.
+- [x] P1 - Converter status tecnicos para labels amigaveis sem perder o valor tecnico no payload.
+- [x] P1 - Criar detalhe expansivel do pedido, evitando que a lista fique pesada.
+- [x] P1 - Adicionar contadores por aba com base nos pedidos carregados.
+- [x] P1 - Destacar pedidos que exigem atencao.
 - [ ] P2 - Adicionar endpoint de metrica operacional para tempo medio de fulfillment.
+
+### Resultado da Fase 5
+
+- `OrdersConsole` agora usa abas com contadores, lista operacional e painel de detalhe por pedido.
+- Os dados seguem vindo de `/orders/:storeId/management`.
+- A atualizacao de status preserva `allowedActions` e os campos de motivo, transporte, rastreio e notas.
+- Status tecnicos sao exibidos como labels amigaveis, mas o payload continua usando o valor tecnico.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 6 - Vitrine conectada
 
