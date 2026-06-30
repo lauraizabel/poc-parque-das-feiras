@@ -292,15 +292,23 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 10 - Onboarding e estados sem loja
 
-- [ ] P0 - Migrar visual do onboarding do Lovable para o fluxo real de `MerchantOnboardingForm`.
-- [ ] P0 - Preservar validacao de slug e criacao de loja conectada a API.
-- [ ] P0 - Manter estado autenticado sem memberships levando ao onboarding.
-- [ ] P1 - Adicionar progresso visual por etapa:
+- [x] P0 - Migrar visual do onboarding do Lovable para o fluxo real de `MerchantOnboardingForm`.
+- [x] P0 - Preservar validacao de slug e criacao de loja conectada a API.
+- [x] P0 - Manter estado autenticado sem memberships levando ao onboarding.
+- [x] P1 - Adicionar progresso visual por etapa:
   - identidade
   - operacao
   - dominio
-- [ ] P1 - Permitir continuar configuracao depois da criacao inicial da loja.
+- [x] P1 - Permitir continuar configuracao depois da criacao inicial da loja.
+  - Ao criar a loja, `refreshContext` recarrega memberships e libera o dashboard.
 - [ ] P2 - Adicionar checklist inicial dentro do dashboard apos primeira loja criada.
+
+### Resultado da Fase 10
+
+- O estado autenticado sem loja agora usa layout de setup com topbar, progresso lateral e painel principal.
+- `MerchantOnboardingForm` segue sendo o formulario real, preservando validacao de slug e criacao conectada a API.
+- Ao finalizar, o contexto e recarregado para entrar no dashboard da primeira loja.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 11 - Testes, QA e entrega
 

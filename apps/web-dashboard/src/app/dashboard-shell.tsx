@@ -107,34 +107,52 @@ function DashboardExperience() {
 
   if (user.memberships.length === 0) {
     return (
-      <main className="shell dashboard-shell">
-        <DashboardTopbar
-          eyebrow="Dashboard"
-          links={[
-            { kind: "anchor", href: "http://localhost:3000", label: "Storefront" },
-            { kind: "anchor", href: env.NEXT_PUBLIC_API_URL + "/health", label: "API Health" },
-            { kind: "button", label: "Sair", onClick: handleLogout }
-          ]}
-          meta={user.email}
-          title="Onboarding da primeira loja"
-        />
-
-        <section className="hero">
-          <span className="badge">Primeira operacao</span>
-          <h1 className="title">Crie sua primeira loja antes de entrar na operacao.</h1>
-          <p className="subtitle">
-            Sua conta ja esta autenticada, mas ainda nao possui memberships. Defina o nome da loja,
-            valide o slug em tempo real e configure os primeiros dados operacionais para liberar o
-            painel.
-          </p>
-        </section>
-
-        <section className="card auth-card onboarding-card">
-          <div>
-            <div className="eyebrow">Nova loja</div>
-            <h2 className="section-title">Onboarding inicial do lojista</h2>
+      <main className="onboarding-setup-shell">
+        <header className="onboarding-setup-topbar">
+          <div className="dashboard-brand">
+            <div className="dashboard-brand-mark">R</div>
+            <div>
+              <strong>Resumo</strong>
+              <span>Setup inicial</span>
+            </div>
           </div>
-          <MerchantOnboardingForm mode="member" onCreated={() => refreshContext()} token={token} />
+          <nav className="dashboard-action-row">
+            <a className="dashboard-action" href={env.NEXT_PUBLIC_API_URL + "/health"}>
+              API Health
+            </a>
+            <button className="dashboard-action" onClick={handleLogout} type="button">
+              Sair
+            </button>
+          </nav>
+        </header>
+
+        <section className="onboarding-setup-grid">
+          <aside className="onboarding-progress-card">
+            <div className="eyebrow">Progresso</div>
+            {[
+              ["01", "Conta", "done"],
+              ["02", "Identidade", "active"],
+              ["03", "Operacao", "pending"],
+              ["04", "Dominio", "pending"]
+            ].map(([step, label, status]) => (
+              <div className={`onboarding-step is-${status}`} key={step}>
+                <span>{step}</span>
+                <strong>{label}</strong>
+              </div>
+            ))}
+          </aside>
+
+          <section className="onboarding-form-panel">
+            <div>
+              <div className="eyebrow">Primeira operacao</div>
+              <h1>Configure sua primeira loja</h1>
+              <p>
+                Sua conta ja esta autenticada como {user.email}. Crie a primeira loja para liberar
+                o dashboard, a vitrine e os modulos operacionais.
+              </p>
+            </div>
+            <MerchantOnboardingForm mode="member" onCreated={() => refreshContext()} token={token} />
+          </section>
         </section>
       </main>
     );
