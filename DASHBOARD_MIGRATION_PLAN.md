@@ -262,13 +262,13 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 9 - Configuracoes e modulos pendentes
 
-- [ ] P0 - Migrar navegacao lateral interna de configuracoes do Lovable.
-- [ ] P0 - Conectar paineis ja existentes:
+- [x] P0 - Migrar navegacao lateral interna de configuracoes do Lovable.
+- [x] P0 - Conectar paineis ja existentes:
   - identidade da loja
   - frete/logistica
   - tema/regiao
   - membros quando fizer sentido
-- [ ] P1 - Separar configuracoes em submodulos:
+- [x] P1 - Separar configuracoes em submodulos:
   - loja
   - fiscal
   - pagamentos
@@ -277,9 +277,18 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
   - integracoes
   - regiao/idiomas
   - API/webhooks
-- [ ] P1 - Marcar modulos sem backend como "em producao" ou ocultar ate estarem prontos.
-- [ ] P1 - Conectar pagamentos e integracoes aos endpoints existentes, quando disponiveis.
+- [x] P1 - Marcar modulos sem backend como "em producao" ou ocultar ate estarem prontos.
+- [x] P1 - Conectar pagamentos e integracoes aos endpoints existentes, quando disponiveis.
+  - Pagamentos nao tem configuracao por loja no backend atual.
+  - Integracoes expoem apenas catalogo global em `GET /integrations`, sem contrato de configuracao por loja nesta fase.
 - [ ] P2 - Implementar webhooks/API keys caso ainda sejam apenas mock.
+
+### Resultado da Fase 9
+
+- `SettingsConsole` agora tem navegacao interna por submodulo no estilo Lovable.
+- Identidade da loja, notificacoes, frete, vitrine e dominios seguem conectados aos endpoints reais.
+- Fiscal, pagamentos, integracoes e API/webhooks ficam visiveis como modulos em producao, sem dados mockados.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 10 - Onboarding e estados sem loja
 

@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useState } from "react";
 import {
   DashboardEmptyState,
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
-import { env } from "../lib/env";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 import { DomainConsole } from "./domain-console";
 import { ShippingConsole } from "./shipping-console";
 import { StorefrontThemeConsole } from "./storefront-theme-console";
@@ -56,6 +56,18 @@ type ProfileFormState = {
   locale: string;
 };
 
+type SettingsSection =
+  | "store"
+  | "shipping"
+  | "storefront"
+  | "domains"
+  | "notifications"
+  | "taxes"
+  | "payments"
+  | "integrations"
+  | "region"
+  | "api";
+
 const EMPTY_FORM: ProfileFormState = {
   name: "",
   supportEmail: "",
@@ -63,17 +75,22 @@ const EMPTY_FORM: ProfileFormState = {
   locale: "pt-BR"
 };
 
-function normalizeMessage(payload: unknown, fallback: string) {
-  if (typeof payload === "object" && payload !== null && "message" in payload) {
-    const value = (payload as { message?: unknown }).message;
-
-    if (typeof value === "string") {
-      return value;
-    }
-  }
-
-  return fallback;
-}
+const SETTINGS_SECTIONS: Array<{
+  id: SettingsSection;
+  label: string;
+  description: string;
+}> = [
+  { id: "store", label: "Identidade da loja", description: "Nome, suporte e owner" },
+  { id: "shipping", label: "Frete e logistica", description: "Metodos usados no checkout" },
+  { id: "storefront", label: "Vitrine", description: "Tema, banner e textos" },
+  { id: "domains", label: "Dominios", description: "DNS e SSL do dominio proprio" },
+  { id: "notifications", label: "Notificacoes", description: "Destinatarios e filas" },
+  { id: "taxes", label: "Fiscal", description: "Modulo em producao" },
+  { id: "payments", label: "Pagamentos", description: "Modulo em producao" },
+  { id: "integrations", label: "Integracoes", description: "Modulo em producao" },
+  { id: "region", label: "Regiao e idiomas", description: "Moeda e locale" },
+  { id: "api", label: "API e webhooks", description: "Modulo em producao" }
+];
 
 export function SettingsConsole({
   token,
@@ -81,6 +98,7 @@ export function SettingsConsole({
   storeLabel,
   storeRole
 }: SettingsConsoleProps) {
+  const [activeSection, setActiveSection] = useState<SettingsSection>("store");
   const [store, setStore] = useState<StoreSettings | null>(null);
   const [notifications, setNotifications] = useState<NotificationSettings | null>(null);
   const [form, setForm] = useState<ProfileFormState>(EMPTY_FORM);
@@ -107,21 +125,18 @@ export function SettingsConsole({
     setProfileState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/settings`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         store?: StoreSettings;
         message?: string;
-      };
+      }>(`/stores/${storeId}/settings`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.store) {
         setStore(null);
         setProfileState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel carregar a loja.")
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar a loja.")
         });
         return;
       }
@@ -141,7 +156,7 @@ export function SettingsConsole({
       setStore(null);
       setProfileState({
         kind: "error",
-        message: "Falha de rede ao carregar a configuração da loja."
+        message: "Falha de rede ao carregar a configuracao da loja."
       });
     } finally {
       setIsLoadingProfile(false);
@@ -153,7 +168,7 @@ export function SettingsConsole({
       setNotifications(null);
       setNotificationState({
         kind: "error",
-        message: "Apenas owner e manager podem consultar notificações da loja."
+        message: "Apenas owner e manager podem consultar notificacoes da loja."
       });
       return;
     }
@@ -162,21 +177,18 @@ export function SettingsConsole({
     setNotificationState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/notifications/${storeId}/settings`, {
-        headers: {
-          authorization: `Bearer ${token}`
-        }
-      });
-      const payload = (await response.json()) as {
+      const { payload, response } = await dashboardApiJson<{
         notifications?: NotificationSettings;
         message?: string;
-      };
+      }>(`/notifications/${storeId}/settings`, {
+        headers: authHeaders(token)
+      });
 
       if (!response.ok || !payload.notifications) {
         setNotifications(null);
         setNotificationState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel carregar as notificações.")
+          message: normalizeApiMessage(payload, "Nao foi possivel carregar as notificacoes.")
         });
         return;
       }
@@ -184,13 +196,13 @@ export function SettingsConsole({
       setNotifications(payload.notifications);
       setNotificationState({
         kind: "success",
-        message: "Destinatários e fila de notificações carregados."
+        message: "Destinatarios e fila de notificacoes carregados."
       });
     } catch {
       setNotifications(null);
       setNotificationState({
         kind: "error",
-        message: "Falha de rede ao carregar as notificações."
+        message: "Falha de rede ao carregar as notificacoes."
       });
     } finally {
       setIsLoadingNotifications(false);
@@ -208,12 +220,14 @@ export function SettingsConsole({
     setProfileState({ kind: "idle" });
 
     try {
-      const response = await fetch(`${env.NEXT_PUBLIC_API_URL}/stores/${storeId}/settings`, {
+      const { payload, response } = await dashboardApiJson<{
+        store?: StoreSettings;
+        message?: string;
+      }>(`/stores/${storeId}/settings`, {
         method: "PATCH",
-        headers: {
-          authorization: `Bearer ${token}`,
+        headers: authHeaders(token, {
           "content-type": "application/json"
-        },
+        }),
         body: JSON.stringify({
           name: form.name,
           supportEmail: form.supportEmail,
@@ -221,15 +235,11 @@ export function SettingsConsole({
           locale: form.locale
         })
       });
-      const payload = (await response.json()) as {
-        store?: StoreSettings;
-        message?: string;
-      };
 
       if (!response.ok || !payload.store) {
         setProfileState({
           kind: "error",
-          message: normalizeMessage(payload, "Nao foi possivel salvar a loja.")
+          message: normalizeApiMessage(payload, "Nao foi possivel salvar a loja.")
         });
         return;
       }
@@ -249,7 +259,7 @@ export function SettingsConsole({
     } catch {
       setProfileState({
         kind: "error",
-        message: "Falha de rede ao salvar a configuração da loja."
+        message: "Falha de rede ao salvar a configuracao da loja."
       });
     } finally {
       setIsSavingProfile(false);
@@ -257,162 +267,247 @@ export function SettingsConsole({
   }
 
   return (
-    <section className="settings-stack">
-      <section className="card settings-card">
-        <div className="domain-head">
-          <div>
-            <div className="eyebrow">Configurações</div>
-            <h2 className="section-title">Centro de configuração de {storeLabel}</h2>
-          </div>
-          <div className="button-row">
-            <button className="secondary-button" onClick={loadStoreSettings} type="button">
-              {isLoadingProfile ? "Atualizando..." : "Atualizar dados"}
-            </button>
-            <button className="secondary-button" onClick={loadNotificationSettings} type="button">
-              Atualizar notificações
-            </button>
-          </div>
+    <section className="settings-console animate-entrance">
+      <header className="settings-console-header">
+        <div>
+          <div className="eyebrow">Console / Configuracoes</div>
+          <h2>Ajustes operacionais de {storeLabel}</h2>
+          <p>Identidade, frete, notificacoes, vitrine, dominios e modulos futuros.</p>
         </div>
-
-        <p className="subtitle">
-          Reúna aqui os ajustes críticos da loja: dados base, destinatários operacionais, frete,
-          vitrine e domínio customizado.
-        </p>
-      </section>
-
-      <section className="card settings-card">
-        <div className="eyebrow">Dados da loja</div>
-        <h3 className="section-title">Perfil operacional</h3>
-
-        <form className="domain-form" onSubmit={handleProfileSubmit}>
-          <div className="field-grid">
-            <label className="field">
-              <span>Nome da loja</span>
-              <input
-                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                value={form.name}
-              />
-            </label>
-            <label className="field">
-              <span>E-mail de suporte / operação</span>
-              <input
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, supportEmail: event.target.value }))
-                }
-                type="email"
-                value={form.supportEmail}
-              />
-            </label>
-            <label className="field">
-              <span>Moeda</span>
-              <input
-                maxLength={3}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    currencyCode: event.target.value.toUpperCase()
-                  }))
-                }
-                value={form.currencyCode}
-              />
-            </label>
-            <label className="field">
-              <span>Locale</span>
-              <input
-                onChange={(event) => setForm((current) => ({ ...current, locale: event.target.value }))}
-                value={form.locale}
-              />
-            </label>
-            <label className="field">
-              <span>Slug</span>
-              <input disabled value={store?.slug ?? ""} />
-            </label>
-            <label className="field">
-              <span>Subdomínio padrão</span>
-              <input disabled value={store?.defaultSubdomain ?? ""} />
-            </label>
-          </div>
-
-          <div className="settings-meta-grid">
-            <div className="overview-domain-box">
-              <span>Owner atual</span>
-              <strong>{store?.owner.fullName ?? store?.owner.email ?? "n/a"}</strong>
-            </div>
-            <div className="overview-domain-box">
-              <span>E-mail do owner</span>
-              <strong>{store?.owner.email ?? "n/a"}</strong>
-            </div>
-          </div>
-
-          <div className="button-row">
-            <button className="primary-button" disabled={isSavingProfile} type="submit">
-              {isSavingProfile ? "Salvando..." : "Salvar dados da loja"}
-            </button>
-          </div>
-        </form>
-
-        <DashboardFeedback state={profileState} />
-      </section>
-
-      <section className="card settings-card">
-        <div className="eyebrow">Notificações</div>
-        <h3 className="section-title">Destinatários e fila essencial</h3>
-
-        <div className="settings-meta-grid">
-          <div className="overview-domain-box">
-            <span>E-mail do owner</span>
-            <strong>{notifications?.ownerEmail ?? "n/a"}</strong>
-          </div>
-          <div className="overview-domain-box">
-            <span>E-mail de suporte</span>
-            <strong>{notifications?.supportEmail ?? "não configurado"}</strong>
-          </div>
-          <div className="overview-domain-box">
-            <span>Fila</span>
-            <strong>{notifications?.queue.queueName ?? "n/a"}</strong>
-          </div>
-          <div className="overview-domain-box">
-            <span>Perfil</span>
-            <strong>{notifications?.queue.profile ?? "n/a"}</strong>
-          </div>
+        <div className="settings-actions">
+          <button className="secondary-button" onClick={loadStoreSettings} type="button">
+            {isLoadingProfile ? "Atualizando..." : "Atualizar loja"}
+          </button>
+          <button className="secondary-button" onClick={loadNotificationSettings} type="button">
+            Atualizar notificacoes
+          </button>
         </div>
+      </header>
 
-        {isLoadingProfile && !store ? (
-          <DashboardLoadingState label="Carregando configurações da loja" />
-        ) : null}
+      <section className="settings-workbench">
+        <nav className="settings-section-nav" aria-label="Secoes de configuracao">
+          {SETTINGS_SECTIONS.map((section) => (
+            <button
+              className={activeSection === section.id ? "is-active" : ""}
+              key={section.id}
+              onClick={() => setActiveSection(section.id)}
+              type="button"
+            >
+              <strong>{section.label}</strong>
+              <span>{section.description}</span>
+            </button>
+          ))}
+        </nav>
 
-        {isLoadingNotifications && !notifications ? (
-          <DashboardLoadingState label="Carregando notificações da loja" />
-        ) : null}
+        <div className="settings-section-panel">
+          {activeSection === "store" || activeSection === "region" ? (
+            <StoreProfilePanel
+              form={form}
+              isLoadingProfile={isLoadingProfile}
+              isSavingProfile={isSavingProfile}
+              onChange={setForm}
+              onSubmit={handleProfileSubmit}
+              profileState={profileState}
+              store={store}
+            />
+          ) : null}
 
-        {!isLoadingNotifications && notifications?.recipientEmails.length ? (
-          <div className="settings-recipient-list">
-            {notifications.recipientEmails.map((recipient) => (
-              <span className="settings-recipient-chip" key={recipient}>
-                {recipient}
-              </span>
-            ))}
-          </div>
-        ) : null}
+          {activeSection === "notifications" ? (
+            <NotificationsPanel
+              isLoading={isLoadingNotifications}
+              notifications={notifications}
+              state={notificationState}
+            />
+          ) : null}
 
-        {!isLoadingNotifications && notifications && notifications.recipientEmails.length === 0 ? (
-          <DashboardEmptyState
-            description="Defina um e-mail de suporte na loja para ampliar os destinatários operacionais além do owner."
-            title="Nenhum destinatário extra configurado"
-          />
-        ) : null}
+          {activeSection === "shipping" ? (
+            <ShippingConsole storeId={storeId} storeLabel={storeLabel} token={token} />
+          ) : null}
 
-        <p className="overview-note">
-          Os templates essenciais de pagamento já estão prontos. Para trocar o destino operacional,
-          ajuste o e-mail de suporte acima.
-        </p>
+          {activeSection === "storefront" ? (
+            <StorefrontThemeConsole storeId={storeId} storeLabel={storeLabel} token={token} />
+          ) : null}
 
-        <DashboardFeedback state={notificationState} />
+          {activeSection === "domains" ? (
+            <DomainConsole storeId={storeId} storeLabel={storeLabel} token={token} />
+          ) : null}
+
+          {["taxes", "payments", "integrations", "api"].includes(activeSection) ? (
+            <PendingSettingsPanel section={activeSection} />
+          ) : null}
+        </div>
       </section>
-
-      <ShippingConsole storeId={storeId} storeLabel={storeLabel} token={token} />
-      <StorefrontThemeConsole storeId={storeId} storeLabel={storeLabel} token={token} />
-      <DomainConsole storeId={storeId} storeLabel={storeLabel} token={token} />
     </section>
+  );
+}
+
+function StoreProfilePanel({
+  form,
+  isLoadingProfile,
+  isSavingProfile,
+  onChange,
+  onSubmit,
+  profileState,
+  store
+}: {
+  form: ProfileFormState;
+  isLoadingProfile: boolean;
+  isSavingProfile: boolean;
+  onChange: (form: ProfileFormState) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  profileState: ApiState;
+  store: StoreSettings | null;
+}) {
+  return (
+    <section className="settings-card-panel">
+      <div>
+        <div className="eyebrow">Dados da loja</div>
+        <h3>Perfil operacional</h3>
+      </div>
+
+      {isLoadingProfile && !store ? (
+        <DashboardLoadingState label="Carregando configuracoes da loja" />
+      ) : null}
+
+      <form className="settings-form" onSubmit={onSubmit}>
+        <div className="settings-form-grid">
+          <SettingsField label="Nome da loja">
+            <input
+              onChange={(event) => onChange({ ...form, name: event.target.value })}
+              value={form.name}
+            />
+          </SettingsField>
+          <SettingsField label="E-mail de suporte">
+            <input
+              onChange={(event) => onChange({ ...form, supportEmail: event.target.value })}
+              type="email"
+              value={form.supportEmail}
+            />
+          </SettingsField>
+          <SettingsField label="Moeda">
+            <input
+              maxLength={3}
+              onChange={(event) =>
+                onChange({ ...form, currencyCode: event.target.value.toUpperCase() })
+              }
+              value={form.currencyCode}
+            />
+          </SettingsField>
+          <SettingsField label="Locale">
+            <input
+              onChange={(event) => onChange({ ...form, locale: event.target.value })}
+              value={form.locale}
+            />
+          </SettingsField>
+          <SettingsField label="Slug">
+            <input disabled value={store?.slug ?? ""} />
+          </SettingsField>
+          <SettingsField label="Subdominio padrao">
+            <input disabled value={store?.defaultSubdomain ?? ""} />
+          </SettingsField>
+        </div>
+
+        <div className="settings-summary-grid">
+          <Metric label="Owner atual" value={store?.owner.fullName ?? store?.owner.email ?? "n/a"} />
+          <Metric label="E-mail do owner" value={store?.owner.email ?? "n/a"} />
+        </div>
+
+        <button className="primary-button" disabled={isSavingProfile} type="submit">
+          {isSavingProfile ? "Salvando..." : "Salvar dados da loja"}
+        </button>
+      </form>
+
+      <DashboardFeedback state={profileState} />
+    </section>
+  );
+}
+
+function NotificationsPanel({
+  isLoading,
+  notifications,
+  state
+}: {
+  isLoading: boolean;
+  notifications: NotificationSettings | null;
+  state: ApiState;
+}) {
+  return (
+    <section className="settings-card-panel">
+      <div>
+        <div className="eyebrow">Notificacoes</div>
+        <h3>Destinatarios e fila essencial</h3>
+      </div>
+
+      {isLoading && !notifications ? (
+        <DashboardLoadingState label="Carregando notificacoes da loja" />
+      ) : null}
+
+      <div className="settings-summary-grid">
+        <Metric label="E-mail do owner" value={notifications?.ownerEmail ?? "n/a"} />
+        <Metric label="E-mail de suporte" value={notifications?.supportEmail ?? "nao configurado"} />
+        <Metric label="Fila" value={notifications?.queue.queueName ?? "n/a"} />
+        <Metric label="Perfil" value={notifications?.queue.profile ?? "n/a"} />
+      </div>
+
+      {notifications?.recipientEmails.length ? (
+        <div className="settings-recipient-list">
+          {notifications.recipientEmails.map((recipient) => (
+            <span className="settings-recipient-chip" key={recipient}>
+              {recipient}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {notifications && notifications.recipientEmails.length === 0 ? (
+        <DashboardEmptyState
+          description="Defina um e-mail de suporte na loja para ampliar os destinatarios operacionais alem do owner."
+          title="Nenhum destinatario extra configurado"
+        />
+      ) : null}
+
+      <DashboardFeedback state={state} />
+    </section>
+  );
+}
+
+function PendingSettingsPanel({ section }: { section: SettingsSection }) {
+  const label = SETTINGS_SECTIONS.find((item) => item.id === section)?.label ?? "Modulo";
+
+  return (
+    <section className="settings-card-panel">
+      <div>
+        <div className="eyebrow">Em producao</div>
+        <h3>{label}</h3>
+      </div>
+      <p className="settings-muted">
+        Este modulo ainda nao possui contrato completo de backend no MVP. Ele fica visivel na
+        navegacao para manter a arquitetura do dashboard preparada para a proxima etapa.
+      </p>
+    </section>
+  );
+}
+
+function SettingsField({
+  children,
+  label
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <label className="settings-field">
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="settings-metric">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
