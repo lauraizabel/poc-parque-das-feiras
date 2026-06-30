@@ -22,6 +22,27 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
   const api = "http://127.0.0.1:3101";
   const storefrontHost = `${primaryStoreSlug}.lvh.me`;
 
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { name: /acesse seu cockpit/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /criar conta no resumo/i })).toHaveAttribute(
+    "href",
+    "/register-merchant"
+  );
+
+  await page.goto("/register");
+  await expect(page.getByRole("heading", { name: /abra sua conta operacional/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /criar conta e primeira loja/i })).toHaveAttribute(
+    "href",
+    "/register-merchant"
+  );
+
+  await page.goto("/register-merchant");
+  await expect(page.getByRole("heading", { name: /configure sua opera/i })).toBeVisible();
+  await expect(page.getByText("Progresso")).toBeVisible();
+
+  await page.goto("/forgot-password");
+  await expect(page.getByRole("heading", { name: /solicite um novo link/i })).toBeVisible();
+
   const registrationResponse = await request.post(`${api}/auth/register-merchant`, {
     data: {
       email: merchantEmail,
@@ -173,16 +194,11 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
   });
   expect(checkoutResponse.ok()).toBeTruthy();
 
-  await page.goto("/");
-
-  await expect(page).toHaveTitle(/dashboard/i);
-  await expect(
-    page.getByRole("heading", { name: /operacao multi-store com mais clareza/i })
-  ).toBeVisible();
+  await page.goto("/login");
 
   await page.getByLabel("E-mail").fill(merchantEmail);
   await page.getByLabel("Senha").fill(password);
-  await page.getByRole("button", { name: /entrar no dashboard/i }).click();
+  await page.getByRole("button", { name: /entrar no cockpit/i }).click();
 
   await expect(page.getByTestId("dashboard-selected-store")).toHaveText(
     "Dashboard Smoke Store A"
