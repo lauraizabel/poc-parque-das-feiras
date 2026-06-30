@@ -20,6 +20,8 @@ import { HealthModule } from "./health/health.module";
 import { HealthController } from "./health/health.controller";
 import { IntegrationsModule } from "./integrations/integrations.module";
 import { IntegrationsController } from "./integrations/integrations.controller";
+import { BaselinkerModule } from "./baselinker/baselinker.module";
+import { BaselinkerController } from "./baselinker/baselinker.controller";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { NotificationsController } from "./notifications/notifications.controller";
 import { OrdersModule } from "./orders/orders.module";
@@ -60,6 +62,7 @@ import { WebhookRateLimitMiddleware } from "./platform/security/webhook-rate-lim
     AuditModule,
     HealthModule,
     IntegrationsModule,
+    BaselinkerModule,
     SecurityModule
   ]
 })
@@ -75,6 +78,7 @@ export class AppModule implements NestModule {
       DomainsController,
       HealthController,
       IntegrationsController,
+      BaselinkerController,
       NotificationsController,
       OrdersController,
       PaymentsController,

@@ -283,6 +283,16 @@ const domainsProviderSchema = z
     }
   });
 
+const baselinkerProviderSchema = z.object({
+  BASELINKER_ENABLED: booleanFromEnv.default(false),
+  BASELINKER_TOKEN_ENCRYPTION_KEY: optionalNonEmptyString,
+  BASELINKER_IMPORT_INTERVAL_MINUTES: z.preprocess((value) => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string" && value.trim().length > 0) return Number(value);
+    return 15;
+  }, z.number().int().positive().default(15))
+});
+
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url(),
   NEXT_PUBLIC_API_URL: z.url()
@@ -292,7 +302,8 @@ export type ApiEnv = z.infer<typeof serverProviderSchema> &
   z.infer<typeof paymentsProviderSchema> &
   z.infer<typeof storageProviderSchema> &
   z.infer<typeof emailProviderSchema> &
-  z.infer<typeof domainsProviderSchema>;
+  z.infer<typeof domainsProviderSchema> &
+  z.infer<typeof baselinkerProviderSchema>;
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
 
 function formatSchemaErrors(error: z.ZodError) {
@@ -320,7 +331,8 @@ export function createApiEnv(input: unknown) {
     ...parseWithContext(paymentsProviderSchema, input, "API payments"),
     ...parseWithContext(storageProviderSchema, input, "API storage"),
     ...parseWithContext(emailProviderSchema, input, "API email"),
-    ...parseWithContext(domainsProviderSchema, input, "API domains")
+    ...parseWithContext(domainsProviderSchema, input, "API domains"),
+    ...parseWithContext(baselinkerProviderSchema, input, "API baselinker")
   } satisfies ApiEnv;
 }
 

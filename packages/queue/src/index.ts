@@ -12,7 +12,11 @@ export type QueueProfileName =
   | "domain-ssl-provisioning"
   | "domain-ssl-status"
   | "notifications-email"
-  | "payment-webhook-processing";
+  | "payment-webhook-processing"
+  | "baselinker-order-export"
+  | "baselinker-order-import"
+  | "baselinker-catalog-sync"
+  | "baselinker-shipping-label";
 
 export type QueuePolicy = {
   attempts: number;
@@ -94,6 +98,38 @@ const QUEUE_POLICIES: Record<QueueProfileName, QueuePolicy> = {
     removeOnComplete: 300,
     removeOnFail: 1_000,
     timeoutMs: 45_000,
+    concurrency: 4
+  },
+  "baselinker-order-export": {
+    attempts: 5,
+    backoffDelayMs: 10_000,
+    removeOnComplete: 300,
+    removeOnFail: 1_000,
+    timeoutMs: 30_000,
+    concurrency: 3
+  },
+  "baselinker-order-import": {
+    attempts: 3,
+    backoffDelayMs: 30_000,
+    removeOnComplete: 100,
+    removeOnFail: 500,
+    timeoutMs: 60_000,
+    concurrency: 1
+  },
+  "baselinker-catalog-sync": {
+    attempts: 5,
+    backoffDelayMs: 15_000,
+    removeOnComplete: 200,
+    removeOnFail: 1_000,
+    timeoutMs: 45_000,
+    concurrency: 2
+  },
+  "baselinker-shipping-label": {
+    attempts: 3,
+    backoffDelayMs: 10_000,
+    removeOnComplete: 200,
+    removeOnFail: 500,
+    timeoutMs: 30_000,
     concurrency: 4
   }
 };

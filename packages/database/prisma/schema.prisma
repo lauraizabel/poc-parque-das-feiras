@@ -258,6 +258,8 @@ model Store {
   cartItems         CartItem[]
   auditLogs         AuditLog[]
   notifications     Notification[]
+  baselinkerConfig  StoreBaselinkerConfig?
+  baselinkerOrderSyncs BaselinkerOrderSync[]
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -753,6 +755,7 @@ model Order {
   shippingMethod           ShippingMethod? @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
   shipment                 Shipment?
   items                    OrderItem[]
+  baselinkerSyncs          BaselinkerOrderSync[]
   createdAt                DateTime    @default(now())
   updatedAt                DateTime    @updatedAt
 
@@ -828,4 +831,42 @@ model ProductVariant {
 
   @@unique([productId, sku])
   @@index([productId, sortOrder])
+}
+
+enum BaselinkerSyncDirection {
+  EXPORT
+  IMPORT
+}
+
+model StoreBaselinkerConfig {
+  id                  String    @id @default(cuid())
+  storeId             String    @unique
+  apiToken            String
+  inventoryId         Int?
+  enabled             Boolean   @default(true)
+  statusMappings      Json?
+  lastOrderImportAt   DateTime?
+  lastCatalogSyncAt   DateTime?
+  store               Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([storeId])
+}
+
+model BaselinkerOrderSync {
+  id                String                  @id @default(cuid())
+  storeId           String
+  orderId           String?
+  baselinkerOrderId Int
+  direction         BaselinkerSyncDirection
+  lastSyncedAt      DateTime                @default(now())
+  lastStatus        String?
+  errorMessage      String?
+  store             Store                   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  order             Order?                  @relation(fields: [orderId], references: [id])
+
+  @@unique([storeId, baselinkerOrderId])
+  @@index([storeId, direction])
+  @@index([orderId])
 }
