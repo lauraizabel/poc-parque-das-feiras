@@ -397,23 +397,25 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form className="domain-form" onSubmit={handleSubmit}>
+    <form className="auth-modern-form" onSubmit={handleSubmit}>
       <label className="field">
         <span>E-mail</span>
         <input
           autoComplete="email"
           onChange={(event) => setEmail(event.target.value)}
+          placeholder="voce@loja.com.br"
           type="email"
           value={email}
         />
         <FieldError message={state.fieldErrors?.email} />
       </label>
 
-      <div className="button-row">
-        <button className="primary-button" disabled={isLoading} type="submit">
+      <div className="auth-action-row">
+        <button className="auth-submit-button" disabled={isLoading} type="submit">
           {isLoading ? "Enviando..." : "Enviar link"}
+          <span aria-hidden="true">→</span>
         </button>
-        <a className="secondary-button auth-anchor-button" href="/login">
+        <a className="auth-text-link" href="/login">
           Voltar ao login
         </a>
       </div>
@@ -486,10 +488,15 @@ export function ResetPasswordForm(props: { initialToken?: string | null }) {
   }
 
   return (
-    <form className="domain-form" onSubmit={handleSubmit}>
+    <form className="auth-modern-form" onSubmit={handleSubmit}>
       <label className="field">
         <span>Token do link</span>
-        <input onChange={(event) => setToken(event.target.value)} type="text" value={token} />
+        <input
+          onChange={(event) => setToken(event.target.value)}
+          placeholder="Cole o token recebido"
+          type="text"
+          value={token}
+        />
         <FieldError message={state.fieldErrors?.token} />
       </label>
 
@@ -498,17 +505,19 @@ export function ResetPasswordForm(props: { initialToken?: string | null }) {
         <input
           autoComplete="new-password"
           onChange={(event) => setPassword(event.target.value)}
+          placeholder="Mínimo 8 caracteres"
           type="password"
           value={password}
         />
         <FieldError message={state.fieldErrors?.password} />
       </label>
 
-      <div className="button-row">
-        <button className="primary-button" disabled={isLoading} type="submit">
+      <div className="auth-action-row">
+        <button className="auth-submit-button" disabled={isLoading} type="submit">
           {isLoading ? "Redefinindo..." : "Salvar nova senha"}
+          <span aria-hidden="true">→</span>
         </button>
-        <a className="secondary-button auth-anchor-button" href="/forgot-password">
+        <a className="auth-text-link" href="/forgot-password">
           Solicitar outro link
         </a>
       </div>
@@ -575,18 +584,24 @@ export function VerifyEmailForm(props: { initialToken?: string | null }) {
   }
 
   return (
-    <form className="domain-form" onSubmit={handleSubmit}>
+    <form className="auth-modern-form" onSubmit={handleSubmit}>
       <label className="field">
         <span>Token de confirmação</span>
-        <input onChange={(event) => setToken(event.target.value)} type="text" value={token} />
+        <input
+          onChange={(event) => setToken(event.target.value)}
+          placeholder="Cole o token recebido"
+          type="text"
+          value={token}
+        />
         <FieldError message={state.fieldErrors?.token} />
       </label>
 
-      <div className="button-row">
-        <button className="primary-button" disabled={isLoading} type="submit">
+      <div className="auth-action-row">
+        <button className="auth-submit-button" disabled={isLoading} type="submit">
           {isLoading ? "Confirmando..." : "Confirmar e-mail"}
+          <span aria-hidden="true">→</span>
         </button>
-        <a className="secondary-button auth-anchor-button" href="/login">
+        <a className="auth-text-link" href="/login">
           Ir para login
         </a>
       </div>

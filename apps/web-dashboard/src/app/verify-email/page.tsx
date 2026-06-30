@@ -1,4 +1,4 @@
-import { AuthPageShell } from "../../components/auth-page-shell";
+import { AuthFormLayout } from "../../components/auth-page-shell";
 import { VerifyEmailForm } from "../../components/auth-forms";
 
 export default async function VerifyEmailPage(props: {
@@ -8,20 +8,19 @@ export default async function VerifyEmailPage(props: {
   const token = typeof searchParams.token === "string" ? searchParams.token : null;
 
   return (
-    <AuthPageShell
+    <AuthFormLayout
       eyebrow="Confirmação"
-      title="Confirme o seu e-mail para concluir o acesso."
+      title="Confirme seu e-mail"
       subtitle="Abra esta página a partir do link recebido por e-mail ou cole o token manualmente para ativar a conta."
-      links={[
-        { href: "/login", label: "Ir para login" },
-        { href: "/register", label: "Criar outra conta" }
-      ]}
     >
-      <div>
-        <div className="eyebrow">Verificação</div>
-        <h2 className="section-title">Confirmar e-mail</h2>
-      </div>
       <VerifyEmailForm initialToken={token} />
-    </AuthPageShell>
+      <a className="auth-next-link" href="/login">
+        <span>
+          <strong>Ir para login</strong>
+          Entre no painel assim que a confirmação for concluída.
+        </span>
+        <em aria-hidden="true">→</em>
+      </a>
+    </AuthFormLayout>
   );
 }

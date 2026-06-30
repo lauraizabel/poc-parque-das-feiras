@@ -1,4 +1,4 @@
-import { AuthPageShell } from "../../components/auth-page-shell";
+import { AuthFormLayout } from "../../components/auth-page-shell";
 import { ResetPasswordForm } from "../../components/auth-forms";
 
 export default async function ResetPasswordPage(props: {
@@ -8,20 +8,19 @@ export default async function ResetPasswordPage(props: {
   const token = typeof searchParams.token === "string" ? searchParams.token : null;
 
   return (
-    <AuthPageShell
+    <AuthFormLayout
       eyebrow="Nova senha"
-      title="Defina uma nova senha a partir do token enviado por e-mail."
+      title="Redefina sua senha"
       subtitle="Cole o token se necessário e escolha uma senha forte para encerrar o fluxo de recuperação."
-      links={[
-        { href: "/forgot-password", label: "Solicitar novo link" },
-        { href: "/login", label: "Voltar ao login" }
-      ]}
     >
-      <div>
-        <div className="eyebrow">Reset</div>
-        <h2 className="section-title">Redefinir senha</h2>
-      </div>
       <ResetPasswordForm initialToken={token} />
-    </AuthPageShell>
+      <a className="auth-next-link" href="/forgot-password">
+        <span>
+          <strong>Solicitar outro link</strong>
+          Gere um novo token se o anterior expirou.
+        </span>
+        <em aria-hidden="true">→</em>
+      </a>
+    </AuthFormLayout>
   );
 }
