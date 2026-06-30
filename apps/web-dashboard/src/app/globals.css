@@ -2215,6 +2215,60 @@ textarea {
   line-height: 1.6;
 }
 
+.onboarding-domain-form {
+  display: grid;
+  gap: 20px;
+}
+
+.onboarding-form-section {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.onboarding-form-section h2 {
+  margin: 6px 0 0;
+  font-size: 1.25rem;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.onboarding-domain-form .field input,
+.onboarding-domain-form .field select,
+.onboarding-domain-form .field textarea {
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  background: white;
+  padding: 0 12px;
+}
+
+.onboarding-domain-form .field textarea {
+  padding-top: 12px;
+}
+
+.onboarding-domain-form .field input:focus,
+.onboarding-domain-form .field select:focus,
+.onboarding-domain-form .field textarea:focus {
+  border-color: rgba(214, 109, 49, 0.42);
+  box-shadow: 0 0 0 4px rgba(214, 109, 49, 0.12);
+}
+
+.onboarding-submit-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.onboarding-submit-row .auth-submit-button {
+  min-width: min(100%, 280px);
+  padding: 0 18px;
+}
+
 .auth-split-shell {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(420px, 0.9fr);
@@ -3668,6 +3722,15 @@ textarea {
 
   .onboarding-progress-card {
     position: static;
+  }
+
+  .onboarding-submit-row {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .onboarding-submit-row .auth-submit-button {
+    width: 100%;
   }
 
   .dashboard-frame {

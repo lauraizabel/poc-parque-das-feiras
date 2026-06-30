@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { z } from "zod";
-import { env } from "../lib/env";
 import { storeDashboardAccessToken } from "../lib/auth-session";
+import { env } from "../lib/env";
 
 type FormState = {
   kind: "idle" | "success" | "error";
@@ -339,8 +339,7 @@ export function MerchantOnboardingForm({
     } catch (error) {
       setState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Falha de rede ao concluir o onboarding."
+        message: error instanceof Error ? error.message : "Falha de rede ao concluir o onboarding."
       });
     } finally {
       setIsLoading(false);
@@ -355,137 +354,152 @@ export function MerchantOnboardingForm({
         : "feedback";
 
   return (
-    <form className="domain-form" onSubmit={handleSubmit}>
+    <form className="onboarding-domain-form" onSubmit={handleSubmit}>
       {mode === "signup" ? (
+        <section className="onboarding-form-section">
+          <div>
+            <div className="eyebrow">Acesso</div>
+            <h2>Dados do lojista</h2>
+          </div>
+          <div className="field-grid">
+            <label className="field">
+              <span>Nome completo</span>
+              <input
+                autoComplete="name"
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Ana Souza"
+                type="text"
+                value={fullName}
+              />
+              <FieldError message={state.fieldErrors?.fullName} />
+            </label>
+            <label className="field">
+              <span>E-mail de trabalho</span>
+              <input
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="voce@suamarca.com"
+                type="email"
+                value={email}
+              />
+              <FieldError message={state.fieldErrors?.email} />
+            </label>
+          </div>
+          <label className="field">
+            <span>Senha</span>
+            <input
+              autoComplete="new-password"
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              type="password"
+              value={password}
+            />
+            <FieldError message={state.fieldErrors?.password} />
+          </label>
+        </section>
+      ) : null}
+
+      <section className="onboarding-form-section">
+        <div>
+          <div className="eyebrow">Loja</div>
+          <h2>Identidade e operação</h2>
+        </div>
         <div className="field-grid">
           <label className="field">
-            <span>Nome completo</span>
+            <span>Nome da loja</span>
             <input
-              autoComplete="name"
-              onChange={(event) => setFullName(event.target.value)}
+              onChange={(event) => setStoreName(event.target.value)}
+              placeholder="Ex.: Casa Aurora"
               type="text"
-              value={fullName}
+              value={storeName}
             />
-            <FieldError message={state.fieldErrors?.fullName} />
+            <FieldError message={state.fieldErrors?.storeName ?? state.fieldErrors?.name} />
+          </label>
+
+          <label className="field">
+            <span>Slug desejado</span>
+            <input
+              onChange={(event) => {
+                setHasCustomSlug(true);
+                setStoreSlug(event.target.value);
+              }}
+              placeholder="casa-aurora"
+              type="text"
+              value={storeSlug}
+            />
+            <FieldError message={state.fieldErrors?.storeSlug ?? state.fieldErrors?.slug} />
+          </label>
+        </div>
+
+        {availability.kind !== "idle" ? (
+          <div className="slug-preview">
+            <p className={availabilityTone}>{availability.message}</p>
+            {availability.normalizedSlug ? (
+              <div className="domain-result compact-grid">
+                <div>
+                  <span>Slug normalizado</span>
+                  <strong>{availability.normalizedSlug}</strong>
+                </div>
+                <div>
+                  <span>Subdomínio padrão previsto</span>
+                  <strong>{availability.defaultSubdomain}</strong>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="field-grid">
+          <label className="field">
+            <span>E-mail de suporte</span>
+            <input
+              onChange={(event) => setSupportEmail(event.target.value)}
+              placeholder="suporte@sualoja.com"
+              type="email"
+              value={supportEmail}
+            />
+            <FieldError message={state.fieldErrors?.supportEmail} />
           </label>
           <label className="field">
-            <span>E-mail</span>
+            <span>Moeda</span>
             <input
-              autoComplete="email"
-              onChange={(event) => setEmail(event.target.value)}
-              type="email"
-              value={email}
+              maxLength={3}
+              onChange={(event) => setCurrencyCode(event.target.value.toUpperCase())}
+              type="text"
+              value={currencyCode}
             />
-            <FieldError message={state.fieldErrors?.email} />
+            <FieldError message={state.fieldErrors?.currencyCode} />
           </label>
         </div>
-      ) : null}
 
-      {mode === "signup" ? (
         <label className="field">
-          <span>Senha</span>
+          <span>Locale inicial</span>
           <input
-            autoComplete="new-password"
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
-            value={password}
-          />
-          <FieldError message={state.fieldErrors?.password} />
-        </label>
-      ) : null}
-
-      <div className="field-grid">
-        <label className="field">
-          <span>Nome da loja</span>
-          <input
-            onChange={(event) => setStoreName(event.target.value)}
-            placeholder="Ex.: Casa Aurora"
+            onChange={(event) => setLocale(event.target.value)}
+            placeholder="pt-BR"
             type="text"
-            value={storeName}
+            value={locale}
           />
-          <FieldError message={state.fieldErrors?.storeName ?? state.fieldErrors?.name} />
+          <FieldError message={state.fieldErrors?.locale} />
         </label>
+      </section>
 
-        <label className="field">
-          <span>Slug desejado</span>
-          <input
-            onChange={(event) => {
-              setHasCustomSlug(true);
-              setStoreSlug(event.target.value);
-            }}
-            placeholder="casa-aurora"
-            type="text"
-            value={storeSlug}
-          />
-          <FieldError message={state.fieldErrors?.storeSlug ?? state.fieldErrors?.slug} />
-        </label>
-      </div>
-
-      {availability.kind !== "idle" ? (
-        <div className="slug-preview">
-          <p className={availabilityTone}>{availability.message}</p>
-          {availability.normalizedSlug ? (
-            <div className="domain-result compact-grid">
-              <div>
-                <span>Slug normalizado</span>
-                <strong>{availability.normalizedSlug}</strong>
-              </div>
-              <div>
-                <span>Subdomínio padrão previsto</span>
-                <strong>{availability.defaultSubdomain}</strong>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div className="field-grid">
-        <label className="field">
-          <span>E-mail de suporte</span>
-          <input
-            onChange={(event) => setSupportEmail(event.target.value)}
-            placeholder="suporte@sualoja.com"
-            type="email"
-            value={supportEmail}
-          />
-          <FieldError message={state.fieldErrors?.supportEmail} />
-        </label>
-        <label className="field">
-          <span>Moeda</span>
-          <input
-            maxLength={3}
-            onChange={(event) => setCurrencyCode(event.target.value.toUpperCase())}
-            type="text"
-            value={currencyCode}
-          />
-          <FieldError message={state.fieldErrors?.currencyCode} />
-        </label>
-      </div>
-
-      <label className="field">
-        <span>Locale inicial</span>
-        <input
-          onChange={(event) => setLocale(event.target.value)}
-          placeholder="pt-BR"
-          type="text"
-          value={locale}
-        />
-        <FieldError message={state.fieldErrors?.locale} />
-      </label>
-
-      <div className="button-row">
-        <button className="primary-button" disabled={isLoading} type="submit">
+      <div className="onboarding-submit-row">
+        {mode === "signup" ? (
+          <a className="auth-text-link" href="/login">
+            Já tenho acesso
+          </a>
+        ) : (
+          <span />
+        )}
+        <button className="auth-submit-button" disabled={isLoading} type="submit">
           {isLoading
             ? "Salvando..."
             : mode === "signup"
               ? "Criar conta e primeira loja"
               : "Criar minha primeira loja"}
+          <span aria-hidden="true">→</span>
         </button>
-        {mode === "signup" ? (
-          <a className="secondary-button auth-anchor-button" href="/login">
-            Já tenho acesso
-          </a>
-        ) : null}
       </div>
 
       <InlineFeedback state={state} />
