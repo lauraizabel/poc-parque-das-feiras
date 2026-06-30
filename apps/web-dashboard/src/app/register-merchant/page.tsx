@@ -22,9 +22,6 @@ export default function RegisterMerchantPage() {
           <a className="dashboard-action" href="/login">
             Já tenho acesso
           </a>
-          <a className="dashboard-action" href="/register">
-            Criar só a conta
-          </a>
         </nav>
       </header>
 

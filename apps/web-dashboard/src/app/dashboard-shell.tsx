@@ -280,12 +280,6 @@ function LoginDashboard({
             <a className="secondary-button auth-anchor-button" href="/register-merchant">
               Abrir minha loja
             </a>
-            <a className="secondary-button auth-anchor-button" href="/register">
-              Criar conta
-            </a>
-            <a className="secondary-button auth-anchor-button" href="/forgot-password">
-              Esqueci minha senha
-            </a>
           </div>
         </form>
 

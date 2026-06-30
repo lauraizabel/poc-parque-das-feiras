@@ -29,19 +29,9 @@ test("covers login, store switch, catalog, orders and custom domain navigation",
     "/register-merchant"
   );
 
-  await page.goto("/register");
-  await expect(page.getByRole("heading", { name: /abra sua conta operacional/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /criar conta e primeira loja/i })).toHaveAttribute(
-    "href",
-    "/register-merchant"
-  );
-
   await page.goto("/register-merchant");
   await expect(page.getByRole("heading", { name: /configure sua opera/i })).toBeVisible();
   await expect(page.getByText("Progresso")).toBeVisible();
-
-  await page.goto("/forgot-password");
-  await expect(page.getByRole("heading", { name: /solicite um novo link/i })).toBeVisible();
 
   const registrationResponse = await request.post(`${api}/auth/register-merchant`, {
     data: {
