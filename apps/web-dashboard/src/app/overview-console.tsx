@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { env } from "../lib/env";
 import {
   DashboardFeedback,
   DashboardLoadingState
 } from "../components/dashboard-state";
+import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -18,6 +18,9 @@ type ManagedOrder = {
   totalCents: number;
   currencyCode: string;
   itemCount: number;
+  createdAt?: string;
+  customerEmail?: string;
+  customerFullName?: string | null;
   payment: {
     status: string;
   } | null;
@@ -25,8 +28,20 @@ type ManagedOrder = {
 
 type CatalogProduct = {
   id: string;
+  name?: string;
+  sku?: string | null;
+  priceCents?: number;
+  currencyCode?: string;
   stockQuantity: number;
   status: string;
+  category?: {
+    name: string;
+  } | null;
+  images?: Array<{
+    imageUrl: string;
+    isPrimary: boolean;
+    altText: string | null;
+  }>;
 };
 
 type DomainRecord = {
@@ -46,17 +61,13 @@ type OverviewConsoleProps = {
   defaultSubdomain: string;
 };
 
-function normalizeMessage(payload: unknown, fallback: string) {
-  if (typeof payload === "object" && payload !== null && "message" in payload) {
-    const value = (payload as { message?: unknown }).message;
-
-    if (typeof value === "string") {
-      return value;
-    }
-  }
-
-  return fallback;
-}
+const REVENUE_STATUSES = new Set([
+  "PAYMENT_APPROVED",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED"
+]);
+const ATTENTION_STATUSES = new Set(["PAYMENT_FAILED", "CANCELED", "REFUNDED"]);
 
 function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR") {
   return new Intl.NumberFormat(locale, {
@@ -67,7 +78,7 @@ function formatMoney(valueInCents: number, currencyCode: string, locale = "pt-BR
 
 function getDomainStatusLabel(domain: DomainRecord | null) {
   if (!domain) {
-    return "Sem domínio próprio";
+    return "Sem dominio proprio";
   }
 
   switch (domain.status) {
@@ -80,7 +91,7 @@ function getDomainStatusLabel(domain: DomainRecord | null) {
     case "AWAITING_DNS":
       return "Aguardando DNS";
     case "ERROR":
-      return "Requer atenção";
+      return "Requer atencao";
     case "REMOVED":
       return "Removido";
     default:
@@ -90,13 +101,13 @@ function getDomainStatusLabel(domain: DomainRecord | null) {
 
 function getDomainHint(domain: DomainRecord | null) {
   if (!domain) {
-    return "Cadastre um domínio quando quiser tirar a loja do subdomínio padrão.";
+    return "Cadastre um dominio quando quiser tirar a loja do subdominio padrao.";
   }
 
   if (domain.status === "ACTIVE") {
     return domain.activatedAt
-      ? `Domínio ativo desde ${new Date(domain.activatedAt).toLocaleDateString("pt-BR")}.`
-      : "Domínio ativo e servindo a vitrine pública.";
+      ? `Dominio ativo desde ${new Date(domain.activatedAt).toLocaleDateString("pt-BR")}.`
+      : "Dominio ativo e servindo a vitrine publica.";
   }
 
   if (domain.dnsErrorMessage) {
@@ -107,7 +118,30 @@ function getDomainHint(domain: DomainRecord | null) {
     return domain.sslErrorMessage;
   }
 
-  return "Continue a ativação pelo console de domínios para concluir DNS e SSL.";
+  return "Continue a ativacao pelo console de dominios para concluir DNS e SSL.";
+}
+
+function getToneForProduct(product: CatalogProduct) {
+  if (product.status === "OUT_OF_STOCK" || product.stockQuantity <= 0) {
+    return "accent";
+  }
+
+  if (product.stockQuantity <= 3) {
+    return "warn";
+  }
+
+  return "signal";
+}
+
+function getOrderDayKey(order: ManagedOrder) {
+  if (!order.createdAt) {
+    return "Sem data";
+  }
+
+  return new Date(order.createdAt).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit"
+  });
 }
 
 export function OverviewConsole({
@@ -127,16 +161,8 @@ export function OverviewConsole({
   const canViewOverview = storeRole === "STORE_OWNER" || storeRole === "STORE_MANAGER";
 
   const metrics = useMemo(() => {
-    const revenueStatuses = new Set([
-      "PAYMENT_APPROVED",
-      "PROCESSING",
-      "SHIPPED",
-      "DELIVERED"
-    ]);
-    const attentionStatuses = new Set(["PAYMENT_FAILED", "CANCELED", "REFUNDED"]);
-
-    const revenueOrders = orders.filter((order) => revenueStatuses.has(order.status));
-    const attentionOrders = orders.filter((order) => attentionStatuses.has(order.status));
+    const revenueOrders = orders.filter((order) => REVENUE_STATUSES.has(order.status));
+    const attentionOrders = orders.filter((order) => ATTENTION_STATUSES.has(order.status));
     const activeProducts = products.filter((product) => product.status === "ACTIVE").length;
     const outOfStockProducts = products.filter(
       (product) => product.status === "OUT_OF_STOCK" || product.stockQuantity <= 0
@@ -161,6 +187,25 @@ export function OverviewConsole({
     };
   }, [orders, products]);
 
+  const orderFlow = useMemo(() => {
+    const grouped = new Map<string, number>();
+
+    for (const order of orders) {
+      const key = getOrderDayKey(order);
+      grouped.set(key, (grouped.get(key) ?? 0) + 1);
+    }
+
+    const rows = Array.from(grouped.entries()).slice(-14);
+
+    if (rows.length === 0) {
+      return [{ label: "Hoje", value: 0 }];
+    }
+
+    return rows.map(([label, value]) => ({ label, value }));
+  }, [orders]);
+
+  const recentProducts = useMemo(() => products.slice(0, 5), [products]);
+
   async function loadOverview() {
     if (!canViewOverview) {
       setOrders([]);
@@ -168,7 +213,7 @@ export function OverviewConsole({
       setDomain(null);
       setState({
         kind: "error",
-        message: "O resumo inicial fica disponível apenas para owner e manager da loja."
+        message: "O resumo inicial fica disponivel apenas para owner e manager da loja."
       });
       return;
     }
@@ -177,54 +222,48 @@ export function OverviewConsole({
     setState({ kind: "idle" });
 
     try {
-      const [ordersResponse, productsResponse, domainResponse] = await Promise.all([
-        fetch(`${env.NEXT_PUBLIC_API_URL}/orders/${storeId}/management`, {
-          headers: {
-            authorization: `Bearer ${token}`
+      const [ordersResult, productsResult, domainResult] = await Promise.all([
+        dashboardApiJson<{ orders?: ManagedOrder[]; message?: string }>(
+          `/orders/${storeId}/management`,
+          {
+            headers: authHeaders(token)
           }
-        }),
-        fetch(`${env.NEXT_PUBLIC_API_URL}/catalog/${storeId}/products`, {
-          headers: {
-            authorization: `Bearer ${token}`
+        ),
+        dashboardApiJson<{ products?: CatalogProduct[]; message?: string }>(
+          `/catalog/${storeId}/products`,
+          {
+            headers: authHeaders(token)
           }
-        }),
-        fetch(`${env.NEXT_PUBLIC_API_URL}/domains/${storeId}`, {
-          headers: {
-            authorization: `Bearer ${token}`
+        ),
+        dashboardApiJson<{ domain?: DomainRecord | null; message?: string }>(
+          `/domains/${storeId}`,
+          {
+            headers: authHeaders(token)
           }
-        })
+        )
       ]);
 
-      const ordersPayload = (await ordersResponse.json()) as {
-        orders?: ManagedOrder[];
-        message?: string;
-      };
-      const productsPayload = (await productsResponse.json()) as {
-        products?: CatalogProduct[];
-        message?: string;
-      };
-      const domainPayload = (await domainResponse.json()) as {
-        domain?: DomainRecord | null;
-        message?: string;
-      };
-
-      if (!ordersResponse.ok || !ordersPayload.orders) {
-        throw new Error(normalizeMessage(ordersPayload, "Nao foi possivel carregar os pedidos."));
-      }
-
-      if (!productsResponse.ok || !productsPayload.products) {
+      if (!ordersResult.response.ok || !ordersResult.payload.orders) {
         throw new Error(
-          normalizeMessage(productsPayload, "Nao foi possivel carregar os produtos.")
+          normalizeApiMessage(ordersResult.payload, "Nao foi possivel carregar os pedidos.")
         );
       }
 
-      if (!domainResponse.ok) {
-        throw new Error(normalizeMessage(domainPayload, "Nao foi possivel carregar o dominio."));
+      if (!productsResult.response.ok || !productsResult.payload.products) {
+        throw new Error(
+          normalizeApiMessage(productsResult.payload, "Nao foi possivel carregar os produtos.")
+        );
       }
 
-      setOrders(ordersPayload.orders);
-      setProducts(productsPayload.products);
-      setDomain(domainPayload.domain ?? null);
+      if (!domainResult.response.ok) {
+        throw new Error(
+          normalizeApiMessage(domainResult.payload, "Nao foi possivel carregar o dominio.")
+        );
+      }
+
+      setOrders(ordersResult.payload.orders);
+      setProducts(productsResult.payload.products);
+      setDomain(domainResult.payload.domain ?? null);
       setState({
         kind: "success",
         message: "Resumo operacional atualizado com sucesso."
@@ -252,45 +291,34 @@ export function OverviewConsole({
   }, [storeId, storeRole, token]);
 
   return (
-    <section className="overview-stack">
-      <section className="card overview-card">
-        <div className="domain-head">
-          <div>
-            <div className="eyebrow">Resumo operacional</div>
-            <h2 className="section-title">Pulso inicial de {storeLabel}</h2>
-          </div>
-          <button className="secondary-button" onClick={loadOverview} type="button">
-            {isLoading ? "Atualizando..." : "Atualizar resumo"}
-          </button>
-        </div>
-
-        <p className="subtitle">
-          Este resumo usa consultas simples do MVP para dar visibilidade rápida de pedidos,
-          faturamento, catálogo e domínio sem depender de BI avançado.
-        </p>
-
-        <div className="overview-grid">
-          <article className="overview-stat">
-            <span>Pedidos totais</span>
-            <strong>{metrics.totalOrders}</strong>
-            <p>{metrics.paidOrders} pedidos contam no faturamento básico.</p>
-          </article>
-          <article className="overview-stat">
-            <span>Faturamento básico</span>
-            <strong>{formatMoney(metrics.revenueCents, currencyCode)}</strong>
-            <p>Soma de pedidos aprovados, em processamento, enviados ou entregues.</p>
-          </article>
-          <article className="overview-stat">
-            <span>Produtos publicados</span>
-            <strong>{metrics.activeProducts}</strong>
-            <p>{metrics.totalProducts} produtos cadastrados no total.</p>
-          </article>
-          <article className="overview-stat">
-            <span>Pedidos com atenção</span>
-            <strong>{metrics.attentionOrders}</strong>
-            <p>Falhas, cancelamentos e reembolsos aparecem aqui.</p>
-          </article>
-        </div>
+    <section className="overview-console animate-entrance">
+      <section className="overview-kpi-grid">
+        <OverviewKpi
+          delta={`${metrics.paidOrders} contam no faturamento`}
+          label="Pedidos totais"
+          tone="signal"
+          value={String(metrics.totalOrders)}
+        />
+        <OverviewKpi
+          delta="Pedidos aprovados, em processamento, enviados ou entregues"
+          label="Faturamento"
+          prefix={currencyCode}
+          tone="signal"
+          value={formatMoney(metrics.revenueCents, currencyCode)}
+        />
+        <OverviewKpi
+          accent
+          delta="Falhas, cancelamentos e reembolsos"
+          label="Atencao necessaria"
+          tone="accent"
+          value={String(metrics.attentionOrders)}
+        />
+        <OverviewKpi
+          delta={`${metrics.outOfStockProducts} sem estoque`}
+          label="Baixo estoque"
+          tone="warn"
+          value={String(metrics.lowStockProducts)}
+        />
       </section>
 
       <DashboardFeedback state={state} />
@@ -299,35 +327,156 @@ export function OverviewConsole({
         <DashboardLoadingState label="Montando resumo operacional da loja" />
       ) : null}
 
-      <section className="overview-detail-grid">
-        <article className="card overview-detail-card">
-          <div className="eyebrow">Catálogo</div>
-          <h3>Saúde do estoque</h3>
-          <div className="overview-mini-grid">
-            <div className="kpi">
-              <span>Baixo estoque</span>
-              <strong>{metrics.lowStockProducts}</strong>
+      <section className="overview-operational-grid">
+        <article className="overview-panel overview-flow-panel">
+          <header className="overview-panel-header">
+            <div>
+              <div className="eyebrow">Pedidos / ultimos movimentos</div>
+              <h2>Fluxo operacional</h2>
             </div>
-            <div className="kpi">
-              <span>Sem estoque</span>
-              <strong>{metrics.outOfStockProducts}</strong>
-            </div>
-          </div>
-          <p className="overview-note">
-            Produtos com até 3 unidades entram em baixo estoque para destacar reposição rápida.
-          </p>
+            <button className="secondary-button" onClick={loadOverview} type="button">
+              {isLoading ? "Atualizando..." : "Atualizar"}
+            </button>
+          </header>
+          <SparkBars data={orderFlow} />
         </article>
 
-        <article className="card overview-detail-card">
-          <div className="eyebrow">Domínio</div>
-          <h3>{getDomainStatusLabel(domain)}</h3>
-          <div className="overview-domain-box">
-            <span>Host atual</span>
+        <aside className="overview-side-stack">
+          <article className="overview-panel">
+            <div className="eyebrow">Saude do dominio</div>
+            <div className="overview-domain-status">{getDomainStatusLabel(domain)}</div>
+            <div className="overview-domain-host">
+              {domain?.host ?? `${defaultSubdomain}.lvh.me`}
+            </div>
+            <p>{getDomainHint(domain)}</p>
+          </article>
+
+          <article className="overview-storefront-card">
+            <div className="eyebrow">Storefront</div>
             <strong>{domain?.host ?? `${defaultSubdomain}.lvh.me`}</strong>
+            <span>{storeLabel}</span>
+            <a href="http://localhost:3000">Abrir loja</a>
+          </article>
+        </aside>
+      </section>
+
+      <section className="overview-panel">
+        <header className="overview-panel-header">
+          <div>
+            <div className="eyebrow">Catalogo recente</div>
+            <h2>Produtos publicados e estoque</h2>
           </div>
-          <p className="overview-note">{getDomainHint(domain)}</p>
-        </article>
+          <span className="overview-total-pill">{metrics.totalProducts} produtos</span>
+        </header>
+
+        <div className="overview-product-list">
+          {recentProducts.length > 0 ? (
+            recentProducts.map((product) => (
+              <ProductRow
+                currencyCode={currencyCode}
+                key={product.id}
+                product={product}
+              />
+            ))
+          ) : (
+            <div className="overview-empty-row">
+              Nenhum produto encontrado para montar o catalogo recente.
+            </div>
+          )}
+        </div>
       </section>
     </section>
+  );
+}
+
+function OverviewKpi({
+  accent,
+  delta,
+  label,
+  prefix,
+  tone,
+  value
+}: {
+  accent?: boolean;
+  delta: string;
+  label: string;
+  prefix?: string;
+  tone: "signal" | "warn" | "accent";
+  value: string;
+}) {
+  return (
+    <article className="overview-kpi-card">
+      <div className="eyebrow">{label}</div>
+      <div className={accent ? "overview-kpi-value is-accent" : "overview-kpi-value"}>
+        {prefix ? <span>{prefix}</span> : null}
+        <strong>{value}</strong>
+      </div>
+      <p className={`overview-kpi-delta is-${tone}`}>{delta}</p>
+    </article>
+  );
+}
+
+function SparkBars({ data }: { data: Array<{ label: string; value: number }> }) {
+  const max = Math.max(...data.map((item) => item.value), 1);
+
+  return (
+    <div className="overview-spark">
+      <div className="overview-spark-bars">
+        {data.map((item, index) => (
+          <div className="overview-spark-item" key={`${item.label}-${index}`}>
+            <span
+              className={index === data.length - 1 ? "is-current" : ""}
+              style={{ height: `${Math.max((item.value / max) * 100, item.value > 0 ? 10 : 4)}%` }}
+              title={`${item.label}: ${item.value}`}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="overview-spark-labels">
+        <span>{data[0]?.label ?? "Inicio"}</span>
+        <strong>{data.reduce((sum, item) => sum + item.value, 0)} pedidos</strong>
+        <span>{data[data.length - 1]?.label ?? "Hoje"}</span>
+      </div>
+    </div>
+  );
+}
+
+function ProductRow({
+  currencyCode,
+  product
+}: {
+  currencyCode: string;
+  product: CatalogProduct;
+}) {
+  const primaryImage = product.images?.find((image) => image.isPrimary) ?? product.images?.[0];
+  const tone = getToneForProduct(product);
+  const stockPercent = Math.max(0, Math.min(product.stockQuantity * 10, 100));
+
+  return (
+    <article className="overview-product-row">
+      <div className="overview-product-thumb">
+        {primaryImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img alt={primaryImage.altText ?? product.name ?? "Produto"} src={primaryImage.imageUrl} />
+        ) : (
+          <span>IMG</span>
+        )}
+      </div>
+      <div className="overview-product-main">
+        <strong>{product.name ?? product.id}</strong>
+        <span>
+          {product.category?.name ?? "Sem categoria"} / {product.sku ?? "sem SKU"}
+        </span>
+      </div>
+      <div className="overview-product-price">
+        {formatMoney(product.priceCents ?? 0, product.currencyCode ?? currencyCode)}
+      </div>
+      <div className="overview-stock-meter">
+        <span>
+          <i className={`is-${tone}`} style={{ width: `${stockPercent}%` }} />
+        </span>
+        <strong>{product.stockQuantity}</strong>
+      </div>
+    </article>
   );
 }

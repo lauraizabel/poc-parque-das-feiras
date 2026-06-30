@@ -125,8 +125,8 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
 
 ## Fase 3 - Resumo conectado
 
-- [ ] P0 - Migrar layout de KPIs do Lovable para `OverviewConsole`.
-- [ ] P0 - Substituir valores mockados por dados reais ja carregados:
+- [x] P0 - Migrar layout de KPIs do Lovable para `OverviewConsole`.
+- [x] P0 - Substituir valores mockados por dados reais ja carregados:
   - pedidos totais
   - faturamento basico
   - pedidos com atencao
@@ -134,10 +134,17 @@ Migrar a experiencia visual e operacional criada no Lovable para o dashboard Nex
   - baixo estoque
   - sem estoque
   - saude do dominio
-- [ ] P1 - Adicionar bloco "Fluxo operacional" com serie real dos ultimos dias.
-- [ ] P1 - Adicionar lista de catalogo recente com produtos reais.
-- [ ] P1 - Adicionar card de storefront com dominio/subdominio real e status de publicacao quando existir.
+- [x] P1 - Adicionar bloco "Fluxo operacional" com serie real dos ultimos dias.
+- [x] P1 - Adicionar lista de catalogo recente com produtos reais.
+- [x] P1 - Adicionar card de storefront com dominio/subdominio real e status de publicacao quando existir.
 - [ ] P2 - Criar endpoint agregado no backend para resumo do dashboard, evitando tres chamadas paralelas em cada carregamento.
+
+### Resultado da Fase 3
+
+- `OverviewConsole` foi refeito no visual operacional do Lovable usando pedidos, produtos e dominio reais.
+- O resumo agora exibe KPIs, fluxo operacional em barras, saude de dominio, card da vitrine e catalogo recente.
+- A tela segue usando as chamadas reais existentes para pedidos, catalogo e dominios; o endpoint agregado permanece como melhoria P2.
+- Validacao executada: `apps/web-dashboard/node_modules/.bin/tsc.CMD --project apps/web-dashboard/tsconfig.json --noEmit`.
 
 ## Fase 4 - Catalogo conectado
 
