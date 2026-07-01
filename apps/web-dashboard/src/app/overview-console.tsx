@@ -6,6 +6,7 @@ import {
   DashboardLoadingState
 } from "../components/dashboard-state";
 import { authHeaders, dashboardApiJson, normalizeApiMessage } from "../lib/dashboard-api";
+import { formatDomainStatusLabel } from "../lib/enum-labels";
 
 type ApiState = {
   kind: "idle" | "success" | "error";
@@ -81,22 +82,7 @@ function getDomainStatusLabel(domain: DomainRecord | null) {
     return "Sem dominio proprio";
   }
 
-  switch (domain.status) {
-    case "ACTIVE":
-      return "Ativo";
-    case "SSL_PENDING":
-      return "Emitindo SSL";
-    case "VERIFYING":
-      return "Verificando DNS";
-    case "AWAITING_DNS":
-      return "Aguardando DNS";
-    case "ERROR":
-      return "Requer atencao";
-    case "REMOVED":
-      return "Removido";
-    default:
-      return domain.status;
-  }
+  return formatDomainStatusLabel(domain.status);
 }
 
 function getDomainHint(domain: DomainRecord | null) {

@@ -10,8 +10,6 @@ import {
   formatPaymentStatusLabel,
   formatPlatformRoleLabel,
   formatProviderLabel,
-  formatShipmentStatusLabel,
-  formatShippingMethodTypeLabel,
   formatStoreRoleLabel,
   formatStoreStatusLabel,
   formatTransactionKindLabel,
@@ -493,7 +491,7 @@ export function AdminShell() {
   const navItems: Array<{ key: AdminSectionKey; label: string; description: string }> = [
     { key: "overview", label: "Pulso", description: "Totais e sinais da plataforma" },
     { key: "stores", label: "Lojas", description: "Estado operacional das lojas" },
-    { key: "users", label: "Usuários", description: "Vínculos, roles e ownership" },
+    { key: "users", label: "Usuários", description: "Vínculos, papéis e propriedade" },
     { key: "orders", label: "Pedidos", description: "Investigação cross-tenant" },
     { key: "payments", label: "Pagamentos", description: "Falhas, attempts e captura" },
     { key: "domains", label: "Domínios", description: "Hosts, DNS e ativação" }
@@ -757,7 +755,7 @@ function AdminOverviewConsole({ token }: { token: string }) {
       <section className="grid admin-grid-3">
         <AdminStatusCard formatLabel={formatStoreStatusLabel} title="Lojas por status" items={overview.storesByStatus} />
         <AdminStatusCard formatLabel={formatOrderStatusLabel} title="Pedidos por status" items={overview.ordersByStatus} />
-        <AdminStatusCard formatLabel={formatDomainStatusLabel} title="Dom�nios por status" items={overview.domainsByStatus} />
+        <AdminStatusCard formatLabel={formatDomainStatusLabel} title="Domínios por status" items={overview.domainsByStatus} />
       </section>
     </section>
   );
@@ -895,7 +893,7 @@ function AdminStoresConsole({ token }: { token: string }) {
               <span>Busca</span>
               <input
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Nome, slug, domínio ou owner"
+                placeholder="Nome, slug, domínio ou proprietário"
                 value={search}
               />
             </label>
@@ -971,7 +969,7 @@ function AdminStoresConsole({ token }: { token: string }) {
               <strong>{formatStoreStatusLabel(selectedStore.status)}</strong>
             </div>
             <div className="kpi">
-              <span>Owner</span>
+              <span>Proprietário</span>
               <strong>{selectedStore.owner.email}</strong>
             </div>
             <div className="kpi">
@@ -1100,7 +1098,7 @@ function AdminUsersConsole({ token }: { token: string }) {
         <div className="domain-head">
           <div>
             <div className="eyebrow">Usuários</div>
-            <h2 className="section-title">Vínculos, ownership e memberships</h2>
+            <h2 className="section-title">Vínculos, propriedade e memberships</h2>
           </div>
           <button className="secondary-button" onClick={loadUsers} type="button">
             {isLoading ? "Atualizando..." : "Atualizar"}
@@ -1124,7 +1122,7 @@ function AdminUsersConsole({ token }: { token: string }) {
               />
             </label>
             <label className="field">
-              <span>Role global</span>
+              <span>Papel global</span>
               <select onChange={(event) => setRoleFilter(event.target.value)} value={roleFilter}>
                 <option value="">Todas</option>
                 <option value="PLATFORM_ADMIN">{formatPlatformRoleLabel("PLATFORM_ADMIN")}</option>
@@ -1178,7 +1176,7 @@ function AdminUsersConsole({ token }: { token: string }) {
           <h3>{selectedUser.fullName ?? selectedUser.email}</h3>
           <div className="grid">
             <div className="kpi">
-              <span>Role global</span>
+              <span>Papel global</span>
               <strong>{formatPlatformRoleLabel(selectedUser.platformRole)}</strong>
             </div>
             <div className="kpi">

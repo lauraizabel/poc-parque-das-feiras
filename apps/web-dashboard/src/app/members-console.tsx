@@ -308,7 +308,7 @@ export function MembersConsole({
         <div className="members-readonly-card">
           <div className="eyebrow">Equipe</div>
           <h2>Gestao de membros</h2>
-          <p>Apenas o owner da loja pode convidar, alterar papel e remover membros neste MVP.</p>
+          <p>Apenas a proprietária da loja pode convidar, alterar papel e remover membros neste MVP.</p>
         </div>
       </section>
     );
@@ -374,8 +374,8 @@ export function MembersConsole({
                         }
                         value={draftRoles[member.id] ?? member.role}
                       >
-                        <option value="STORE_MANAGER">Operador</option>
-                        <option value="STORE_SUPPORT">Suporte</option>
+                        <option value="STORE_MANAGER">{formatStoreRoleLabel("STORE_MANAGER")}</option>
+                        <option value="STORE_SUPPORT">{formatStoreRoleLabel("STORE_SUPPORT")}</option>
                       </select>
                     )}
                   </div>
@@ -455,8 +455,8 @@ export function MembersConsole({
                 onChange={(event) => setRole(event.target.value as (typeof roleOptions)[number])}
                 value={role}
               >
-                <option value="STORE_MANAGER">Operador</option>
-                <option value="STORE_SUPPORT">Suporte</option>
+                <option value="STORE_MANAGER">{formatStoreRoleLabel("STORE_MANAGER")}</option>
+                <option value="STORE_SUPPORT">{formatStoreRoleLabel("STORE_SUPPORT")}</option>
               </select>
             </label>
             <button className="primary-button" disabled={isLoading} type="submit">
